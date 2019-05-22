@@ -19,8 +19,8 @@ base.overrideAttrs (old: {
     rustup component add rust-src rls rust-analysis rustfmt
   '';
 
-  buildInputs = old.buildInputs ++ [
-
-  ];
-})
+  buildInputs = old.buildInputs ++ (with pkgs; [
+    remarshal
+  ]);
+)
 
