@@ -1,0 +1,46 @@
+#! /usr/bin/env remarshal -if toml -of json
+
+[StructKind]
+enum = ["Scalar", "Repeated", "Map"]
+
+[PrimitiveType]
+enum = ["int53", "int64", "double", "string", "bool", "any"]
+
+[Dependency.fields]
+to = "Reference"
+from = "Reference"
+is_local = "bool"
+
+[Reference.fields]
+qualified_name = "string"
+type_name = "string"
+module_name = "string"
+
+[Type.fields]
+is_a = ["TypeStruct", "optional"]
+fields = "Field{}"
+options = "string[]"
+type_name = "string"
+tags = "string[]"
+
+[Module.fields]
+module_name = "string"
+dependencies = "Dependency[]"
+types_by_name = "Type{}"
+types_dependency_ordering = "string[]"
+
+[TypeStruct.fields]
+struct_kind = "StructKind"
+reference = "Reference"
+primitive_type = "PrimitiveType"
+is_literal = "bool"
+literal_int64 = "int64"
+literal_int53 = "int53"
+literal_double = "double"
+literal_string = "string"
+literal_bool = "bool"
+
+[Field.fields]
+field_name = "string"
+tags = "string[]"
+type_struct = "TypeStruct"

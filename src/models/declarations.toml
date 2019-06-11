@@ -1,0 +1,13 @@
+#! /usr/bin/env remarshal -if toml -of json
+
+[ModuleDec]
+is_a = "TypeDec{}"
+
+[FieldDec]
+is_a = "string[]"
+
+[TypeDec.fields]
+enum = "string[]"
+is_a = "string"
+fields = "FieldDec{}"
+tags = "string[]"
