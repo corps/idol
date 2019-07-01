@@ -9,5 +9,4 @@ jobs:
           nix-env -i coreutils git openssh gnutar gzip rsync bash go
       - checkout
       - run: |
-          cd idol
           ./.circleci/build.sh
