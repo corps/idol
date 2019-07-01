@@ -4,6 +4,7 @@
     date = "2019-05-14";
     channel = "stable";
   }
+, rustPlatform ? pkgs.makeRustPlatform rustChannel
 }:
 
 let
@@ -11,6 +12,29 @@ let
 in
 
 base.overrideAttrs (old: {
-  buildInputs = old.buildInputs ++ (with rustChannel; [rust cargo rust-src]);
-})
+  buildInputs = old.buildInputs ++ (with rustChannel; [
+    (rust.override {
+      extensions = [ "rust-std" "rust-src" ];
+    })
+    cargo rust-src
+  ] ++ (with pkgs; [
+    cacert
+  ]));
 
+  src = ./.;
+
+  buildPhase = ''
+    export HOME=$(mktemp -d)
+    cargo build --release
+  '';
+
+  installPhase = ''
+    mkdir $out
+    for file in ./target/release/*; do
+      echo $file
+      test -x $file && test -f $file && cp $file $out/
+    done
+
+    echo 'done'
+  '';
+})

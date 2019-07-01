@@ -1,0 +1,21 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: lnl7:nix:2019-03-01
+
+    steps:
+      - run: |
+        nix-env -i coreutils git openssh gnutar gzip rsync bash go
+      - checkout
+      - run: |
+        nix-shell default.nix --run 'export HOME=$(mktemp -d); cargo test'
+      - run: |
+        nix-build
+      - run: |
+        export GOPATH=$(mktemp -d)
+        go get -u github.com/tcnksm/ghr
+        export PATH=$GOPATH/bin:$PATH
+
+        VERSION=$(./result/idol --version | cut -d' ' -f2)
+        ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./result/

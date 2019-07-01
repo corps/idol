@@ -22,5 +22,5 @@ base.overrideAttrs (old: {
   buildInputs = old.buildInputs ++ (with pkgs; [
     remarshal
   ]);
-)
+})
 
