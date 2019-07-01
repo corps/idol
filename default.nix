@@ -42,7 +42,7 @@ base.overrideAttrs (old: {
     mkdir -p $out/bin
 
     for file in ./target/release/*; do
-      test -x $file && test -f $file && cp $file out/bin/
+      test -x $file && test -f $file && cp $file $out/bin/
     done
 
     echo 'done'
