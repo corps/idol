@@ -18,25 +18,37 @@ base.overrideAttrs (old: {
     })
     cargo rust-src
   ] ++ (with pkgs; [
-    cacert
+    cacert gzip coreutils
   ]));
 
   src = ./.;
 
   dontPatchELF = true;
 
-  buildPhase = ''
+  preBuildPhases = [ "setupHomePhase" ];
+
+  setupHomePhase = ''
     export HOME=$(mktemp -d)
+  '';
+
+  buildPhase = ''
+    set -x
     cargo build --release
+
+    mkdir ./bin
+    for file in ./target/release/*; do
+      test -x $file && test -f $file && cp $file bin/
+    done
+    set +x
   '';
 
   installPhase = ''
-    mkdir $out
-    for file in ./target/release/*; do
-      echo $file
-      test -x $file && test -f $file && cp $file $out/
-    done
+    set -x
+    mkdir -p $out
+
+    tar c ./bin | gzip > "$out/idol-${pkgs.system}.tar.gz"
 
     echo 'done'
+    set +x
   '';
 })
