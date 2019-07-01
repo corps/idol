@@ -14,4 +14,5 @@ echo $GOPATH/bin
 '
 
 export PATH=$(nix-shell -p go --run "$program"):$PATH
+export VERSION=$(./result/idol --version | cut -d' ' -f2)
 ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./result/

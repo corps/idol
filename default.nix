@@ -23,6 +23,8 @@ base.overrideAttrs (old: {
 
   src = ./.;
 
+  dontPatchELF = true;
+
   buildPhase = ''
     export HOME=$(mktemp -d)
     cargo build --release

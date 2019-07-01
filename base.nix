@@ -2,8 +2,7 @@
 }:
 
 pkgs.stdenv.mkDerivation rec {
-  name = "idol-${version}";
-  version = "0.1.0";
+  name = "idol-latest";
 
   buildInputs = with pkgs; [
     openssl pkgconfig
