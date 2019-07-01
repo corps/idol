@@ -35,18 +35,15 @@ base.overrideAttrs (old: {
     set -x
     cargo build --release
 
-    mkdir ./bin
-    for file in ./target/release/*; do
-      test -x $file && test -f $file && cp $file bin/
-    done
-    set +x
   '';
 
   installPhase = ''
     set -x
-    mkdir -p $out
+    mkdir -p $out/bin
 
-    tar c ./bin | gzip > "$out/idol-${pkgs.system}.tar.gz"
+    for file in ./target/release/*; do
+      test -x $file && test -f $file && cp $file out/bin/
+    done
 
     echo 'done'
     set +x

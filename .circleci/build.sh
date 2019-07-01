@@ -15,4 +15,8 @@ echo $GOPATH/bin
 
 export PATH=$(nix-shell -p go --run "$program"):$PATH
 export VERSION="$(./target/release/idol --version | cut -d' ' -f2)"
-ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} ${VERSION} ./result/
+
+mkdir release
+tar c result/* | gzip > release/idol-$(uname | tr '[:upper:]' '[:lower:]')-$(arch).tar.gz
+
+ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} ${VERSION} ./release
