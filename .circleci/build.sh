@@ -14,7 +14,7 @@ echo $GOPATH/bin
 '
 
 export PATH=$(nix-shell -p go --run "$program"):$PATH
-export VERSION="$(./target/release/idol --version | cut -d' ' -f2)"
+export VERSION="$(./result/idol --version | cut -d' ' -f2)"
 
 mkdir release
 tar c result/* | gzip > release/idol-$(uname | tr '[:upper:]' '[:lower:]')-$(arch).tar.gz
