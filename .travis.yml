@@ -1,0 +1,42 @@
+sudo: false
+language: rust
+rust: nightly
+os:
+  - linux
+  - osx
+cache:
+  directories:
+    - $HOME/.cargo
+
+addons:
+  apt:
+    packages:
+      - libcurl4-openssl-dev
+      - libelf-dev
+      - libdw-dev
+
+script:
+  - |
+    cargo build
+    cargo test
+
+    mkdir bin
+    mkdir release
+
+    for file in ./target/release/*; do
+      test -x $file && test -f $file && cp $file bin/
+    done
+
+    tar c bin | gzip > release/idol-$(uname | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
+
+
+deploy:
+  provider: releases
+  api_key:
+    secure: "your own encrypted key"
+  file_glob: true
+  file: release/*
+  on:
+    repo: corps/idol
+    tags: true
+  skip_clean: true

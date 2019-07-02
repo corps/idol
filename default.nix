@@ -12,9 +12,9 @@ let
 in
 
 base.overrideAttrs (old: {
-  buildInputs = old.buildInputs ++ (with rustChannel; [
+  nativeBuildInputs = (with rustChannel; [
     (rust.override {
-      extensions = [ "rust-std" "rust-src" ];
+      extensions = [ "rust-std" ];
     })
     cargo rust-src
   ] ++ (with pkgs; [
@@ -33,7 +33,6 @@ base.overrideAttrs (old: {
 
   buildPhase = ''
     set -x
-    export PATH=/usr/bin:$PATH
     cargo build --release
   '';
 
