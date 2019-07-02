@@ -1,10 +1,14 @@
 { pkgs ? import <nixpkgs> {}
 }:
 
-(pkgs.stdenv.override { cc = pkgs.gcc-unwrapped; }).mkDerivation rec {
+pkgs.stdenv.mkDerivation rec {
   name = "idol-latest";
 
   buildInputs = with pkgs; [
     openssl pkgconfig
+  ];
+
+  nativeBuildInputs = with pkgs; [
+    gcc-unwrapped
   ];
 }
