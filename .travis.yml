@@ -1,3 +1,4 @@
+if: tag IS blank
 sudo: false
 language: rust
 rust: nightly
@@ -17,6 +18,7 @@ script:
 - |
   cargo build
   cargo test
+  cargo build --release
 
   mkdir bin
   mkdir release
