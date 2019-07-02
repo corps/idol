@@ -29,6 +29,11 @@ script:
 
     tar c bin | gzip > release/idol-$(uname | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
 
+before_deploy:
+  - git config --local user.name "Zachary Collins"
+  - git config --local user.email "recursive.cookie.jar@gmail.com"
+  - export TRAVIS_TAG=${TRAVIS_TAG:-$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)}
+  - git tag $TRAVIS_TAG
 
 deploy:
   provider: releases
@@ -36,7 +41,4 @@ deploy:
     secure: "your own encrypted key"
   file_glob: true
   file: release/*
-  on:
-    repo: corps/idol
-    tags: true
   skip_clean: true
