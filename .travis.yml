@@ -28,7 +28,6 @@ script:
   done
 
   tar c bin | gzip > release/idol-$(uname | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
-  ls release/
 
 before_deploy:
 - git config --local user.name "Zachary Collins"
@@ -42,4 +41,4 @@ deploy:
     secure: bw5D9Pu+n4UIqoACUQR3WPc+qp3NReG5ZPzW2OyUmT4tYGdtZK5EltEcRP0PAK8+vol5FmKgaoFL7kX7wJH8j1C8+EhY6O4q+zpnpjP4dAH78QM3hyO90RaBUb1jO3dyNkazvzN+tTrvg2FQisMGgJaZnI8FDjM4vEvZThfeMfGj9T3tSEn4cFGWXQFUiWGla8pJOAW+AbkftsLpHHXcm5vITBUyyUQblKiU+7cHjpoqlItwp7NDNuWk7uKTc1Px6EU+tZ/L2PO2mEZ1SQfM2KJbO5tYvYOR32v4yR2SnEYz3Kv3h5q2HVanf4aKNQFB1XwGlQzQu0LbQJwGGye1Kcb7uryooGDLeLpykkGpwyBn0zX0uajupofQZf3DlPdn49ei6qBcD/AT8Z13GaKiogUusMQe/MvmuMW3lIi82AvHyc5nfp2iFnfgrjAck01Mqjh+wdBiEJ+KZUR/KIef0cXoLR5bZG8gw7kz9mS2bIY8MmOSYS1pv3Rw+O7Id6wAtZsczv1aTVS12FiD/HAdXaQhfK6buBq/rQhYhT/Nd8cRb2zmb+9+IVxrtVD/ugdocAXawDDYPvbbGSYcQAC64dMrvZ5ZK094d4Ng7phZrK+eTzLig3PKYoXaE0qnlnkrxbhLIBhGQicUB4EyeJlgqDNEOR84KuYjOdOwKuNII3U=
   file_glob: true
   file: release/*
-  skip_clean: true
+  skip_cleanup: true
