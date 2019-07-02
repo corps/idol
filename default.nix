@@ -33,8 +33,8 @@ base.overrideAttrs (old: {
 
   buildPhase = ''
     set -x
+    export PATH=/usr/bin:$PATH
     cargo build --release
-
   '';
 
   installPhase = ''

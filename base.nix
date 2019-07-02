@@ -1,7 +1,7 @@
 { pkgs ? import <nixpkgs> {}
 }:
 
-pkgs.stdenv.mkDerivation rec {
+pkgs.stdenvNoCC.mkDerivation rec {
   name = "idol-latest";
 
   buildInputs = with pkgs; [
@@ -9,6 +9,6 @@ pkgs.stdenv.mkDerivation rec {
   ];
 
   nativeBuildInputs = with pkgs; [
-    gcc-unwrapped
+    gcc-unwrapped cmake
   ];
 }
