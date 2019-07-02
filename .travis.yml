@@ -2,43 +2,39 @@ sudo: false
 language: rust
 rust: nightly
 os:
-  - linux
-  - osx
+- linux
+- osx
 cache:
   directories:
-    - $HOME/.cargo
-
+  - "$HOME/.cargo"
 addons:
   apt:
     packages:
-      - libcurl4-openssl-dev
-      - libelf-dev
-      - libdw-dev
-
+    - libcurl4-openssl-dev
+    - libelf-dev
+    - libdw-dev
 script:
-  - |
-    cargo build
-    cargo test
+- |
+  cargo build
+  cargo test
 
-    mkdir bin
-    mkdir release
+  mkdir bin
+  mkdir release
 
-    for file in ./target/release/*; do
-      test -x $file && test -f $file && cp $file bin/
-    done
+  for file in ./target/release/*; do
+    test -x $file && test -f $file && cp $file bin/
+  done
 
-    tar c bin | gzip > release/idol-$(uname | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
-
+  tar c bin | gzip > release/idol-$(uname | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
 before_deploy:
-  - git config --local user.name "Zachary Collins"
-  - git config --local user.email "recursive.cookie.jar@gmail.com"
-  - export TRAVIS_TAG=${TRAVIS_TAG:-$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)}
-  - git tag $TRAVIS_TAG
-
+- git config --local user.name "Zachary Collins"
+- git config --local user.email "recursive.cookie.jar@gmail.com"
+- export TRAVIS_TAG=${TRAVIS_TAG:-$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)}
+- git tag $TRAVIS_TAG
 deploy:
   provider: releases
   api_key:
-    secure: "your own encrypted key"
+    secure: bw5D9Pu+n4UIqoACUQR3WPc+qp3NReG5ZPzW2OyUmT4tYGdtZK5EltEcRP0PAK8+vol5FmKgaoFL7kX7wJH8j1C8+EhY6O4q+zpnpjP4dAH78QM3hyO90RaBUb1jO3dyNkazvzN+tTrvg2FQisMGgJaZnI8FDjM4vEvZThfeMfGj9T3tSEn4cFGWXQFUiWGla8pJOAW+AbkftsLpHHXcm5vITBUyyUQblKiU+7cHjpoqlItwp7NDNuWk7uKTc1Px6EU+tZ/L2PO2mEZ1SQfM2KJbO5tYvYOR32v4yR2SnEYz3Kv3h5q2HVanf4aKNQFB1XwGlQzQu0LbQJwGGye1Kcb7uryooGDLeLpykkGpwyBn0zX0uajupofQZf3DlPdn49ei6qBcD/AT8Z13GaKiogUusMQe/MvmuMW3lIi82AvHyc5nfp2iFnfgrjAck01Mqjh+wdBiEJ+KZUR/KIef0cXoLR5bZG8gw7kz9mS2bIY8MmOSYS1pv3Rw+O7Id6wAtZsczv1aTVS12FiD/HAdXaQhfK6buBq/rQhYhT/Nd8cRb2zmb+9+IVxrtVD/ugdocAXawDDYPvbbGSYcQAC64dMrvZ5ZK094d4Ng7phZrK+eTzLig3PKYoXaE0qnlnkrxbhLIBhGQicUB4EyeJlgqDNEOR84KuYjOdOwKuNII3U=
   file_glob: true
   file: release/*
   skip_clean: true
