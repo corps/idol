@@ -1,5 +1,3 @@
-#! /usr/bin/env remarshal -if toml -of json
-
 [StructKind]
 enum = ["Scalar", "Repeated", "Map"]
 
