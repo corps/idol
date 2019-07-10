@@ -44,6 +44,12 @@ base.overrideAttrs (old: {
       test -x $file && test -f $file && cp $file $out/bin/
     done
 
+    for file in ./src/bin/*; do
+      test -x $file && test -f $file && cp $file $out/bin/
+    done
+
+    cp -r ./src/lib $out/
+
     echo 'done'
     set +x
   '';
