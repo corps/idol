@@ -11,6 +11,6 @@ target/debug/idol_rs: src/*.rs $(SOURCE_FILES) src/bin/idol_rs.rs
 
 models: $(MODELS)
 	./target/debug/idol $? | ./target/debug/idol_rs --output src/models/ --mod "crate::models"
-	./target/debug/idol $? | ./src/bin/idol_py.py --output src/models2/ --mod "src.models"
+	./target/debug/idol $? | ./src/bin/idol_py.py --output src/lib/idol --mod "idol"
 
 .PHONY: models dev

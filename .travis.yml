@@ -27,7 +27,13 @@ script:
     test -x $file && test -f $file && cp $file bin/
   done
 
-  tar c bin | gzip > release/idol-$(uname | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
+  for file in ./src/bin/*; do
+    test -x $file && test -f $file && cp $file bin/
+  done
+
+  cp -r ./src/lib ./
+
+  tar c bin lib | gzip > release/idol-$(uname | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
 
 before_deploy:
 - git config --local user.name "Zachary Collins"
