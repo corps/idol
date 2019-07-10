@@ -1,4 +1,4 @@
-from .__idol__ import Struct, List, Map, Optional, Enum, Any
+from src.models.__idol__ import Struct, List, Map, Optional, Enum, Any
 
 __all__ = [
     'PrimitiveType',
@@ -8,6 +8,7 @@ __all__ = [
     'TypeStruct',
     'Type',
     'Module',
+    'Field'
 ]
 
 
@@ -29,6 +30,7 @@ class StructKind(Enum):
 class Reference(Struct):
     module_name: str
     qualified_name: str
+    type_name: str
 
 
 class Dependency(Struct):
@@ -52,7 +54,7 @@ class TypeStruct(Struct):
 class Field(Struct):
     field_name: str
     type_struct: TypeStruct
-    types: List[str]
+    tags: List[str]
 
 
 class Type(Struct):
