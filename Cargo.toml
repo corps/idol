@@ -1,6 +1,6 @@
 [package]
 name = "idol"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Zach Collins <recursive.cookie.jar@gmail.com>"]
 edition = "2018"
 
