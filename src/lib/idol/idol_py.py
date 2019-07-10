@@ -210,7 +210,7 @@ class ModuleBuildEnv:
                 if option in KEYWORDS:
                     option_name += "_"
 
-                yield f"{option_name} = {json.dumps(option)}"
+                yield f"{option_name} = {repr(option)}"
 
     def gen_struct_impl(self, module: Module, type: TypeExt):
         yield f"class {type.type_name}(_Struct):"
@@ -227,7 +227,7 @@ class ModuleBuildEnv:
             yield ""
             yield "# Required to ensure stable ordering.  str() on python dicts is unstable,"
             yield "# but the json.dumps is stable."
-            yield f"__metadata__ = json.loads({repr(json.dumps(type.unwrap()))})"
+            yield f"__metadata__ = json.loads({repr(json.dumps(type.unwrap(), sort_keys=True))})"
 
     def gen_literal_impl(self, module: Module, type: TypeExt):
         type_struct = type.is_a
