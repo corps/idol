@@ -209,6 +209,9 @@ class ModuleBuildEnv:
 
                 yield f"{field_name}: {self.display_type(field.type_struct)}"
 
+            yield ""
+            yield f"__metadata__ = {type.unwrap()}"
+
     def gen_literal_impl(self, module: Module, type: TypeExt):
         type_struct = type.is_a
         scalar_type = self.display_scalar_type(type_struct)
