@@ -3,3 +3,4 @@
 .idea
 result
 __pycache__
+/test/target

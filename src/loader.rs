@@ -11,6 +11,10 @@ pub struct Loader {
   extensions: Vec<String>,
 }
 
+pub trait LoadsModules {
+  fn load_module(&self, module_name: &String) -> Result<ModuleDec, LoadError>;
+}
+
 impl Loader {
   pub fn new(include_paths: Vec<String>, extensions: Vec<String>) -> Loader {
     Loader {
@@ -25,6 +29,7 @@ pub enum LoadError {
   DeserializationError(String, String),
   ValidationError(String, crate::models::idol::ValidationError),
   ExecutionError(String, i32),
+  CouldNotFindError(String),
 }
 
 impl Display for LoadError {
@@ -44,6 +49,9 @@ impl Display for LoadError {
         "input was not a valid ModuleDec for module {}: {}",
         m, err
       ),
+      LoadError::CouldNotFindError(m) => {
+        write!(f, "Could not find module {} in search directories", m)
+      }
     })
   }
 }
@@ -65,8 +73,10 @@ impl Loader {
       })
       .map_err(|err_message| LoadError::DeserializationError(path.to_owned(), err_message))
   }
+}
 
-  pub fn load_module(&self, module_name: &String) -> Result<Option<serde_json::Value>, LoadError> {
+impl LoadsModules for Loader {
+  fn load_module(&self, module_name: &String) -> Result<ModuleDec, LoadError> {
     for include_root in self.include_paths.iter() {
       let mut path_buf = PathBuf::from(include_root);
       for ext in self.extensions.iter() {
@@ -117,10 +127,13 @@ impl Loader {
         ModuleDec::validate_json(&value)
           .map_err(|e| LoadError::ValidationError(path.to_owned(), e))?;
 
-        return Ok(Some(value));
+        let value: ModuleDec = serde_json::from_value(value)
+          .map_err(|e| LoadError::DeserializationError(path.to_owned(), format!("{}", e)))?;
+
+        return Ok(value);
       }
     }
 
-    return Ok(None);
+    return Err(LoadError::CouldNotFindError(module_name.to_owned()));
   }
 }

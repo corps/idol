@@ -387,7 +387,7 @@ fn parse_literal_annotation<'a>(lit_type: &'a str, val: &'a str) -> Result<TypeS
     match result.primitive_type {
         PrimitiveType::int53 => result.literal_int53 = serde_json::from_str(val)?,
         PrimitiveType::int64 => result.literal_int64 = serde_json::from_str(val)?,
-        PrimitiveType::string => result.literal_string = serde_json::from_str(val)?,
+        PrimitiveType::string => result.literal_string = val.to_owned(),
         PrimitiveType::double => result.literal_double = serde_json::from_str(val)?,
         PrimitiveType::bool => result.literal_bool = serde_json::from_str(val)?,
         PrimitiveType::any => return Err(FieldError::LiteralAnyError),

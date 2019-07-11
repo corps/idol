@@ -1,0 +1,10 @@
+[Assembled.fields]
+test_literal_struct = ["tests.basic.TestLiteralStruct"]
+test_literal_top = "tests.basic.TestLiteralTop"
+test_kind = ["tests.basic.TestKind"]
+test_atleast_one = ["tests.basic.TestAtleastOne"]
+test_list_of_list_struct = ["tests.basic.TestListOfListStruct"]
+test_map = ["tests.basic.TestMap"]
+test_optional_field = ["test.basic.TestOptionalField"]
+test_struct = ["tests.basic.TestStruct"]
+test_enum = ["tests.basic.TestEnum"]

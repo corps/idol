@@ -2,7 +2,7 @@ extern crate idol;
 extern crate serde_json;
 extern crate structopt;
 
-use idol::loader::Loader;
+use idol::loader::{Loader, LoadsModules};
 use idol::models::declarations::ModuleDec;
 use idol::registry::SchemaRegistry;
 use std::path::PathBuf;
@@ -18,27 +18,6 @@ struct Opt {
     #[structopt(long = "extension", short = "x")]
     extensions: Vec<String>,
     src_files: Vec<String>,
-}
-
-fn do_load(module_name: &String, loader: &Loader) -> Result<ModuleDec, i32> {
-    match loader.load_module(&module_name) {
-        Ok(Some(value)) => Ok(value),
-        Ok(None) => {
-            eprintln!("Could not find or open module {}!", module_name);
-            Err(1)
-        }
-        Err(err) => {
-            eprintln!("{}", err);
-            Err(1)
-        }
-    }
-    .and_then(|v| {
-        let module: ModuleDec = serde_json::from_value(v).map_err(|err| {
-            eprintln!("Error parsing json: {}", err);
-            1
-        })?;
-        Ok(module)
-    })
 }
 
 fn prepare_opts(opt: &mut Opt) -> Result<(), i32> {
@@ -66,6 +45,29 @@ fn prepare_opts(opt: &mut Opt) -> Result<(), i32> {
     Ok(())
 }
 
+fn process_module(
+    module_name: &String,
+    loader: &dyn LoadsModules,
+    registry: &mut SchemaRegistry,
+) -> Result<(), i32> {
+    let module_def = match loader.load_module(&module_name) {
+        Ok(value) => Ok(value),
+        Err(err) => {
+            eprintln!("{}", err);
+            Err(1)
+        }
+    }?;
+
+    registry
+        .process_module(module_name.to_owned(), &module_def)
+        .or_else(|err| {
+            eprintln!("Problem processing {}", err);
+            Err(1)
+        })?;
+
+    Ok(())
+}
+
 fn main() -> Result<(), i32> {
     let mut opt = Opt::from_args();
     prepare_opts(&mut opt)?;
@@ -81,21 +83,10 @@ fn main() -> Result<(), i32> {
             continue;
         }
 
-        let module_def = do_load(&module_name, &loader)?;
-        registry
-            .process_module(module_name.to_owned(), &module_def)
-            .or_else(|err| {
-                eprintln!("Problem processing {}", err);
-                Err(1)
-            })?;
+        process_module(&module_name, &loader, &mut registry)?;
 
         while let Some(missing_module) = registry.missing_module_lookups.iter().cloned().next() {
-            registry
-                .process_module(missing_module, &module_def)
-                .or_else(|err| {
-                    eprintln!("Problem processing {}", err);
-                    Err(1)
-                })?
+            process_module(&missing_module, &loader, &mut registry)?;
         }
 
         if registry.missing_type_lookups.is_empty() {

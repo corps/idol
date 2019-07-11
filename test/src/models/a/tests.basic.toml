@@ -1,0 +1,41 @@
+[TestTagsStruct]
+tags = ["tag-a", "tag-b"]
+fields.a = "int53"
+
+[TestLiteralStruct.fields]
+one = "literal:int53:1"
+two = "literal:string:hello"
+three = "literal:double:3.0"
+four = "literal:bool:true"
+five = ["literal:int64:5", "optional"]
+
+[TestLiteralTop]
+is_a = "literal:string:mooo"
+
+[TestKind]
+is_a = "string"
+
+[TestAtleastOne.fields]
+atleast_one = ["TestKind[]", "atleast_one"]
+
+[TestListOfListStruct.fields]
+list_of_list = "TestAtleastOne[]"
+
+[TestMap]
+is_a = "TestAtleastOne{}"
+
+[TestOptionalField.fields]
+optional = ["string", "optional"]
+
+[TestStruct.fields]
+a = "string"
+b = ["int53", "tag"]
+c = "TestStructInner"
+
+[TestStructInner.fields]
+d = "bool"
+e = "double"
+f = "int64"
+
+[TestEnum]
+enum = ["a", "b", "c"]
