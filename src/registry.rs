@@ -1,3 +1,4 @@
+use crate::dep_mapper::DepMapper;
 use crate::models::declarations::*;
 use crate::schema::*;
 use regex::Regex;
@@ -6,6 +7,7 @@ use std::collections::HashSet;
 use std::error::Error;
 use std::fmt::Display;
 
+#[derive(Debug)]
 pub enum FieldDecError {
     LiteralParseError(String),
     UnknownPrimitiveType(String),
@@ -13,17 +15,21 @@ pub enum FieldDecError {
     LiteralAnyError,
 }
 
+#[derive(Debug)]
 pub enum TypeDecError {
     FieldError(String, FieldDecError),
     BadFieldNameError(String),
     IsAError(FieldDecError),
 }
 
+#[derive(Debug)]
 pub enum ModuleError {
     TypeDecError(String, TypeDecError),
     BadTypeNameError(String),
+    CircularDependency(String),
 }
 
+#[derive(Debug)]
 pub enum ProcessingError {
     ModuleError(String, ModuleError),
     BadModuleNameError(String),
@@ -53,6 +59,9 @@ impl Display for ModuleError {
         (match self {
             ModuleError::TypeDecError(m, err) => write!(f, "declaration {}: {}", m, err),
             ModuleError::BadTypeNameError(m) => write!(f, "declaration {}", m),
+            ModuleError::CircularDependency(msg) => {
+                write!(f, "circular dependency between declarations: {}", msg)
+            }
         })
     }
 }
@@ -86,6 +95,7 @@ pub struct SchemaRegistry {
     pub modules: HashMap<String, Module>,
     pub missing_module_lookups: HashSet<String>,
     pub missing_type_lookups: HashMap<Reference, Reference>,
+    pub module_dep_mapper: DepMapper,
 }
 
 impl SchemaRegistry {
@@ -94,6 +104,7 @@ impl SchemaRegistry {
             modules,
             missing_module_lookups: HashSet::new(),
             missing_type_lookups: HashMap::new(),
+            module_dep_mapper: DepMapper::new(),
         }
     }
 
@@ -108,7 +119,9 @@ impl SchemaRegistry {
 
         self.process_models(&mut module, module_dec)
             .map_err(|e| ProcessingError::ModuleError(module_name.to_owned(), e))?;
-        self.order_local_dependencies(&mut module);
+        self.order_local_dependencies(&mut module).map_err(|m| {
+            ProcessingError::ModuleError(module_name.to_owned(), ModuleError::CircularDependency(m))
+        })?;
 
         self.missing_module_lookups.remove(&module_name);
         for type_name in module.types_by_name.keys() {
@@ -125,6 +138,13 @@ impl SchemaRegistry {
 
                 continue;
             }
+
+            self.module_dep_mapper
+                .add_dependency(
+                    dep.from.module_name.to_owned(),
+                    dep.to.module_name.to_owned(),
+                )
+                .map_err(|msg| ProcessingError::CircularImportError(msg))?;
 
             if self.resolve(&dep.to).is_none() {
                 self.missing_type_lookups
@@ -147,56 +167,33 @@ impl SchemaRegistry {
             .and_then(|module| module.types_by_name.get(&model_reference.type_name))
     }
 
-    fn order_local_dependencies(&mut self, module: &mut Module) {
-        let mut local_dependenants: HashMap<&String, Vec<&String>> = HashMap::new();
-        let mut processing_stack: Vec<(Vec<&String>, &Vec<&String>)> = Vec::new();
-        let mut ordered: HashSet<&String> = HashSet::new();
-
+    fn order_local_dependencies(&mut self, module: &mut Module) -> Result<(), String> {
+        let mut dep_mapper = DepMapper::new();
         let mut model_names: Vec<&String> = module.types_by_name.keys().collect();
         model_names.sort();
 
-        for model_name in model_names.iter() {
-            local_dependenants.insert(model_name, vec![]);
-        }
-
-        processing_stack.push((vec![], &model_names));
-
         for dependency in module.dependencies.iter() {
             if dependency.is_local {
-                if let Some(from_deps) = local_dependenants.get_mut(&dependency.from.type_name) {
-                    from_deps.push(&dependency.to.type_name);
-                }
+                dep_mapper.add_dependency(
+                    dependency.from.type_name.to_owned(),
+                    dependency.to.type_name.to_owned(),
+                )?;
             }
         }
 
-        while let Some((path, children)) = processing_stack.last().map(|v| v.to_owned()) {
-            let mut found_unresolved_child = false;
-            for child in children.iter() {
-                if ordered.contains(child) || path.contains(child) {
-                    continue;
-                }
-
-                if let Some(child_children) = local_dependenants.get(child) {
-                    found_unresolved_child = true;
-                    let mut new_parent = path.clone();
-                    new_parent.push(child);
-                    processing_stack.push((new_parent, child_children));
-                }
+        let ordered = dep_mapper.order_dependencies();
+        for model_name in model_names.iter().cloned() {
+            if ordered.contains(model_name) {
+                continue;
             }
-
-            if !found_unresolved_child {
-                processing_stack.pop();
-                if let Some(tail) = path.last() {
-                    if ordered.contains(tail) {
-                        continue;
-                    }
-                    ordered.insert(tail);
-                    module
-                        .types_dependency_ordering
-                        .push(tail.to_owned().to_owned());
-                }
-            }
+            module.types_dependency_ordering.push(model_name.to_owned());
         }
+
+        for model_name in ordered {
+            module.types_dependency_ordering.push(model_name);
+        }
+
+        Ok(())
     }
 
     fn process_models(
@@ -255,6 +252,7 @@ impl SchemaRegistry {
             modules: HashMap::new(),
             missing_type_lookups: HashMap::new(),
             missing_module_lookups: HashSet::new(),
+            module_dep_mapper: DepMapper::new(),
         };
     }
 }
@@ -277,7 +275,7 @@ impl<'a> ModuleResolver<'a> {
     fn type_from_dec(&self, type_name: &str, type_dec: &TypeDec) -> Result<Type, ModuleError> {
         lazy_static! {
             static ref TYPE_NAME_REGEX: Regex =
-                Regex::new(r"^[A-Z]+[a-zA-Z_]+[0123456789]*$").unwrap();
+                Regex::new(r"^[A-Z]+[a-zA-Z_]*[0123456789]*$").unwrap();
         }
 
         if !TYPE_NAME_REGEX.is_match(type_name) {
@@ -514,6 +512,46 @@ mod tests {
             Err(ProcessingError::ModuleError(_, ModuleError::BadTypeNameError(type_name))) => {
                 assert_eq!(type_name, "my_model")
             }
+            _ => assert!(false),
+        }
+    }
+
+    #[test]
+    fn test_circular_import() {
+        let mut registry = SchemaRegistry::new();
+
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            is_a: "a.A".to_owned(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("A".to_owned(), type_dec);
+        registry
+            .process_module("b".to_owned(), &module_dec)
+            .unwrap();
+
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            is_a: "c.A".to_owned(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("A".to_owned(), type_dec);
+        registry
+            .process_module("a".to_owned(), &module_dec)
+            .unwrap();
+
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            is_a: "b.A".to_owned(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("A".to_owned(), type_dec);
+        let result = registry.process_module("c".to_owned(), &module_dec);
+
+        assert!(result.is_err());
+
+        match result {
+            Err(ProcessingError::CircularImportError(desc)) => assert_eq!(desc, "b <- c <- a <- b"),
             _ => assert!(false),
         }
     }

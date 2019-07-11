@@ -7,8 +7,8 @@ import idol.schema
 
 __all__ = [
     "StructKind",
-    "Reference",
     "PrimitiveType",
+    "Reference",
     "TypeStruct",
     "Field",
     "Type",
@@ -23,6 +23,15 @@ class StructKind(_Enum):
     Scalar = 'Scalar'
 
 
+class PrimitiveType(_Enum):
+    any = 'any'
+    bool = 'bool'
+    double = 'double'
+    int53 = 'int53'
+    int64 = 'int64'
+    string = 'string'
+
+
 class Reference(_Struct):
     module_name: str
     qualified_name: str
@@ -31,15 +40,6 @@ class Reference(_Struct):
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
     __metadata__ = json.loads('{"fields": {"module_name": {"field_name": "module_name", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "qualified_name": {"field_name": "qualified_name", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "type_name": {"field_name": "type_name", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}}, "is_a": null, "options": [], "tags": [], "type_name": "Reference"}')
-
-
-class PrimitiveType(_Enum):
-    any = 'any'
-    bool = 'bool'
-    double = 'double'
-    int53 = 'int53'
-    int64 = 'int64'
-    string = 'string'
 
 
 class TypeStruct(_Struct):

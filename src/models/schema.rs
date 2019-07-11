@@ -63,52 +63,6 @@ impl idol::ValidatesJson for StructKind {
   }
 }
 
-#[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
-pub struct Reference {
-  pub r#module_name: String,
-  pub r#qualified_name: String,
-  pub r#type_name: String,
-}
-
-impl idol::ExpandsJson for Reference {
-  fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
-    if !value.is_object() {
-      return Some(serde_json::value::to_value(Reference::default()).unwrap());
-    }
-
-    match String::expand_json(&mut value["module_name"]) {
-      Some(v) => value["module_name"] = v,
-      None => (),
-    }
-
-    match String::expand_json(&mut value["qualified_name"]) {
-      Some(v) => value["qualified_name"] = v,
-      None => (),
-    }
-
-    match String::expand_json(&mut value["type_name"]) {
-      Some(v) => value["type_name"] = v,
-      None => (),
-    }
-
-    None
-  }
-}
-
-impl idol::ValidatesJson for Reference {
-  fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
-    if !value.is_object() {
-      return Err(idol::ValidationError(format!("expected an object but found {}", value)));
-    }
-
-    String::validate_json(&value["module_name"]).map_err(|e| idol::ValidationError(format!("field module_name: {}", e)))?;
-    String::validate_json(&value["qualified_name"]).map_err(|e| idol::ValidationError(format!("field qualified_name: {}", e)))?;
-    String::validate_json(&value["type_name"]).map_err(|e| idol::ValidationError(format!("field type_name: {}", e)))?;
-
-    Ok(())
-  }
-}
-
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
 pub enum PrimitiveType {
   int53,
@@ -178,6 +132,52 @@ impl idol::ExpandsJson for PrimitiveType {
 impl idol::ValidatesJson for PrimitiveType {
   fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
     return serde_json::from_value::<PrimitiveType>(value.to_owned()).map_err(|_| idol::ValidationError(format!("expected a valid enum value for PrimitiveType, but found {}", value))).map(|_| ());
+  }
+}
+
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
+pub struct Reference {
+  pub r#module_name: String,
+  pub r#qualified_name: String,
+  pub r#type_name: String,
+}
+
+impl idol::ExpandsJson for Reference {
+  fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+    if !value.is_object() {
+      return Some(serde_json::value::to_value(Reference::default()).unwrap());
+    }
+
+    match String::expand_json(&mut value["module_name"]) {
+      Some(v) => value["module_name"] = v,
+      None => (),
+    }
+
+    match String::expand_json(&mut value["qualified_name"]) {
+      Some(v) => value["qualified_name"] = v,
+      None => (),
+    }
+
+    match String::expand_json(&mut value["type_name"]) {
+      Some(v) => value["type_name"] = v,
+      None => (),
+    }
+
+    None
+  }
+}
+
+impl idol::ValidatesJson for Reference {
+  fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
+    if !value.is_object() {
+      return Err(idol::ValidationError(format!("expected an object but found {}", value)));
+    }
+
+    String::validate_json(&value["module_name"]).map_err(|e| idol::ValidationError(format!("field module_name: {}", e)))?;
+    String::validate_json(&value["qualified_name"]).map_err(|e| idol::ValidationError(format!("field qualified_name: {}", e)))?;
+    String::validate_json(&value["type_name"]).map_err(|e| idol::ValidationError(format!("field type_name: {}", e)))?;
+
+    Ok(())
   }
 }
 

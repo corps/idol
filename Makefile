@@ -1,7 +1,7 @@
 MODELS     := $(wildcard src/models/*.toml)
 SOURCE_FILES = $(shell find src -type f | egrep ".*\.rs" | grep -v "bin/")
 
-release: models target/release/idol target/release/idol_rs
+release: target/release/idol target/release/idol_rs
 
 dev: target/debug/idol target/debug/idol_rs models
 
@@ -22,7 +22,7 @@ models: $(MODELS)
 	cat build.json | ./target/debug/idol_rs --output src/models/ --mod "crate::models"
 	cat build.json | ./src/bin/idol_py.py --output src/lib/idol --mod "idol"
 
-test: models target/debug/idol target/debug/idol_rs
+test: target/debug/idol target/debug/idol_rs models
 	cargo test
 	make -C test
 
