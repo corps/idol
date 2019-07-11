@@ -3,6 +3,7 @@ is_a = "TypeDec{}"
 
 [FieldDec]
 is_a = "string[]"
+tags = ["atleast_one"]
 
 [TypeDec]
 fields.enum = "string[]"

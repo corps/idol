@@ -6,29 +6,33 @@ use std::collections::HashSet;
 use std::error::Error;
 use std::fmt::Display;
 
-pub enum FieldError {
+pub enum FieldDecError {
     LiteralParseError(String),
     UnknownPrimitiveType(String),
     UnspecifiedType,
     LiteralAnyError,
 }
 
-pub enum DecError {
-    FieldError(String, FieldError),
-    DecError(FieldError),
+pub enum TypeDecError {
+    FieldError(String, FieldDecError),
+    BadFieldNameError(String),
+    IsAError(FieldDecError),
 }
 
 pub enum ModuleError {
-    DecError(String, DecError),
+    TypeDecError(String, TypeDecError),
+    BadTypeNameError(String),
 }
 
 pub enum ProcessingError {
     ModuleError(String, ModuleError),
+    BadModuleNameError(String),
+    CircularImportError(String),
 }
 
-impl From<serde_json::Error> for FieldError {
-    fn from(e: serde_json::Error) -> FieldError {
-        FieldError::LiteralParseError(e.description().to_string())
+impl From<serde_json::Error> for FieldDecError {
+    fn from(e: serde_json::Error) -> FieldDecError {
+        FieldDecError::LiteralParseError(e.description().to_string())
     }
 }
 
@@ -36,6 +40,10 @@ impl Display for ProcessingError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         (match self {
             ProcessingError::ModuleError(m, err) => write!(f, "module {}: {}", m, err),
+            ProcessingError::BadModuleNameError(m) => write!(f, "module {}: invalid name", m),
+            ProcessingError::CircularImportError(desc) => {
+                write!(f, "circular module dependency found: {}", desc)
+            }
         })
     }
 }
@@ -43,29 +51,33 @@ impl Display for ProcessingError {
 impl Display for ModuleError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         (match self {
-            ModuleError::DecError(m, err) => write!(f, "declaration {}: {}", m, err),
+            ModuleError::TypeDecError(m, err) => write!(f, "declaration {}: {}", m, err),
+            ModuleError::BadTypeNameError(m) => write!(f, "declaration {}", m),
         })
     }
 }
 
-impl Display for DecError {
+impl Display for TypeDecError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         (match self {
-            DecError::FieldError(field, err) => write!(f, "field {}: {}", field, err),
-            DecError::DecError(err) => write!(f, "{}", err),
+            TypeDecError::FieldError(field, err) => write!(f, "field {}: {}", field, err),
+            TypeDecError::IsAError(err) => write!(f, "{}", err),
+            TypeDecError::BadFieldNameError(field) => write!(f, "field {}: invalid name", field),
         })
     }
 }
 
-impl Display for FieldError {
+impl Display for FieldDecError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         (match self {
-            FieldError::LiteralParseError(field) => {
+            FieldDecError::LiteralParseError(field) => {
                 write!(f, "problem parsing literal value for field {}", field)
             }
-            FieldError::UnknownPrimitiveType(msg) => write!(f, "unknown primitive type: {}", msg),
-            FieldError::UnspecifiedType => write!(f, "type was unspecified"),
-            FieldError::LiteralAnyError => write!(f, "literal field cannot be 'any' type"),
+            FieldDecError::UnknownPrimitiveType(msg) => {
+                write!(f, "unknown primitive type: {}", msg)
+            }
+            FieldDecError::UnspecifiedType => write!(f, "type was unspecified"),
+            FieldDecError::LiteralAnyError => write!(f, "literal field cannot be 'any' type"),
         })
     }
 }
@@ -203,9 +215,7 @@ impl SchemaRegistry {
                 type_name: next.to_owned(),
             };
 
-            let t = module_resolver
-                .type_from_dec(next, &module_dec.0[next])
-                .map_err(|e| ModuleError::DecError(next.to_string(), e))?;
+            let t = module_resolver.type_from_dec(next, &module_dec.0[next])?;
 
             let fields = &t.fields;
             let dependencies = &mut module.dependencies;
@@ -264,21 +274,36 @@ impl<'a> ModuleResolver<'a> {
         return name.to_owned();
     }
 
-    fn type_from_dec(&self, type_name: &str, type_dec: &TypeDec) -> Result<Type, DecError> {
+    fn type_from_dec(&self, type_name: &str, type_dec: &TypeDec) -> Result<Type, ModuleError> {
+        lazy_static! {
+            static ref TYPE_NAME_REGEX: Regex =
+                Regex::new(r"^[A-Z]+[a-zA-Z_]+[0123456789]*$").unwrap();
+        }
+
+        if !TYPE_NAME_REGEX.is_match(type_name) {
+            return Err(ModuleError::BadTypeNameError(type_name.to_owned()));
+        }
+
         Ok(Type {
             type_name: type_name.to_owned(),
-            ..self.type_of_dec(type_dec)?
+            ..self
+                .type_of_dec(type_dec)
+                .map_err(|fe| ModuleError::TypeDecError(type_name.to_owned(), fe))?
         })
     }
 
-    fn type_of_dec(&self, type_dec: &TypeDec) -> Result<Type, DecError> {
+    fn type_of_dec(&self, type_dec: &TypeDec) -> Result<Type, TypeDecError> {
+        lazy_static! {
+            static ref FIELD_NAME_REGEX: Regex = Regex::new(r"^[a-zA-Z_]+[0123456789]*$").unwrap();
+        }
+
         let mut result = Type::default();
         result.tags = type_dec.tags.to_owned();
 
         if type_dec.is_a.len() > 0 {
             result.is_a = Some(
                 self.type_struct_of_dec(&type_dec.is_a)
-                    .map_err(|e| DecError::DecError(e))?,
+                    .map_err(|e| TypeDecError::IsAError(e))?,
             );
             return Ok(result);
         }
@@ -290,17 +315,22 @@ impl<'a> ModuleResolver<'a> {
 
         for field in type_dec.fields.iter() {
             let field_name = field.0.to_owned();
+
+            if !FIELD_NAME_REGEX.is_match(&field_name) {
+                return Err(TypeDecError::BadFieldNameError(field_name.to_owned()));
+            }
+
             let field_dec = field.1;
             let tags = Vec::from(&field_dec.0[1..]);
             if field_dec.0.len() < 1 {
-                return Err(DecError::FieldError(
+                return Err(TypeDecError::FieldError(
                     field_name.to_owned(),
-                    FieldError::UnspecifiedType,
+                    FieldDecError::UnspecifiedType,
                 ));
             }
             let type_struct = self
                 .type_struct_of_dec(&field_dec.0[0])
-                .map_err(|e| DecError::FieldError(field_name.to_owned(), e))?;
+                .map_err(|e| TypeDecError::FieldError(field_name.to_owned(), e))?;
 
             result.fields.insert(
                 field_name.to_owned(),
@@ -315,7 +345,7 @@ impl<'a> ModuleResolver<'a> {
         return Ok(result);
     }
 
-    fn type_struct_of_dec(&self, field_val: &str) -> Result<TypeStruct, FieldError> {
+    fn type_struct_of_dec(&self, field_val: &str) -> Result<TypeStruct, FieldDecError> {
         let (mut type_struct, unused) = parse_type_annotation(field_val)?;
 
         if let Some(field_val) = unused {
@@ -337,7 +367,7 @@ fn is_model_ref<'a>(type_val: &'a str) -> bool {
 
 fn parse_type_annotation<'a>(
     field_val: &'a str,
-) -> Result<(TypeStruct, Option<&'a str>), FieldError> {
+) -> Result<(TypeStruct, Option<&'a str>), FieldDecError> {
     lazy_static! {
         static ref TYPE_ANNOTATION_REGEX: Regex =
             Regex::new(r"^literal:(.*):(.*)$|(.*)\{\}$|(.*)\[\]$$").unwrap();
@@ -378,7 +408,10 @@ fn parse_type_annotation<'a>(
         .unwrap()
 }
 
-fn parse_literal_annotation<'a>(lit_type: &'a str, val: &'a str) -> Result<TypeStruct, FieldError> {
+fn parse_literal_annotation<'a>(
+    lit_type: &'a str,
+    val: &'a str,
+) -> Result<TypeStruct, FieldDecError> {
     let mut result = TypeStruct::default();
     result.struct_kind = StructKind::Scalar;
     result.primitive_type = parse_primitive_type(lit_type)?;
@@ -390,12 +423,98 @@ fn parse_literal_annotation<'a>(lit_type: &'a str, val: &'a str) -> Result<TypeS
         PrimitiveType::string => result.literal_string = val.to_owned(),
         PrimitiveType::double => result.literal_double = serde_json::from_str(val)?,
         PrimitiveType::bool => result.literal_bool = serde_json::from_str(val)?,
-        PrimitiveType::any => return Err(FieldError::LiteralAnyError),
+        PrimitiveType::any => return Err(FieldDecError::LiteralAnyError),
     }
     return Ok(result);
 }
 
-fn parse_primitive_type(prim_kind: &str) -> Result<PrimitiveType, FieldError> {
+fn parse_primitive_type(prim_kind: &str) -> Result<PrimitiveType, FieldDecError> {
     serde_json::from_value(serde_json::Value::String(prim_kind.to_owned()))
-        .map_err(|e| FieldError::UnknownPrimitiveType(e.to_string()))
+        .map_err(|e| FieldDecError::UnknownPrimitiveType(e.to_string()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::declarations::*;
+    use crate::schema::*;
+    use regex::Regex;
+    use std::collections::HashMap;
+    use std::collections::HashSet;
+    use std::error::Error;
+    use std::fmt::Display;
+    use std::iter::FromIterator;
+
+    macro_rules! map(
+        { $($key:expr => $value:expr),+ } => {
+            {
+                let mut m = ::std::collections::HashMap::new();
+                $(
+                    m.insert($key, $value);
+                )+
+                m
+            }
+        };
+    );
+
+    #[test]
+    fn test_field_names() {
+        let mut registry = SchemaRegistry::new();
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            fields: map! { "ok_field".to_owned() => FieldDec(vec!["string".to_owned()]) },
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("My_model".to_owned(), type_dec);
+
+        let result = registry.process_module("My_module".to_owned(), &module_dec);
+        assert!(result.is_ok());
+
+        let type_dec = TypeDec {
+            fields: map! { "not.ok.field".to_owned() => FieldDec(vec!["string".to_owned()]) },
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("My_model".to_owned(), type_dec);
+
+        let result = registry.process_module("My_module".to_owned(), &module_dec);
+        assert!(result.is_err());
+        match result {
+            Err(ProcessingError::ModuleError(
+                _,
+                ModuleError::TypeDecError(_, TypeDecError::BadFieldNameError(field_name)),
+            )) => assert_eq!(field_name, "not.ok.field"),
+            _ => assert!(false),
+        }
+    }
+
+    #[test]
+    fn test_type_names() {
+        let mut registry = SchemaRegistry::new();
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            is_a: "string".to_owned(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("My_model".to_owned(), type_dec);
+
+        let result = registry.process_module("my_module".to_owned(), &module_dec);
+        assert!(result.is_ok());
+
+        let type_dec = TypeDec {
+            is_a: "string".to_owned(),
+            ..TypeDec::default()
+        };
+        module_dec
+            .0
+            .insert("my_model".to_owned(), TypeDec { ..type_dec });
+
+        let result = registry.process_module("my_module".to_owned(), &module_dec);
+        assert!(result.is_err());
+        match result {
+            Err(ProcessingError::ModuleError(_, ModuleError::BadTypeNameError(type_name))) => {
+                assert_eq!(type_name, "my_model")
+            }
+            _ => assert!(false),
+        }
+    }
 }
