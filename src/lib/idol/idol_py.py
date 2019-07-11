@@ -4,7 +4,6 @@ import sys
 import os.path
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "lib")))
-print(sys.path)
 
 from idol.schema import *
 from idol.__idol__ import Map, Optional, KEYWORDS

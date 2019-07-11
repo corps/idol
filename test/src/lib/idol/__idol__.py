@@ -1,9 +1,13 @@
 from typing import TypeVar, MutableSequence, Optional, MutableMapping, Generic, Any, Iterable, \
     Tuple, Union
 from enum import Enum as enumEnum
-from six import with_metaclass
 
 T = TypeVar('T')
+
+
+def with_metaclass(meta, *bases):
+    """Create a base class with a metaclass."""
+    return meta("NewBase", bases, {})
 
 
 def unwrap_value(value):

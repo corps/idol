@@ -15,7 +15,7 @@ addons:
     - libelf-dev
     - libdw-dev
     - jq
-    - python3.6
+    - python3
   homebrew:
     packages:
       - python36
