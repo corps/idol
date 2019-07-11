@@ -59,12 +59,7 @@ class TestOptionalField(_Struct):
 TestKind = str
 
 
-class TestAtleastOne(_Struct):
-    atleast_one: _List[TestKind]
-    
-    # Required to ensure stable ordering.  str() on python dicts is unstable,
-    # but the json.dumps is stable.
-    __metadata__ = json.loads('{"fields": {"atleast_one": {"field_name": "atleast_one", "tags": ["atleast_one"], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestKind", "type_name": "TestKind"}, "struct_kind": "Repeated"}}}, "is_a": null, "options": [], "tags": [], "type_name": "TestAtleastOne"}')
+TestAtleastOne = _List[TestKind]
 
 
 TestMap = _Map[TestAtleastOne]

@@ -15,8 +15,9 @@ is_a = "literal:string:mooo"
 [TestKind]
 is_a = "string"
 
-[TestAtleastOne.fields]
-atleast_one = ["TestKind[]", "atleast_one"]
+[TestAtleastOne]
+is_a = "TestKind[]"
+tags = ["atleast_one"]
 
 [TestListOfListStruct.fields]
 list_of_list = "TestAtleastOne[]"

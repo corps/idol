@@ -1,0 +1,31 @@
+{
+  "test_atleast_one": [
+    ""
+  ],
+  "test_enum": "a",
+  "test_kind": "",
+  "test_list_of_list_struct": {
+    "list_of_list": []
+  },
+  "test_literal_struct": {
+    "five": null,
+    "four": false,
+    "one": 0,
+    "three": 0,
+    "two": ""
+  },
+  "test_literal_top": "mooo",
+  "test_map": {},
+  "test_optional_field": {
+    "optional": null
+  },
+  "test_struct": {
+    "a": "",
+    "b": 0,
+    "c": {
+      "d": false,
+      "e": 0,
+      "f": 0
+    }
+  }
+}

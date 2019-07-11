@@ -14,11 +14,14 @@ addons:
     - libcurl4-openssl-dev
     - libelf-dev
     - libdw-dev
+    - jq
 script:
 - |
   cargo build
   cargo test
   cargo build --release
+
+  make test
 
   mkdir bin
   mkdir release

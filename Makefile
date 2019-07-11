@@ -14,4 +14,7 @@ models: $(MODELS)
 	cat build.json | ./target/debug/idol_rs --output src/models/ --mod "crate::models"
 	cat build.json | ./src/bin/idol_py.py --output src/lib/idol --mod "idol"
 
-.PHONY: models dev
+test: target/debug/idol target/debug/idol_rs
+	make -C test
+
+.PHONY: models dev test

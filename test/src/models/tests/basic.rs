@@ -174,35 +174,45 @@ impl idol::ValidatesJson for TestKind {
   }
 }
 
-#[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
-pub struct TestAtleastOne {
-  pub r#atleast_one: Vec<TestKind>,
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
+pub struct TestAtleastOne(pub Vec<TestKind>);
+
+impl Default for TestAtleastOne {
+  fn default() -> TestAtleastOne {
+    TestAtleastOne(vec![TestKind::default()])
+  }
 }
 
 impl idol::ExpandsJson for TestAtleastOne {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
-    if !value.is_object() {
-      return Some(serde_json::value::to_value(TestAtleastOne::default()).unwrap());
+    if value.is_null() {
+      return Some(serde_json::Value::Array(vec![serde_json::value::to_value(TestKind::default()).unwrap()]));
+    } if let serde_json::Value::Array(contents) = value {
+      if contents.is_empty() {
+        contents.push(serde_json::Value::Null);
+      }
+    } else {
+      let inner = TestKind::expand_json(value);
+      if inner.is_some() {
+        return Some(serde_json::Value::Array(vec![inner.unwrap()]));
+      } else {
+        return Some(serde_json::Value::Array(vec![value.to_owned()]));
+      }
     }
 
-    match Vec::<TestKind>::expand_json(&mut value["atleast_one"]) {
-      Some(v) => value["atleast_one"] = v,
-      None => (),
-    }
-
-    None
+    Vec::<TestKind>::expand_json(value)
   }
 }
 
 impl idol::ValidatesJson for TestAtleastOne {
   fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
-    if !value.is_object() {
-      return Err(idol::ValidationError(format!("expected an object but found {}", value)));
+    if let serde_json::Value::Array(contents) = value {
+      if contents.is_empty() {
+        return Err(idol::ValidationError("expected atleast one value, but none was found.".to_string()));
+      }
     }
 
-    Vec::<TestKind>::validate_json(&value["atleast_one"]).map_err(|e| idol::ValidationError(format!("field atleast_one: {}", e)))?;
-
-    Ok(())
+    Vec::<TestKind>::validate_json(value)
   }
 }
 

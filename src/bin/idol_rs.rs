@@ -459,7 +459,7 @@ impl<'a> ModuleBuildEnv<'a> {
 
     self.write_nl()?;
     self.start_block(format!("impl Default for {}", t.type_name))?;
-    self.start_block(format!("pub fn default() -> {}", t.type_name))?;
+    self.start_block(format!("fn default() -> {}", t.type_name))?;
     self.write(format!("{}(vec![{}::default()])", t.type_name, scalar_type))?;
     self.end_block()?;
     self.end_block()?;
@@ -470,7 +470,7 @@ impl<'a> ModuleBuildEnv<'a> {
       .start_block("fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value>")?;
     self.start_block("if value.is_null()")?;
     self.write(format!(
-      "return Some(serde_json::Value::Array(vec![serde_json::value::to_val({}::default).unwrap()]));",
+      "return Some(serde_json::Value::Array(vec![serde_json::value::to_value({}::default()).unwrap()]));",
       scalar_type
     ))?;
     self.branch_block("if let serde_json::Value::Array(contents) = value")?;
@@ -496,12 +496,12 @@ impl<'a> ModuleBuildEnv<'a> {
     self.start_block("if let serde_json::Value::Array(contents) = value")?;
     self.start_block("if contents.is_empty()")?;
     self.write(
-      "return idol::ValidationError(\"expected atleast one value, but none was found.\".to_string());",
+      "return Err(idol::ValidationError(\"expected atleast one value, but none was found.\".to_string()));",
     )?;
     self.end_block()?;
     self.end_block()?;
     self.write_nl()?;
-    self.write(format!("Vec::<{}>::validate_json_json(value)", scalar_type))?;
+    self.write(format!("Vec::<{}>::validate_json(value)", scalar_type))?;
     self.end_block()?;
     self.end_block()?;
 
