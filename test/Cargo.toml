@@ -1,6 +1,6 @@
 
 [package]
-name = "test"
+name = "libtest"
 version = "0.1.0"
 authors = ["Zach Collins <recursive.cookie.jar@gmail.com>"]
 edition = "2018"

@@ -1,3 +1,5 @@
+pub mod tests;
+pub mod all;
 
 pub mod idol {
   use serde::{Deserialize, Serialize};

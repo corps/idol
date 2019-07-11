@@ -1,5 +1,5 @@
-MODELS     := $(wildcard src/models/*.toml)
-SOURCE_FILES = $(find src -type f | egrep ".*\.rs" | grep -v "bin/")
+MODELS       = $(shell find src/models -type f | grep ".*\.toml")
+SOURCE_FILES = $(shell find src -type f | egrep ".*\.rs" | grep -v "bin/")
 
 test_bins: target/debug/expand target/debug/validate
 
@@ -10,7 +10,8 @@ target/debug/validate: $(SOURCE_FILES) src/bin/validate.rs models ../target/debu
 	cargo build --bin validate
 
 models: $(MODELS)
-	../target/debug/idol $? | ../target/debug/idol_rs --output src/models/ --mod "crate::models"
-	../target/debug/idol $? | ../src/bin/idol_py.py --output src/lib/idol --mod "idol"
+	../target/debug/idol $? > build.json
+	cat build.json | ../target/debug/idol_rs --output src/models/ --mod "crate::models"
+	cat build.json | ../src/bin/idol_py.py --output src/lib/idol --mod "idol"
 
 .PHONY: models test_bins

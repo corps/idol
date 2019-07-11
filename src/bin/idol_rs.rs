@@ -125,6 +125,14 @@ impl BuildEnv {
 
     let mut file = fs::File::create(path.join("mod.rs"))?;
 
+    for (mod_dir, _) in dirs.iter() {
+      write!(
+        file,
+        "pub mod {};\n",
+        String::from(mod_dir.file_stem().unwrap().to_string_lossy())
+      )?;
+    }
+
     for (mod_file, _) in files.iter() {
       write!(
         file,
@@ -349,14 +357,18 @@ impl<'a> ModuleBuildEnv<'a> {
     self.write_nl()?;
     self.start_block(format!("impl {}", t.type_name))?;
     self.start_block(format!("pub fn val(&self) -> {}", scalar_type))?;
-    self.write("self.0")?;
+    self.write("self.0.to_owned()")?;
     self.end_block()?;
     self.end_block()?;
 
     self.write_nl()?;
     self.start_block(format!("impl Default for {}", t.type_name))?;
     self.start_block(format!("fn default() -> {}", t.type_name))?;
-    self.write(format!("{}({})", t.type_name, type_struct.literal_value()))?;
+    self.write(format!(
+      "{}(({}).to_owned())",
+      t.type_name,
+      type_struct.literal_value()
+    ))?;
     self.end_block()?;
     self.end_block()?;
 
