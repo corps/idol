@@ -76,6 +76,10 @@ impl DepMapper {
     from_dependency: String,
     to_dependency: String,
   ) -> Result<(), String> {
+    if from_dependency == to_dependency {
+      return Err(format!("{} <- {}", from_dependency, to_dependency));
+    }
+
     let from_key = self.key_entry(from_dependency);
     let to_key = self.key_entry(to_dependency);
     let from_parents = self.parents.get(from_key).unwrap();
