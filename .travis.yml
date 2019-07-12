@@ -1,7 +1,7 @@
 if: tag IS blank
 sudo: false
 language: rust
-rust: nightly
+rust: stable
 os:
 - linux
 - osx
@@ -10,12 +10,13 @@ cache:
   - "$HOME/.cargo"
 addons:
   apt:
+    update: true
     packages:
     - libcurl4-openssl-dev
     - libelf-dev
     - libdw-dev
     - jq
-    - python3
+    - python3.6
   homebrew:
     packages:
       - python36
