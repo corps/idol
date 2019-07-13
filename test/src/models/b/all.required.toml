@@ -1,3 +1,10 @@
+[TipletOfSideImport2]
+is_a = "tests.abstract.one.Triple<tests.abstract.three.SideImport2>"
+tags = ["v"]
+
+[ListOfTestKind]
+is_a = "tests.abstract.one.List<tests.basic.TestKind>"
+
 [Assembled.fields]
 test_literal_struct = ["tests.basic.TestLiteralStruct"]
 test_literal_top = "tests.basic.TestLiteralTop"
@@ -8,3 +15,5 @@ test_map = ["tests.basic.TestMap"]
 test_optional_field = ["tests.basic.TestOptionalField"]
 test_struct = ["tests.basic.TestStruct"]
 test_enum = ["tests.basic.TestEnum"]
+test_triplet = ["TripletOfSideImport2"]
+test_list_of = ["ListOfTestKind"]

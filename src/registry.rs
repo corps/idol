@@ -161,7 +161,7 @@ impl SchemaRegistry {
                 Reference::from(format!("{}.{}", module_name, type_name).as_str());
 
             if let Some(abstraction_references) =
-                self.unresolved_abstractions.get(&abstract_reference)
+                self.unresolved_abstractions.remove(&abstract_reference)
             {
                 for abstraction_reference in abstraction_references.iter() {
                     let abstraction = self.resolve(abstraction_reference).unwrap();

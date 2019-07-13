@@ -1,0 +1,11 @@
+[Triplet]
+fields.a = "A"
+fields.b = "B[]"
+fields.c = "C{}"
+fields.side_import = "tests.abstract.two.SideImport"
+type_vars = ["A", "B", "C"]
+
+[List]
+is_a = "T[]"
+tags = ["atleast_one"]
+type_vars = ["T"]
