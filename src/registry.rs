@@ -205,7 +205,7 @@ impl SchemaRegistry {
     fn process_dependencies(&mut self, module_name: &String) -> Result<(), ProcessingError> {
         self.check_circular_dependencies(module_name)?;
         self.process_local_abstractions(module_name)?;
-        self.add_missing_module_lookups(module_name)?;
+        self.add_missing_lookups(module_name)?;
 
         Ok(())
     }
@@ -270,13 +270,20 @@ impl SchemaRegistry {
         Ok(())
     }
 
-    fn add_missing_module_lookups(&mut self, module_name: &String) -> Result<(), ProcessingError> {
+    fn add_missing_lookups(&mut self, module_name: &String) -> Result<(), ProcessingError> {
         let module = self.modules.get(module_name).unwrap();
 
         for dep in module.dependencies.iter() {
             if !self.modules.contains_key(&dep.to.module_name) {
                 self.missing_module_lookups
                     .insert(dep.to.module_name.clone());
+            }
+
+            if !dep.is_abstraction {
+                if self.resolve(&dep.to).is_none() {
+                    self.missing_type_lookups
+                        .insert(dep.to.to_owned(), dep.from.to_owned());
+                }
             }
         }
 
@@ -332,22 +339,17 @@ impl SchemaRegistry {
         let mut module = Module::default();
         module.module_name = module_name.to_owned();
 
-        // Prepare the module
         SchemaRegistry::add_types_to_module(&mut module, module_dec)
             .map_err(|e| ProcessingError::ModuleError(module_name.to_owned(), e))?;
         module.order_local_dependencies().map_err(|m| {
             ProcessingError::ModuleError(module_name.to_owned(), ModuleError::CircularDependency(m))
         })?;
 
-        // This module is resolved, remove it from missing lookups.
         self.missing_module_lookups.remove(&module_name);
         self.modules.insert(module.module_name.to_owned(), module);
 
-        // Process deps
         self.process_dependencies(&module_name)?;
-        // Resolve dependent abstractions
         self.resolve_dependent_abstractions(&module_name)?;
-        // Resolve dependent dependencies
         self.remove_resolved_missing_dependencies(&module_name)?;
 
         Ok(())
@@ -697,6 +699,39 @@ mod tests {
             }
         };
     );
+
+    #[test]
+    fn test_missing_imports() {
+        let mut registry = SchemaRegistry::new();
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            is_a: "b.B".to_string(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("A".to_owned(), type_dec);
+
+        let type_dec = TypeDec {
+            is_a: "c.C".to_string(),
+            type_vars: vec!["T".to_string()],
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("AA".to_owned(), type_dec);
+
+        let result = registry.process_module("a".to_owned(), &module_dec);
+        assert_eq!(result, Ok(()));
+        assert_eq!(
+            registry.missing_module_lookups,
+            HashSet::from_iter(vec!["b".to_owned()])
+        );
+        assert_eq!(
+            registry
+                .missing_type_lookups
+                .keys()
+                .map(|r| r.qualified_name.to_owned())
+                .collect::<Vec<String>>(),
+            vec!["b.B".to_owned()]
+        );
+    }
 
     #[test]
     fn test_duplicate_import_error() {

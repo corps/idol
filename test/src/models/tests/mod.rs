@@ -1,2 +1,2 @@
-pub mod abstract;
+pub mod abs;
 pub mod basic;

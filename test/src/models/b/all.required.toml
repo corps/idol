@@ -1,9 +1,10 @@
-[TipletOfSideImport2]
-is_a = "tests.abstract.one.Triplet<tests.abstract.three.SideImport2, tests.basic.TestLiteralTop, tests.basic.TestStruct>"
+[TripletOfSideImport2]
+is_a = "tests.abs.one.Triplet<tests.abs.three.SideImport2, tests.basic.TestLiteralTop, tests.basic.TestStruct>"
 tags = ["v"]
 
 [ListOfTestKind]
-is_a = "tests.abstract.one.List<tests.basic.TestKind>"
+is_a = "tests.abs.one.List<tests.basic.TestKind>"
+tags = ["atleast_one"]
 
 [Assembled.fields]
 test_literal_struct = ["tests.basic.TestLiteralStruct"]

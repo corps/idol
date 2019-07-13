@@ -2,7 +2,7 @@
 fields.a = "A"
 fields.b = "B[]"
 fields.c = "C{}"
-fields.side_import = "tests.abstract.two.SideImport"
+fields.side_import = "tests.abs.two.SideImport"
 type_vars = ["A", "B", "C"]
 
 [List]

@@ -4,6 +4,9 @@
   ],
   "test_enum": "a",
   "test_kind": "",
+  "test_list_of": [
+    ""
+  ],
   "test_list_of_list_struct": {
     "list_of_list": []
   },
@@ -11,7 +14,7 @@
     "five": null,
     "four": false,
     "one": 0,
-    "three": 0,
+    "three": 0.0,
     "two": ""
   },
   "test_literal_top": "mooo",
@@ -24,8 +27,19 @@
     "b": 0,
     "c": {
       "d": false,
-      "e": 0,
+      "e": 0.0,
       "f": 0
+    }
+  },
+  "test_triplet": {
+    "a": {
+      "side_import2": 0
+    },
+    "b": [],
+    "c": {},
+    "side_import": {
+      "side_import": ""
     }
   }
 }
+

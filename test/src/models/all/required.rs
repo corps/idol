@@ -4,20 +4,20 @@ use crate::models::idol;
 use std::convert::TryFrom;
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
-pub struct TipletOfSideImport2 {
-  pub r#a: crate::models::tests::abstract::three::SideImport2,
+pub struct TripletOfSideImport2 {
+  pub r#a: crate::models::tests::abs::three::SideImport2,
   pub r#b: Vec<crate::models::tests::basic::TestLiteralTop>,
   pub r#c: HashMap<String, crate::models::tests::basic::TestStruct>,
-  pub r#side_import: crate::models::tests::abstract::two::SideImport,
+  pub r#side_import: crate::models::tests::abs::two::SideImport,
 }
 
-impl idol::ExpandsJson for TipletOfSideImport2 {
+impl idol::ExpandsJson for TripletOfSideImport2 {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
     if !value.is_object() {
-      return Some(serde_json::value::to_value(TipletOfSideImport2::default()).unwrap());
+      return Some(serde_json::value::to_value(TripletOfSideImport2::default()).unwrap());
     }
 
-    match crate::models::tests::abstract::three::SideImport2::expand_json(&mut value["a"]) {
+    match crate::models::tests::abs::three::SideImport2::expand_json(&mut value["a"]) {
       Some(v) => value["a"] = v,
       None => (),
     }
@@ -32,7 +32,7 @@ impl idol::ExpandsJson for TipletOfSideImport2 {
       None => (),
     }
 
-    match crate::models::tests::abstract::two::SideImport::expand_json(&mut value["side_import"]) {
+    match crate::models::tests::abs::two::SideImport::expand_json(&mut value["side_import"]) {
       Some(v) => value["side_import"] = v,
       None => (),
     }
@@ -41,32 +41,59 @@ impl idol::ExpandsJson for TipletOfSideImport2 {
   }
 }
 
-impl idol::ValidatesJson for TipletOfSideImport2 {
+impl idol::ValidatesJson for TripletOfSideImport2 {
   fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
     if !value.is_object() {
       return Err(idol::ValidationError(format!("expected an object but found {}", value)));
     }
 
-    crate::models::tests::abstract::three::SideImport2::validate_json(&value["a"]).map_err(|e| idol::ValidationError(format!("field a: {}", e)))?;
+    crate::models::tests::abs::three::SideImport2::validate_json(&value["a"]).map_err(|e| idol::ValidationError(format!("field a: {}", e)))?;
     Vec::<crate::models::tests::basic::TestLiteralTop>::validate_json(&value["b"]).map_err(|e| idol::ValidationError(format!("field b: {}", e)))?;
     HashMap::<String, crate::models::tests::basic::TestStruct>::validate_json(&value["c"]).map_err(|e| idol::ValidationError(format!("field c: {}", e)))?;
-    crate::models::tests::abstract::two::SideImport::validate_json(&value["side_import"]).map_err(|e| idol::ValidationError(format!("field side_import: {}", e)))?;
+    crate::models::tests::abs::two::SideImport::validate_json(&value["side_import"]).map_err(|e| idol::ValidationError(format!("field side_import: {}", e)))?;
 
     Ok(())
   }
 }
 
-#[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
 pub struct ListOfTestKind(pub Vec<crate::models::tests::basic::TestKind>);
+
+impl Default for ListOfTestKind {
+  fn default() -> ListOfTestKind {
+    ListOfTestKind(vec![crate::models::tests::basic::TestKind::default()])
+  }
+}
 
 impl idol::ExpandsJson for ListOfTestKind {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+    if value.is_null() {
+      return Some(serde_json::Value::Array(vec![serde_json::value::to_value(crate::models::tests::basic::TestKind::default()).unwrap()]));
+    } if let serde_json::Value::Array(contents) = value {
+      if contents.is_empty() {
+        contents.push(serde_json::Value::Null);
+      }
+    } else {
+      let inner = crate::models::tests::basic::TestKind::expand_json(value);
+      if inner.is_some() {
+        return Some(serde_json::Value::Array(vec![inner.unwrap()]));
+      } else {
+        return Some(serde_json::Value::Array(vec![value.to_owned()]));
+      }
+    }
+
     Vec::<crate::models::tests::basic::TestKind>::expand_json(value)
   }
 }
 
 impl idol::ValidatesJson for ListOfTestKind {
   fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
+    if let serde_json::Value::Array(contents) = value {
+      if contents.is_empty() {
+        return Err(idol::ValidationError("expected atleast one value, but none was found.".to_string()));
+      }
+    }
+
     Vec::<crate::models::tests::basic::TestKind>::validate_json(value)
   }
 }
