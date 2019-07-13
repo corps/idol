@@ -8,12 +8,14 @@ pub struct Assembled {
   pub r#test_atleast_one: Option<crate::models::tests::basic::TestAtleastOne>,
   pub r#test_enum: Option<crate::models::tests::basic::TestEnum>,
   pub r#test_kind: Option<crate::models::tests::basic::TestKind>,
+  pub r#test_list_of: Option<crate::models::all::required::ListOfTestKind>,
   pub r#test_list_of_list_struct: Option<crate::models::tests::basic::TestListOfListStruct>,
   pub r#test_literal_struct: Option<crate::models::tests::basic::TestLiteralStruct>,
   pub r#test_literal_top: Option<crate::models::tests::basic::TestLiteralTop>,
   pub r#test_map: Option<crate::models::tests::basic::TestMap>,
   pub r#test_optional_field: Option<crate::models::tests::basic::TestOptionalField>,
   pub r#test_struct: Option<crate::models::tests::basic::TestStruct>,
+  pub r#test_triplet: Option<crate::models::all::required::TripletOfSideImport2>,
 }
 
 impl idol::ExpandsJson for Assembled {
@@ -34,6 +36,11 @@ impl idol::ExpandsJson for Assembled {
 
     match Option::<crate::models::tests::basic::TestKind>::expand_json(&mut value["test_kind"]) {
       Some(v) => value["test_kind"] = v,
+      None => (),
+    }
+
+    match Option::<crate::models::all::required::ListOfTestKind>::expand_json(&mut value["test_list_of"]) {
+      Some(v) => value["test_list_of"] = v,
       None => (),
     }
 
@@ -67,6 +74,11 @@ impl idol::ExpandsJson for Assembled {
       None => (),
     }
 
+    match Option::<crate::models::all::required::TripletOfSideImport2>::expand_json(&mut value["test_triplet"]) {
+      Some(v) => value["test_triplet"] = v,
+      None => (),
+    }
+
     None
   }
 }
@@ -80,12 +92,14 @@ impl idol::ValidatesJson for Assembled {
     Option::<crate::models::tests::basic::TestAtleastOne>::validate_json(&value["test_atleast_one"]).map_err(|e| idol::ValidationError(format!("field test_atleast_one: {}", e)))?;
     Option::<crate::models::tests::basic::TestEnum>::validate_json(&value["test_enum"]).map_err(|e| idol::ValidationError(format!("field test_enum: {}", e)))?;
     Option::<crate::models::tests::basic::TestKind>::validate_json(&value["test_kind"]).map_err(|e| idol::ValidationError(format!("field test_kind: {}", e)))?;
+    Option::<crate::models::all::required::ListOfTestKind>::validate_json(&value["test_list_of"]).map_err(|e| idol::ValidationError(format!("field test_list_of: {}", e)))?;
     Option::<crate::models::tests::basic::TestListOfListStruct>::validate_json(&value["test_list_of_list_struct"]).map_err(|e| idol::ValidationError(format!("field test_list_of_list_struct: {}", e)))?;
     Option::<crate::models::tests::basic::TestLiteralStruct>::validate_json(&value["test_literal_struct"]).map_err(|e| idol::ValidationError(format!("field test_literal_struct: {}", e)))?;
     Option::<crate::models::tests::basic::TestLiteralTop>::validate_json(&value["test_literal_top"]).map_err(|e| idol::ValidationError(format!("field test_literal_top: {}", e)))?;
     Option::<crate::models::tests::basic::TestMap>::validate_json(&value["test_map"]).map_err(|e| idol::ValidationError(format!("field test_map: {}", e)))?;
     Option::<crate::models::tests::basic::TestOptionalField>::validate_json(&value["test_optional_field"]).map_err(|e| idol::ValidationError(format!("field test_optional_field: {}", e)))?;
     Option::<crate::models::tests::basic::TestStruct>::validate_json(&value["test_struct"]).map_err(|e| idol::ValidationError(format!("field test_struct: {}", e)))?;
+    Option::<crate::models::all::required::TripletOfSideImport2>::validate_json(&value["test_triplet"]).map_err(|e| idol::ValidationError(format!("field test_triplet: {}", e)))?;
 
     Ok(())
   }

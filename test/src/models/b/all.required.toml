@@ -1,5 +1,5 @@
 [TipletOfSideImport2]
-is_a = "tests.abstract.one.Triple<tests.abstract.three.SideImport2>"
+is_a = "tests.abstract.one.Triplet<tests.abstract.three.SideImport2, tests.basic.TestLiteralTop, tests.basic.TestStruct>"
 tags = ["v"]
 
 [ListOfTestKind]
