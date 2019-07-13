@@ -1,6 +1,6 @@
-use crate::models::idol;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use crate::models::idol;
 use std::convert::TryFrom;
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
@@ -59,14 +59,7 @@ impl idol::ExpandsJson for StructKind {
 
 impl idol::ValidatesJson for StructKind {
   fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
-    return serde_json::from_value::<StructKind>(value.to_owned())
-      .map_err(|_| {
-        idol::ValidationError(format!(
-          "expected a valid enum value for StructKind, but found {}",
-          value
-        ))
-      })
-      .map(|_| ());
+    return serde_json::from_value::<StructKind>(value.to_owned()).map_err(|_| idol::ValidationError(format!("expected a valid enum value for StructKind, but found {}", value))).map(|_| ());
   }
 }
 
@@ -138,14 +131,7 @@ impl idol::ExpandsJson for PrimitiveType {
 
 impl idol::ValidatesJson for PrimitiveType {
   fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
-    return serde_json::from_value::<PrimitiveType>(value.to_owned())
-      .map_err(|_| {
-        idol::ValidationError(format!(
-          "expected a valid enum value for PrimitiveType, but found {}",
-          value
-        ))
-      })
-      .map(|_| ());
+    return serde_json::from_value::<PrimitiveType>(value.to_owned()).map_err(|_| idol::ValidationError(format!("expected a valid enum value for PrimitiveType, but found {}", value))).map(|_| ());
   }
 }
 
@@ -184,18 +170,12 @@ impl idol::ExpandsJson for Reference {
 impl idol::ValidatesJson for Reference {
   fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
     if !value.is_object() {
-      return Err(idol::ValidationError(format!(
-        "expected an object but found {}",
-        value
-      )));
+      return Err(idol::ValidationError(format!("expected an object but found {}", value)));
     }
 
-    String::validate_json(&value["module_name"])
-      .map_err(|e| idol::ValidationError(format!("field module_name: {}", e)))?;
-    String::validate_json(&value["qualified_name"])
-      .map_err(|e| idol::ValidationError(format!("field qualified_name: {}", e)))?;
-    String::validate_json(&value["type_name"])
-      .map_err(|e| idol::ValidationError(format!("field type_name: {}", e)))?;
+    String::validate_json(&value["module_name"]).map_err(|e| idol::ValidationError(format!("field module_name: {}", e)))?;
+    String::validate_json(&value["qualified_name"]).map_err(|e| idol::ValidationError(format!("field qualified_name: {}", e)))?;
+    String::validate_json(&value["type_name"]).map_err(|e| idol::ValidationError(format!("field type_name: {}", e)))?;
 
     Ok(())
   }
@@ -278,32 +258,19 @@ impl idol::ExpandsJson for TypeStruct {
 impl idol::ValidatesJson for TypeStruct {
   fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
     if !value.is_object() {
-      return Err(idol::ValidationError(format!(
-        "expected an object but found {}",
-        value
-      )));
+      return Err(idol::ValidationError(format!("expected an object but found {}", value)));
     }
 
-    bool::validate_json(&value["is_literal"])
-      .map_err(|e| idol::ValidationError(format!("field is_literal: {}", e)))?;
-    bool::validate_json(&value["literal_bool"])
-      .map_err(|e| idol::ValidationError(format!("field literal_bool: {}", e)))?;
-    f64::validate_json(&value["literal_double"])
-      .map_err(|e| idol::ValidationError(format!("field literal_double: {}", e)))?;
-    idol::i53::validate_json(&value["literal_int53"])
-      .map_err(|e| idol::ValidationError(format!("field literal_int53: {}", e)))?;
-    i64::validate_json(&value["literal_int64"])
-      .map_err(|e| idol::ValidationError(format!("field literal_int64: {}", e)))?;
-    String::validate_json(&value["literal_string"])
-      .map_err(|e| idol::ValidationError(format!("field literal_string: {}", e)))?;
-    Vec::<Reference>::validate_json(&value["parameters"])
-      .map_err(|e| idol::ValidationError(format!("field parameters: {}", e)))?;
-    PrimitiveType::validate_json(&value["primitive_type"])
-      .map_err(|e| idol::ValidationError(format!("field primitive_type: {}", e)))?;
-    Reference::validate_json(&value["reference"])
-      .map_err(|e| idol::ValidationError(format!("field reference: {}", e)))?;
-    StructKind::validate_json(&value["struct_kind"])
-      .map_err(|e| idol::ValidationError(format!("field struct_kind: {}", e)))?;
+    bool::validate_json(&value["is_literal"]).map_err(|e| idol::ValidationError(format!("field is_literal: {}", e)))?;
+    bool::validate_json(&value["literal_bool"]).map_err(|e| idol::ValidationError(format!("field literal_bool: {}", e)))?;
+    f64::validate_json(&value["literal_double"]).map_err(|e| idol::ValidationError(format!("field literal_double: {}", e)))?;
+    idol::i53::validate_json(&value["literal_int53"]).map_err(|e| idol::ValidationError(format!("field literal_int53: {}", e)))?;
+    i64::validate_json(&value["literal_int64"]).map_err(|e| idol::ValidationError(format!("field literal_int64: {}", e)))?;
+    String::validate_json(&value["literal_string"]).map_err(|e| idol::ValidationError(format!("field literal_string: {}", e)))?;
+    Vec::<Reference>::validate_json(&value["parameters"]).map_err(|e| idol::ValidationError(format!("field parameters: {}", e)))?;
+    PrimitiveType::validate_json(&value["primitive_type"]).map_err(|e| idol::ValidationError(format!("field primitive_type: {}", e)))?;
+    Reference::validate_json(&value["reference"]).map_err(|e| idol::ValidationError(format!("field reference: {}", e)))?;
+    StructKind::validate_json(&value["struct_kind"]).map_err(|e| idol::ValidationError(format!("field struct_kind: {}", e)))?;
 
     Ok(())
   }
@@ -344,18 +311,12 @@ impl idol::ExpandsJson for Field {
 impl idol::ValidatesJson for Field {
   fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
     if !value.is_object() {
-      return Err(idol::ValidationError(format!(
-        "expected an object but found {}",
-        value
-      )));
+      return Err(idol::ValidationError(format!("expected an object but found {}", value)));
     }
 
-    String::validate_json(&value["field_name"])
-      .map_err(|e| idol::ValidationError(format!("field field_name: {}", e)))?;
-    Vec::<String>::validate_json(&value["tags"])
-      .map_err(|e| idol::ValidationError(format!("field tags: {}", e)))?;
-    TypeStruct::validate_json(&value["type_struct"])
-      .map_err(|e| idol::ValidationError(format!("field type_struct: {}", e)))?;
+    String::validate_json(&value["field_name"]).map_err(|e| idol::ValidationError(format!("field field_name: {}", e)))?;
+    Vec::<String>::validate_json(&value["tags"]).map_err(|e| idol::ValidationError(format!("field tags: {}", e)))?;
+    TypeStruct::validate_json(&value["type_struct"]).map_err(|e| idol::ValidationError(format!("field type_struct: {}", e)))?;
 
     Ok(())
   }
@@ -414,24 +375,15 @@ impl idol::ExpandsJson for Type {
 impl idol::ValidatesJson for Type {
   fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
     if !value.is_object() {
-      return Err(idol::ValidationError(format!(
-        "expected an object but found {}",
-        value
-      )));
+      return Err(idol::ValidationError(format!("expected an object but found {}", value)));
     }
 
-    HashMap::<String, Field>::validate_json(&value["fields"])
-      .map_err(|e| idol::ValidationError(format!("field fields: {}", e)))?;
-    Option::<TypeStruct>::validate_json(&value["is_a"])
-      .map_err(|e| idol::ValidationError(format!("field is_a: {}", e)))?;
-    Vec::<String>::validate_json(&value["options"])
-      .map_err(|e| idol::ValidationError(format!("field options: {}", e)))?;
-    Vec::<String>::validate_json(&value["tags"])
-      .map_err(|e| idol::ValidationError(format!("field tags: {}", e)))?;
-    String::validate_json(&value["type_name"])
-      .map_err(|e| idol::ValidationError(format!("field type_name: {}", e)))?;
-    Vec::<String>::validate_json(&value["type_vars"])
-      .map_err(|e| idol::ValidationError(format!("field type_vars: {}", e)))?;
+    HashMap::<String, Field>::validate_json(&value["fields"]).map_err(|e| idol::ValidationError(format!("field fields: {}", e)))?;
+    Option::<TypeStruct>::validate_json(&value["is_a"]).map_err(|e| idol::ValidationError(format!("field is_a: {}", e)))?;
+    Vec::<String>::validate_json(&value["options"]).map_err(|e| idol::ValidationError(format!("field options: {}", e)))?;
+    Vec::<String>::validate_json(&value["tags"]).map_err(|e| idol::ValidationError(format!("field tags: {}", e)))?;
+    String::validate_json(&value["type_name"]).map_err(|e| idol::ValidationError(format!("field type_name: {}", e)))?;
+    Vec::<String>::validate_json(&value["type_vars"]).map_err(|e| idol::ValidationError(format!("field type_vars: {}", e)))?;
 
     Ok(())
   }
@@ -478,20 +430,13 @@ impl idol::ExpandsJson for Dependency {
 impl idol::ValidatesJson for Dependency {
   fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
     if !value.is_object() {
-      return Err(idol::ValidationError(format!(
-        "expected an object but found {}",
-        value
-      )));
+      return Err(idol::ValidationError(format!("expected an object but found {}", value)));
     }
 
-    Reference::validate_json(&value["from"])
-      .map_err(|e| idol::ValidationError(format!("field from: {}", e)))?;
-    bool::validate_json(&value["is_abstraction"])
-      .map_err(|e| idol::ValidationError(format!("field is_abstraction: {}", e)))?;
-    bool::validate_json(&value["is_local"])
-      .map_err(|e| idol::ValidationError(format!("field is_local: {}", e)))?;
-    Reference::validate_json(&value["to"])
-      .map_err(|e| idol::ValidationError(format!("field to: {}", e)))?;
+    Reference::validate_json(&value["from"]).map_err(|e| idol::ValidationError(format!("field from: {}", e)))?;
+    bool::validate_json(&value["is_abstraction"]).map_err(|e| idol::ValidationError(format!("field is_abstraction: {}", e)))?;
+    bool::validate_json(&value["is_local"]).map_err(|e| idol::ValidationError(format!("field is_local: {}", e)))?;
+    Reference::validate_json(&value["to"]).map_err(|e| idol::ValidationError(format!("field to: {}", e)))?;
 
     Ok(())
   }
@@ -544,22 +489,14 @@ impl idol::ExpandsJson for Module {
 impl idol::ValidatesJson for Module {
   fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
     if !value.is_object() {
-      return Err(idol::ValidationError(format!(
-        "expected an object but found {}",
-        value
-      )));
+      return Err(idol::ValidationError(format!("expected an object but found {}", value)));
     }
 
-    HashMap::<String, Type>::validate_json(&value["abstract_types_by_name"])
-      .map_err(|e| idol::ValidationError(format!("field abstract_types_by_name: {}", e)))?;
-    Vec::<Dependency>::validate_json(&value["dependencies"])
-      .map_err(|e| idol::ValidationError(format!("field dependencies: {}", e)))?;
-    String::validate_json(&value["module_name"])
-      .map_err(|e| idol::ValidationError(format!("field module_name: {}", e)))?;
-    HashMap::<String, Type>::validate_json(&value["types_by_name"])
-      .map_err(|e| idol::ValidationError(format!("field types_by_name: {}", e)))?;
-    Vec::<String>::validate_json(&value["types_dependency_ordering"])
-      .map_err(|e| idol::ValidationError(format!("field types_dependency_ordering: {}", e)))?;
+    HashMap::<String, Type>::validate_json(&value["abstract_types_by_name"]).map_err(|e| idol::ValidationError(format!("field abstract_types_by_name: {}", e)))?;
+    Vec::<Dependency>::validate_json(&value["dependencies"]).map_err(|e| idol::ValidationError(format!("field dependencies: {}", e)))?;
+    String::validate_json(&value["module_name"]).map_err(|e| idol::ValidationError(format!("field module_name: {}", e)))?;
+    HashMap::<String, Type>::validate_json(&value["types_by_name"]).map_err(|e| idol::ValidationError(format!("field types_by_name: {}", e)))?;
+    Vec::<String>::validate_json(&value["types_dependency_ordering"]).map_err(|e| idol::ValidationError(format!("field types_dependency_ordering: {}", e)))?;
 
     Ok(())
   }

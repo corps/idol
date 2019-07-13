@@ -7,7 +7,7 @@ use std::collections::HashSet;
 use std::error::Error;
 use std::fmt::Display;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum FieldDecError {
     LiteralParseError(String),
     UnknownPrimitiveType(String),
@@ -16,14 +16,14 @@ pub enum FieldDecError {
     LiteralAnyError,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TypeDecError {
     FieldError(String, FieldDecError),
     BadFieldNameError(String),
     IsAError(FieldDecError),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ModuleError {
     TypeDecError(String, TypeDecError),
     GenericTypeError(String, String),
@@ -31,7 +31,7 @@ pub enum ModuleError {
     CircularDependency(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ProcessingError {
     ModuleError(String, ModuleError),
     BadModuleNameError(String),
@@ -111,11 +111,12 @@ impl Display for FieldDecError {
     }
 }
 
+#[derive(Debug)]
 pub struct SchemaRegistry {
     pub modules: HashMap<String, Module>,
     pub missing_module_lookups: HashSet<String>,
     pub missing_type_lookups: HashMap<Reference, Reference>,
-    pub missing_abstraction_lookups: HashMap<Reference, Reference>,
+    pub unresolved_abstractions: HashMap<Reference, HashSet<Reference>>,
     pub module_dep_mapper: DepMapper,
     pub type_dep_mapper: DepMapper,
 }
@@ -126,7 +127,7 @@ impl SchemaRegistry {
             modules,
             missing_module_lookups: HashSet::new(),
             missing_type_lookups: HashMap::new(),
-            missing_abstraction_lookups: HashMap::new(),
+            unresolved_abstractions: HashMap::new(),
             module_dep_mapper: DepMapper::new(),
             type_dep_mapper: DepMapper::new(),
         }
@@ -144,16 +145,10 @@ impl SchemaRegistry {
             self.missing_type_lookups.remove(&reference);
         }
 
-        for type_name in module.abstract_types_by_name.keys() {
-            let reference =
-                Reference::from(format!("{}.{}", module.module_name, type_name).as_str());
-            self.missing_abstraction_lookups.remove(&reference);
-        }
-
         Ok(())
     }
 
-    fn process_resolved_missing_abstract_types(
+    fn resolve_dependent_abstractions(
         &mut self,
         module_name: &String,
     ) -> Result<(), ProcessingError> {
@@ -165,68 +160,133 @@ impl SchemaRegistry {
             let abstract_reference =
                 Reference::from(format!("{}.{}", module_name, type_name).as_str());
 
-            if let Some(abstraction_reference) =
-                self.missing_abstraction_lookups.get(&abstract_reference)
+            if let Some(abstraction_references) =
+                self.unresolved_abstractions.get(&abstract_reference)
             {
-                let abstraction = self.resolve(abstraction_reference).unwrap();
+                for abstraction_reference in abstraction_references.iter() {
+                    let abstraction = self.resolve(abstraction_reference).unwrap();
 
-                let new_type = abstraction
-                    .resolve_abstraction(abstract_type)
-                    .map_err(|msg| {
-                        ProcessingError::ModuleError(
-                            abstraction_reference.module_name.to_owned(),
-                            ModuleError::GenericTypeError(
-                                abstraction_reference.type_name.to_owned(),
-                                msg,
-                            ),
-                        )
+                    let new_type = SchemaRegistry::create_concrete_from(
+                        abstraction,
+                        abstraction_reference,
+                        abstract_type,
+                    )?;
+
+                    let abstraction_module_resolver =
+                        ModuleResolver(abstraction_reference.module_name.to_owned());
+                    let abstraction_module = self
+                        .modules
+                        .get_mut(&abstraction_reference.module_name)
+                        .unwrap();
+
+                    SchemaRegistry::add_type_and_replace_dependencies(
+                        abstraction_module,
+                        &abstraction_module_resolver,
+                        new_type,
+                    )
+                    .map_err(|e| {
+                        ProcessingError::ModuleError(abstraction_module.module_name.to_owned(), e)
                     })?;
 
-                let abstraction_module_resolver =
-                    ModuleResolver(abstraction_reference.module_name.to_owned());
-                let abstraction_module = self
-                    .modules
-                    .get_mut(&abstraction_reference.module_name)
-                    .unwrap();
-
-                SchemaRegistry::add_type_and_replace_dependencies(
-                    abstraction_module,
-                    &abstraction_module_resolver,
-                    new_type,
-                )
-                .map_err(|e| {
-                    ProcessingError::ModuleError(abstraction_module.module_name.to_owned(), e)
-                })?;
-
-                resolved_abstraction_modules.insert(abstraction_reference.module_name.to_owned());
+                    resolved_abstraction_modules
+                        .insert(abstraction_reference.module_name.to_owned());
+                }
             }
         }
 
         // Recalculate any dependencies in need of resolving after pulling the abstraction in.
         for module_name in resolved_abstraction_modules {
-            self.add_missing_dependencies_of(&module_name)?;
+            self.process_dependencies(&module_name)?;
         }
 
         Ok(())
     }
 
-    // TEST having a type parameter that is not used in the final thing.
-    // Only dependencies created on the final object should be invoked.
+    fn process_dependencies(&mut self, module_name: &String) -> Result<(), ProcessingError> {
+        self.check_circular_dependencies(module_name)?;
+        self.process_local_abstractions(module_name)?;
+        self.add_missing_module_lookups(module_name)?;
 
-    /*
-    Add all module, type, and abstract type dependencies not currently resolvable to this registry.
-    Can produce duplicates, does not dedup or clear existing entries.
-    */
-    fn add_missing_dependencies_of(&mut self, module_name: &String) -> Result<(), ProcessingError> {
+        Ok(())
+    }
+
+    fn create_concrete_from(
+        abstraction: &Type,
+        abstraction_reference: &Reference,
+        abstract_type: &Type,
+    ) -> Result<Type, ProcessingError> {
+        let new_type = abstraction
+            .resolve_abstraction(abstract_type)
+            .map_err(|msg| {
+                ProcessingError::ModuleError(
+                    abstraction_reference.module_name.to_owned(),
+                    ModuleError::GenericTypeError(abstraction_reference.type_name.to_owned(), msg),
+                )
+            })?;
+
+        Ok(new_type)
+    }
+
+    fn process_local_abstractions(&mut self, module_name: &String) -> Result<(), ProcessingError> {
+        let module = self.modules.get(module_name).unwrap();
+        let dependencies = module.dependencies.to_owned();
+        let mut new_types: Vec<(Type, &Reference)> = vec![];
+
+        for dep in dependencies.iter() {
+            if dep.is_abstraction {
+                if let Some(abstract_type) = self.resolve_abstract_type(&dep.to) {
+                    let abstraction = self.resolve(&dep.from).unwrap();
+
+                    new_types.push((
+                        SchemaRegistry::create_concrete_from(
+                            abstraction,
+                            &dep.from,
+                            abstract_type,
+                        )?,
+                        &dep.from,
+                    ));
+                } else {
+                    self.unresolved_abstractions
+                        .entry(dep.to.clone())
+                        .or_default()
+                        .insert(dep.from.clone());
+                }
+            }
+        }
+
+        let module = self.modules.get_mut(module_name).unwrap();
+        for (new_type, abstraction_reference) in new_types {
+            let abstraction_module_resolver =
+                ModuleResolver(abstraction_reference.module_name.to_owned());
+
+            SchemaRegistry::add_type_and_replace_dependencies(
+                module,
+                &abstraction_module_resolver,
+                new_type,
+            )
+            .map_err(|e| ProcessingError::ModuleError(module.module_name.to_owned(), e))?;
+        }
+
+        Ok(())
+    }
+
+    fn add_missing_module_lookups(&mut self, module_name: &String) -> Result<(), ProcessingError> {
         let module = self.modules.get(module_name).unwrap();
 
         for dep in module.dependencies.iter() {
-            // Any missing modules should be reported so that the loader will know to look them up.
             if !self.modules.contains_key(&dep.to.module_name) {
                 self.missing_module_lookups
                     .insert(dep.to.module_name.clone());
             }
+        }
 
+        Ok(())
+    }
+
+    fn check_circular_dependencies(&mut self, module_name: &String) -> Result<(), ProcessingError> {
+        let module = self.modules.get(module_name).unwrap();
+
+        for dep in module.dependencies.iter() {
             // Check for cicular dependencies.  For local dependencies, the local ordering has already
             // performed this check, so we can ignore duplicating effort.
             if !dep.is_local {
@@ -252,19 +312,6 @@ impl SchemaRegistry {
                         dep.to.qualified_name.to_owned(),
                     )
                     .map_err(|msg| ProcessingError::CircularTypeError(msg))?;
-            }
-
-            // Add any dependency not currently resolvable.
-            if !dep.is_abstraction {
-                if self.resolve(&dep.to).is_none() {
-                    self.missing_type_lookups
-                        .insert(dep.to.clone(), dep.from.clone());
-                }
-            } else {
-                if self.resolve_abstract_type(&dep.to).is_none() {
-                    self.missing_abstraction_lookups
-                        .insert(dep.to.clone(), dep.from.clone());
-                }
             }
         }
 
@@ -296,9 +343,12 @@ impl SchemaRegistry {
         self.missing_module_lookups.remove(&module_name);
         self.modules.insert(module.module_name.to_owned(), module);
 
-        self.add_missing_dependencies_of(&module_name)?;
+        // Process deps
+        self.process_dependencies(&module_name)?;
+        // Resolve dependent abstractions
+        self.resolve_dependent_abstractions(&module_name)?;
+        // Resolve dependent dependencies
         self.remove_resolved_missing_dependencies(&module_name)?;
-        self.process_resolved_missing_abstract_types(&module_name)?;
 
         Ok(())
     }
@@ -376,7 +426,7 @@ impl SchemaRegistry {
             modules: HashMap::new(),
             missing_type_lookups: HashMap::new(),
             missing_module_lookups: HashSet::new(),
-            missing_abstraction_lookups: HashMap::new(),
+            unresolved_abstractions: HashMap::new(),
             module_dep_mapper: DepMapper::new(),
             type_dep_mapper: DepMapper::new(),
         };
@@ -649,6 +699,133 @@ mod tests {
     );
 
     #[test]
+    fn test_duplicate_import_error() {
+        let mut registry = SchemaRegistry::new();
+        let module_dec = ModuleDec::default();
+        let result = registry.process_module("My_module".to_owned(), &module_dec);
+        assert!(result.is_ok());
+
+        let result = registry.process_module("My_module".to_owned(), &module_dec);
+        assert_eq!(
+            result,
+            Err(ProcessingError::DuplicateImportError(
+                "My_module".to_string(),
+            ))
+        );
+    }
+
+    #[test]
+    fn test_primitive_generic_parameter() {
+        let mut registry = SchemaRegistry::new();
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            is_a: "T[]".to_string(),
+            type_vars: vec!["T".to_string()],
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("AList".to_owned(), type_dec);
+
+        let type_dec = TypeDec {
+            is_a: "AList<string>".to_string(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("StringList".to_owned(), type_dec);
+
+        let result = registry.process_module("a".to_owned(), &module_dec);
+        assert_eq!(
+            result,
+            Err(ProcessingError::ModuleError(
+                "a".to_string(),
+                ModuleError::TypeDecError(
+                    "StringList".to_string(),
+                    TypeDecError::IsAError(FieldDecError::InvalidParameter(
+                        "string was a primitive, but reference is required".to_string()
+                    ))
+                )
+            ))
+        );
+    }
+
+    #[test]
+    fn test_generics_in_struct() {
+        let mut registry = SchemaRegistry::new();
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            is_a: "T[]".to_string(),
+            type_vars: vec!["T".to_string()],
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("AList".to_owned(), type_dec);
+
+        let type_dec = TypeDec {
+            fields: map! { "my_field".to_owned() => FieldDec(vec!["AList<AString>".to_owned()]) },
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("FancyStruct".to_owned(), type_dec);
+
+        let type_dec = TypeDec {
+            is_a: "string".to_string(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("AString".to_owned(), type_dec);
+
+        let result = registry.process_module("a".to_owned(), &module_dec);
+        assert_eq!(
+            result,
+            Err(ProcessingError::ModuleError(
+                "a".to_string(),
+                ModuleError::GenericTypeError(
+                    "FancyStruct".to_string(),
+                    "generics only supported in `is_a` type aliases".to_string(),
+                )
+            ))
+        );
+    }
+
+    #[test]
+    fn test_circular_abstract_types() {
+        let mut registry = SchemaRegistry::new();
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            is_a: "T[]".to_string(),
+            type_vars: vec!["T".to_string()],
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("AList".to_owned(), type_dec);
+
+        let type_dec = TypeDec {
+            is_a: "b.BList<AString>".to_string(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("StringList".to_owned(), type_dec);
+
+        let type_dec = TypeDec {
+            is_a: "string".to_string(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("AString".to_owned(), type_dec);
+
+        let result = registry.process_module("a".to_owned(), &module_dec);
+        assert_eq!(result, Ok(()));
+
+        let type_dec = TypeDec {
+            is_a: "T[]".to_string(),
+            type_vars: vec!["T".to_string()],
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("BList".to_owned(), type_dec);
+
+        let type_dec = TypeDec {
+            is_a: "a.AList<a.AString>".to_string(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("StringList".to_owned(), type_dec);
+
+        let result = registry.process_module("My_module2".to_owned(), &module_dec);
+        assert_eq!(result, Ok(()));
+    }
+
+    #[test]
     fn test_field_names() {
         let mut registry = SchemaRegistry::new();
         let mut module_dec = ModuleDec::default();
@@ -665,17 +842,20 @@ mod tests {
             fields: map! { "not.ok.field".to_owned() => FieldDec(vec!["string".to_owned()]) },
             ..TypeDec::default()
         };
-        module_dec.0.insert("My_model".to_owned(), type_dec);
+        module_dec.0.insert("My_model2".to_owned(), type_dec);
 
-        let result = registry.process_module("My_module".to_owned(), &module_dec);
-        assert!(result.is_err());
-        match result {
+        let result = registry.process_module("My_module2".to_owned(), &module_dec);
+
+        assert_eq!(
+            result,
             Err(ProcessingError::ModuleError(
-                _,
-                ModuleError::TypeDecError(_, TypeDecError::BadFieldNameError(field_name)),
-            )) => assert_eq!(field_name, "not.ok.field"),
-            _ => assert!(false),
-        }
+                "My_module2".to_string(),
+                ModuleError::TypeDecError(
+                    "My_model2".to_string(),
+                    TypeDecError::BadFieldNameError("not.ok.field".to_string())
+                ),
+            ))
+        );
     }
 
     #[test]
@@ -699,14 +879,15 @@ mod tests {
             .0
             .insert("my_model".to_owned(), TypeDec { ..type_dec });
 
-        let result = registry.process_module("my_module".to_owned(), &module_dec);
-        assert!(result.is_err());
-        match result {
-            Err(ProcessingError::ModuleError(_, ModuleError::BadTypeNameError(type_name))) => {
-                assert_eq!(type_name, "my_model")
-            }
-            _ => assert!(false),
-        }
+        let result = registry.process_module("my_module2".to_owned(), &module_dec);
+
+        assert_eq!(
+            result,
+            Err(ProcessingError::ModuleError(
+                "my_module2".to_string(),
+                ModuleError::BadTypeNameError("my_model".to_string())
+            ))
+        )
     }
 
     #[test]

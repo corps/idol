@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
+#[derive(Debug)]
 pub struct DepMapper {
   entries: Vec<String>,
   children: Vec<Vec<usize>>,
