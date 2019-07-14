@@ -127,23 +127,23 @@ def validate_primitive(cls, json, path=[]):
 
         if primitive_type == 'int53':
             if not isinstance(json, int):
-                raise TypeError(f"{path.join(".")} Expected a int, found {type(json)}")
+                raise TypeError(f"{path.join('.')} Expected a int, found {type(json)}")
             if json > 9007199254740991 or json < -9007199254740991:
-                raise ValueError(f"{path.join(".")} value was out of range for i53")
+                raise ValueError(f"{path.join('.')} value was out of range for i53")
         if primitive_type == 'int64':
             if not isinstance(json, int):
-                raise TypeError(f"{path.join(".")} Expected a int, found {type(json)}")
+                raise TypeError(f"{path.join('.')} Expected a int, found {type(json)}")
             if json > 9223372036854775807 or json < -9223372036854775807:
-                raise ValueError(f"{path.join(".")} value was out of range for i64")
+                raise ValueError(f"{path.join('.')} value was out of range for i64")
         if primitive_type == 'double':
             if not isinstance(json, float):
-                raise TypeError(f"{path.join(".")} Expected a float, found {type(json)}")
+                raise TypeError(f"{path.join('.')} Expected a float, found {type(json)}")
         if primitive_type == 'string':
             if not isinstance(json, str):
-                raise TypeError(f"{path.join(".")} Expected a str, found {type(json)}")
+                raise TypeError(f"{path.join('.')} Expected a str, found {type(json)}")
         if primitive_type == 'boolean':
             if not isinstance(json, bool):
-                raise TypeError(f"{path.join(".")} Expected a bool, found {type(json)}")
+                raise TypeError(f"{path.join('.')} Expected a bool, found {type(json)}")
 
 
 class WrapsValue:
@@ -153,14 +153,16 @@ class WrapsValue:
 
     is_valid = classmethod(is_valid)
 
+    def _inner_kind(cls):
+        if cls.is_container():
+            return cls.__args__[0]
+
     @classmethod
     def inner_kind(cls):
-        if self.is_container():
-            if hasattr(self, '__orig_class__'):
-                return self.__orig_class__.__args__[0]
-            if hasattr(self, '__orig_bases__'):
-                return self.__orig_bases__[0].__args__[0]
-            return Any
+        return WrapsValue._inner_kind(cls)
+
+    def inst_inner_kind(self):
+        return WrapsValue._inner_kind(self.__orig_class__)
 
     def unwrap(self):
         pass
@@ -176,7 +178,7 @@ class Literal(WrapsValue, Generic[T]):
         metadata = cls.__metadata__
 
         if json != cls.literal:
-            raise ValueError(f"{path.join(".")} Expected to find literal {cls.literal}")
+            raise ValueError(f"{path.join('.')} Expected to find literal {cls.literal}")
 
 
     @classmethod
@@ -204,12 +206,12 @@ class Enum(WrapsValue, enumEnum):
         metadata = cls.__metadata__
 
         if not isinstance(json, string):
-            raise TypeError(f"{path.join(".")} Expected a string, found {type(json)}")
+            raise TypeError(f"{path.join('.')} Expected a string, found {type(json)}")
 
         try:
             cls(json)
         except ValueError:
-            raise ValueError(f"{path.join(".")} Value does not match enum type {cls}")
+            raise ValueError(f"{path.join('.')} Value does not match enum type {cls}")
 
 
     @classmethod
@@ -242,11 +244,11 @@ class List(MutableSequence[T], WrapsValue):
         metadata = cls.__metadata__
 
         if not isinstance(json, list):
-            raise TypeError(f"{path.join(".")} Expected a list, found {type(json)}")
+            raise TypeError(f"{path.join('.')} Expected a list, found {type(json)}")
 
         if 'atleast_one' in metadata['tags']:
             if not len(json):
-                raise ValueError(f"{path.join(".")} Expected atleast one item, but it was empty")
+                raise ValueError(f"{path.join('.')} Expected atleast one item, but it was empty")
 
         for val, i in enumerate(json):
             cls.inner_kind().validate(val, path.concat([str(i)]))
@@ -285,7 +287,7 @@ class List(MutableSequence[T], WrapsValue):
         return len(self.orig_list)
 
     def __getitem__(self, i):
-        return wrap_value(self.inner_kind(), self.orig_list.__getitem__(i))
+        return wrap_value(self.inst_inner_kind(), self.orig_list.__getitem__(i))
 
     def __setitem__(self, key, value):
         self.orig_list.__setitem__(key, unwrap_value(value))
@@ -313,7 +315,7 @@ class Map(Generic[T], MutableMapping[str, T], WrapsValue):
         metadata = cls.__metadata__
 
         if not isinstance(json, dict):
-            raise TypeError(f"{path.join(".")} Expected a dict, found {type(json)}")
+            raise TypeError(f"{path.join('.')} Expected a dict, found {type(json)}")
 
         for key, field in json.items():
             val = json.get(key, None)
@@ -355,7 +357,7 @@ class Map(Generic[T], MutableMapping[str, T], WrapsValue):
             yield item
 
     def __getitem__(self, i):
-        return wrap_value(self.inner_kind(), self.orig_map.__getitem__(i))
+        return wrap_value(self.inst_inner_kind(), self.orig_map.__getitem__(i))
 
     def items(self) -> Iterable[Tuple[str, T]]:
         for item in self.orig_map:
@@ -425,17 +427,17 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
         metadata = cls.__metadata__
 
         if not isinstance(json, dict):
-            raise TypeError(f"{path.join(".")} Expected a dict, found {type(json)}")
+            raise TypeError(f"{path.join('.')} Expected a dict, found {type(json)}")
 
         for field_name, field in metadata['fields'].items():
             val = json.get(field_name, None)
             optional = 'option' in field['tags']
 
-            if val is None 
+            if val is None:
                 if optional:
                     continue
                 else:
-                    raise KeyError(f"{path.join(".")} Missing required key {repr(field_name)}")
+                    raise KeyError(f"{path.join('.')} Missing required key {repr(field_name)}")
 
             annotation_name = field_name
             if field_name in KEYWORDS:
@@ -466,7 +468,7 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
             val = json.get(field_name, None)
             optional = 'option' in field['tags']
 
-            if val is None 
+            if val is None:
                 if optional:
                     continue
 

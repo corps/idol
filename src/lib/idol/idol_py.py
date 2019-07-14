@@ -224,7 +224,7 @@ class ModuleBuildEnv:
 
                 yield f"{option_name} = {repr(option)}"
 
-            yield from self.gen_class_extensions()
+            yield from self.gen_class_extensions(type)
 
     def gen_struct_impl(self, module: Module, type: TypeExt):
         yield f"class {type.type_name}(_Struct):"
@@ -242,7 +242,7 @@ class ModuleBuildEnv:
 
                 yield f"{field_name}: {field_type}"
 
-            yield from self.gen_class_extensions()
+            yield from self.gen_class_extensions(type)
 
     def gen_literal_impl(self, module: Module, type: TypeExt):
         type_struct = type.is_a
@@ -251,7 +251,7 @@ class ModuleBuildEnv:
         with self.in_block():
             yield f"literal: {scalar_type} = {repr(type.is_a.literal_value)}"
             yield ""
-            yield from self.gen_class_extensions()
+            yield from self.gen_class_extensions(type)
 
     def gen_wrap_type(self, type: TypeExt):
         type_name_as_str = json.dumps(type.type_name)
