@@ -350,6 +350,17 @@ impl<'a> ModuleBuildEnv<'a> {
     Ok(())
   }
 
+  fn gen_get_scalar(&mut self) -> BResult {
+    self.write_nl()?;
+    self.write("let mut value = value;".to_string())?;
+    self.start_block("match idol::get_list_scalar(value)".to_string())?;
+    self.write("Some(v) => value = &v,".to_string())?;
+    self.write("None => (),".to_string())?;
+    self.end_block()?;
+    self.write_nl()?;
+    Ok(())
+  }
+
   fn gen_literal_impls(&mut self, t: &Type, type_struct: &TypeStruct) -> BResult {
     let scalar_type =
       type_struct.display_scalar_type(&self.build_env.root_rust_module, &self.idol_module_name);
@@ -376,10 +387,25 @@ impl<'a> ModuleBuildEnv<'a> {
     self.start_block(format!("impl idol::ExpandsJson for {}", t.type_name))?;
     self
       .start_block("fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value>")?;
+    self.gen_get_scalar()?;
+
+    match type_struct.primitive_type {
+      PrimitiveType::bool => self.start_block(format!("if value.is_boolean()"))?,
+      PrimitiveType::double => self.start_block(format!("if value.is_boolean()"))?,
+      PrimitiveType::int53 => self.start_block(format!("if value.is_i64()"))?,
+      PrimitiveType::int64 => self.start_block(format!("if value.is_i64()"))?,
+      PrimitiveType::string => self.start_block(format!("if value.is_string()"))?,
+      PrimitiveType::any => (),
+    };
+
     self.write(format!(
       "Some(serde_json::Value::from({}))",
       type_struct.literal_value()
     ))?;
+
+    self.branch_block("else".to_string())?;
+    self.write("None".to_string())?;
+    self.end_block()?;
     self.end_block()?;
     self.end_block()?;
 
@@ -546,6 +572,7 @@ impl<'a> ModuleBuildEnv<'a> {
     self.start_block(format!("impl idol::ExpandsJson for {}", t.type_name))?;
     self
       .start_block("fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value>")?;
+    self.gen_get_scalar()?;
     self.start_block("if value.is_null()")?;
     self.write(format!(
       "return serde_json::to_value({}::default()).ok();",
@@ -553,14 +580,6 @@ impl<'a> ModuleBuildEnv<'a> {
     ))?;
     self.end_block()?;
 
-    self.write_nl()?;
-    self.start_block("if value.is_i64()")?;
-    self.write("let i: i64 = serde_json::from_value(value.to_owned()).ok()?;")?;
-    self.write(format!(
-      "return serde_json::value::to_value({}::from(usize::try_from(i).ok()?)).ok();",
-      t.type_name
-    ))?;
-    self.end_block()?;
     self.write_nl()?;
     self.write("None")?;
     self.end_block()?;
@@ -791,6 +810,19 @@ pub mod idol {
   pub struct ValidationError(pub String);
   pub type ValidationResult = Result<(), ValidationError>;
 
+  pub fn get_list_scalar(value: &serde_json::Value) -> Option<serde_json::Value> {
+    if let serde_json::Value::Array(array) = value {
+      let mut value = Some(value);
+      while let Some(serde_json::Value::Array(array)) = value {
+        value = array.get(0).or(Some(&serde_json::Value::Null));
+      }
+
+      return value.cloned();
+    }
+
+    None
+  }
+
   impl fmt::Display for ValidationError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, \"{}\", self.0)
@@ -810,6 +842,12 @@ pub mod idol {
     T: ExpandsJson,
   {
     fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+      let mut value = value;
+      match get_list_scalar(value)
+        Some(v) => value = &v,
+        None => (),
+      }
+
       if value.is_null() {
         return Some(serde_json::Value::Null);
       }
@@ -863,6 +901,12 @@ pub mod idol {
     T: ExpandsJson,
   {
     fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+      let mut value = value;
+      match get_list_scalar(value)
+        Some(v) => value = &v,
+        None => (),
+      }
+
       if value.is_null() {
         return Some(serde_json::Value::Object(serde_json::Map::new()));
       }
@@ -881,12 +925,14 @@ pub mod idol {
 
   impl ExpandsJson for i64 {
     fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+      let mut value = value;
+      match get_list_scalar(value)
+        Some(v) => value = &v,
+        None => (),
+      }
+
       match value {
         serde_json::Value::Null => serde_json::to_value(0).ok(),
-        serde_json::Value::String(s) => s
-          .parse::<i64>()
-          .ok()
-          .and_then(|i| serde_json::to_value(i).ok()),
         _ => None,
       }
     }
@@ -894,6 +940,12 @@ pub mod idol {
 
   impl ExpandsJson for String {
     fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+      let mut value = value;
+      match get_list_scalar(value)
+        Some(v) => value = &v,
+        None => (),
+      }
+
       match value {
         serde_json::Value::Null => serde_json::to_value(\"\").ok(),
         _ => None,
@@ -903,6 +955,12 @@ pub mod idol {
 
   impl ExpandsJson for bool {
     fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+      let mut value = value;
+      match get_list_scalar(value)
+        Some(v) => value = &v,
+        None => (),
+      }
+
       match value {
         serde_json::Value::Null => serde_json::to_value(false).ok(),
         _ => None,
@@ -912,12 +970,14 @@ pub mod idol {
 
   impl ExpandsJson for f64 {
     fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+      let mut value = value;
+      match get_list_scalar(value)
+        Some(v) => value = &v,
+        None => (),
+      }
+
       match value {
         serde_json::Value::Null => serde_json::to_value(0.0).ok(),
-        serde_json::Value::String(s) => s
-          .parse::<f64>()
-          .ok()
-          .and_then(|i| serde_json::to_value(i).ok()),
         _ => None,
       }
     }
@@ -925,12 +985,14 @@ pub mod idol {
 
   impl ExpandsJson for i53 {
     fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+      let mut value = value;
+      match get_list_scalar(value)
+        Some(v) => value = &v,
+        None => (),
+      }
+
       match value {
         serde_json::Value::Null => serde_json::to_value(0).ok(),
-        serde_json::Value::String(s) => s
-          .parse::<i64>()
-          .ok()
-          .and_then(|i| serde_json::to_value(i).ok()),
         _ => None,
       }
     }

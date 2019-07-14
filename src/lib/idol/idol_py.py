@@ -135,10 +135,14 @@ class ModuleBuildEnv:
             "Optional",
             "Enum",
             "Any",
-            "Literal"
+            "Literal",
+            "expand_primitive",
+            "validate_primitive"
         ])
         yield f"from {self.root_python_module}.__idol__ import {joined_imports}"
         yield "import json"
+        yield "import types"
+        yield ""
 
         seen_modules = set()
         for dependency in module.dependencies:
@@ -200,6 +204,15 @@ class ModuleBuildEnv:
         as_path = "/".join(module_name.split("."))
         return f"{as_path}.py"
 
+    def metadata_as_pycode(self, type: TypeExt):
+        return f"json.loads({repr(json.dumps(type.unwrap(), sort_keys=True))})"
+
+    def gen_class_extensions(self, type: TypeExt):
+        yield ""
+        yield "# Required to ensure stable ordering.  str() on python dicts is unstable,"
+        yield "# but the json.dumps is stable."
+        yield f"__metadata__ = {self.metadata_as_pycode(type)}"
+
     def gen_enum_impl(self, module: Module, type: TypeExt):
         yield f"class {type.type_name}(_Enum):"
         with self.in_block():
@@ -211,6 +224,8 @@ class ModuleBuildEnv:
 
                 yield f"{option_name} = {repr(option)}"
 
+            yield from self.gen_class_extensions()
+
     def gen_struct_impl(self, module: Module, type: TypeExt):
         yield f"class {type.type_name}(_Struct):"
         with self.in_block():
@@ -220,35 +235,50 @@ class ModuleBuildEnv:
 
                 if field_name in KEYWORDS:
                     field_name += "_"
+                
+                field_type = self.display_type(field.type_struct)
+                if "optional" in field.tags:
+                    field_type = f"_Optional[{field_type}]"
 
-                yield f"{field_name}: {self.display_type(field.type_struct)}"
+                yield f"{field_name}: {field_type}"
 
-            yield ""
-            yield "# Required to ensure stable ordering.  str() on python dicts is unstable,"
-            yield "# but the json.dumps is stable."
-            yield f"__metadata__ = json.loads({repr(json.dumps(type.unwrap(), sort_keys=True))})"
+            yield from self.gen_class_extensions()
 
     def gen_literal_impl(self, module: Module, type: TypeExt):
         type_struct = type.is_a
         scalar_type = self.display_scalar_type(type_struct)
         yield f"class {type.type_name}(_Literal[{scalar_type}]):"
         with self.in_block():
-            yield f"literal: {scalar_type} = {json.dumps(type.is_a.literal_value)}"
+            yield f"literal: {scalar_type} = {repr(type.is_a.literal_value)}"
+            yield ""
+            yield from self.gen_class_extensions()
+
+    def gen_wrap_type(self, type: TypeExt):
+        type_name_as_str = json.dumps(type.type_name)
+        yield f"locals()[{type_name_as_str}] = types.new_class({type_name_as_str}, (locals()[{type_name_as_str}]),))"
+        yield f"{type.type_name}.__metadata__ = {self.metadata_as_pycode(type)}"
 
     def gen_scalar_impl(self, module: Module, type: TypeExt):
         type_struct = type.is_a
         scalar_type = self.display_scalar_type(type_struct)
         yield f"{type.type_name} = {scalar_type}"
+        yield from self.gen_wrap_type(type)
+
+        if type_struct.is_primitive:
+            yield f"{type.type_name}.expand = classmethod(_expand_primitive)"
+            yield f"{type.type_name}.validate = classmethod(_validate_primitive)"
 
     def gen_repeated_impl(self, module: Module, type: TypeExt):
         type_struct = type.is_a
         scalar_type = self.display_scalar_type(type_struct)
         yield f"{type.type_name} = _List[{scalar_type}]"
+        yield from self.gen_wrap_type(type)
 
     def gen_map_impl(self, module: Module, type: TypeExt):
         type_struct = type.is_a
         scalar_type = self.display_scalar_type(type_struct)
         yield f"{type.type_name} = _Map[{scalar_type}]"
+        yield from self.gen_wrap_type(type)
 
     scalar_name_mappings = {
         PrimitiveType.bool: 'bool',
