@@ -19,6 +19,8 @@ target/release/idol_rs: src/*.rs $(SOURCE_FILES) src/bin/idol_rs.rs
 
 models: $(MODELS)
 	./target/debug/idol $? > build.json
+	export PATH="$$PWD/test:$$PATH"
+	python3 --version
 	cat build.json | ./target/debug/idol_rs --output src/models/ --mod "crate::models"
 	cat build.json | ./src/bin/idol_py.py --output src/lib/idol --mod "idol"
 

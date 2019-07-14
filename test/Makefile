@@ -14,7 +14,8 @@ target/debug/validate: $(SOURCE_FILES) src/bin/validate.rs models ../target/debu
 
 models: $(MODELS)
 	../target/debug/idol $? > build.json
-	export PATH="$PWD:$PATH"
+	export PATH="$$PWD:$$PATH"
+	python3 --version
 	cat build.json | ../target/debug/idol_rs --output src/models/ --mod "crate::models"
 	cat build.json | ../src/bin/idol_py.py --output src/lib/idol --mod "idol"
 

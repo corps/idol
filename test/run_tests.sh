@@ -4,22 +4,27 @@ set -e
 
 expand_rs=./target/debug/expand
 validate_rs=./target/debug/validate
+expand_py=./src/lib/expand.py
+validate_py=./src/lib/validate.py
 failed=
 
 function test_expand() {
   local case=$1
 
-  for expand in $expand_rs; do
-    if failed="${failed}$(
+  for expand in $expand_rs $expand_py; do
+    if failed="${failed}
+$(
       set -e
       local result=$(cat $case | $expand | jq -S .)
       local expected=$(cat expected/$(basename $case) | jq -S .)
       if test "$result" != "$expected"; then
-        echo Case $case failed!
+        echo
+        echo Case $case failed using $expand!
         diff <(echo "$expected") <(echo "$result")
+        echo
         exit 1
       fi
-    )"; then
+)"; then
       echo -n "."
     else
       echo -n "X"
@@ -30,8 +35,9 @@ function test_expand() {
 function test_validate() {
   local case=$1
 
-  for validate in $validate_rs; do
-    if failed="${failed}$(
+  for validate in $validate_rs $validate_py; do
+    if failed="${failed}
+$(
       set -e
       if cat $case | $validate; then
         if ! test -e expected/$(basename $case); then
@@ -41,12 +47,13 @@ function test_validate() {
         fi
       else
         if test -e expected/$(basename $case); then
-          echo Case $case failed!
+          echo
+          echo Case $case failed using $validate!
           echo Expected input to be valid, but was not!
           exit 1
         fi
       fi
-    )"; then
+)"; then
       echo -n "."
     else
       echo -n "X"
@@ -57,7 +64,10 @@ function test_validate() {
 # expand cases
 for file in cases/expand_*.json; do
   test_expand $file
-  # All expanded jsons should also be valid
+done
+
+# validate cases
+for file in cases/validate_*.json; do
   test_validate $file
 done
 

@@ -55,95 +55,102 @@ def get_list_scalar(value):
     return value
 
 
-def expand_primitive(primitive_type, json, optional=False):
-    if primitive_type in ('int64', 'int53'):
-        if json is None and not optional:
-            return 0
-        if isinstance(json, str):
-            try:
-                return int(json)
-            except ValueError:
-                pass
-
-    if primitive_type == 'double':
-        if json is None and not optional:
-            return 0.0
-        if isinstance(json, str):
-            try:
-                return float(json)
-            except ValueError:
-                pass
-
-    if primitive_type == 'string':
-        if json is None and not optional:
-            return ""
-
-    if primitive_type == 'bool':
-        if json is None and not optional:
-            return False
-
-    return json
-
-
 def is_valid(cls, json):
     try:
-        cls.validate(json)
+        validate(cls, json)
         return True
     except (ValueError, KeyError, TypeError):
         return False
 
 
-def expand_primitive(cls, json):
-    metadata = cls.__metadata__
+def expand(cls, json):
+    if hasattr(cls, 'expand'):
+        return cls.expand(json, concrete_cls=cls)
+
+    return expand_primitive(cls, json)
+
+
+def validate(cls, json, path=[]):
+    if hasattr(cls, 'validate'):
+        return cls.validate(json, path=path, concrete_cls=cls)
+
+    return validate_primitive(cls, json, path=path)
+
+
+def expand_primitive(cls, json, concrete_cls=None):
+    if concrete_cls:
+        cls = concrete_cls
+
     json = get_list_scalar(json)
 
     if json:
         return json
 
-    if metadata.get('is_a', None):
-        type_struct = metadata['is_a']
-        primitive_type = type_struct['primitive_type']
+    if issubclass(cls, int):
+        primitive_type = 'int64'
+    if issubclass(cls, float):
+        primitive_type = 'double'
+    if issubclass(cls, str):
+        primitive_type = 'string'
+    if issubclass(cls, bool):
+        primitive_type = 'boolean'
 
-        if primitive_type == 'int53':
-            return 0
-        if primitive_type == 'int64':
-            return 0
-        if primitive_type == 'double':
-            return 0.0
-        if primitive_type == 'string':
-            return ""
-        if primitive_type == 'boolean':
-            return False
+    if primitive_type == 'int53':
+        return 0
+    if primitive_type == 'int64':
+        return 0
+    if primitive_type == 'double':
+        return 0.0
+    if primitive_type == 'string':
+        return ""
+    if primitive_type == 'boolean':
+        return False
 
     return json
 
 
 def validate_primitive(cls, json, path=[]):
-    metadata = cls.__metadata__
+    if concrete_cls:
+        cls = concrete_cls
 
-    if metadata.get('is_a', None):
-        type_struct = metadata['is_a']
-        primitive_type = type_struct['primitive_type']
+    if issubclass(cls, int):
+        primitive_type = 'int64'
+    if issubclass(cls, float):
+        primitive_type = 'double'
+    if issubclass(cls, str):
+        primitive_type = 'string'
+    if issubclass(cls, bool):
+        primitive_type = 'boolean'
 
-        if primitive_type == 'int53':
-            if not isinstance(json, int):
-                raise TypeError(f"{path.join('.')} Expected a int, found {type(json)}")
-            if json > 9007199254740991 or json < -9007199254740991:
-                raise ValueError(f"{path.join('.')} value was out of range for i53")
-        if primitive_type == 'int64':
-            if not isinstance(json, int):
-                raise TypeError(f"{path.join('.')} Expected a int, found {type(json)}")
-            if json > 9223372036854775807 or json < -9223372036854775807:
-                raise ValueError(f"{path.join('.')} value was out of range for i64")
-        if primitive_type == 'double':
-            if not isinstance(json, float):
-                raise TypeError(f"{path.join('.')} Expected a float, found {type(json)}")
-        if primitive_type == 'string':
-            if not isinstance(json, str):
-                raise TypeError(f"{path.join('.')} Expected a str, found {type(json)}")
-        if primitive_type == 'boolean':
-            if not isinstance(json, bool):
-                raise TypeError(f"{path.join('.')} Expected a bool, found {type(json)}")
+    if primitive_type == 'int53':
+        if not isinstance(json, int):
+            raise TypeError(f"{'.'.join(path)} Expected a int, found {type(json)}")
+        if json > 9007199254740991 or json < -9007199254740991:
+            raise ValueError(f"{'.'.join(path)} value was out of range for i53")
+    if primitive_type == 'int64':
+        if not isinstance(json, int):
+            raise TypeError(f"{'.'.join(path)} Expected a int, found {type(json)}")
+        if json > 9223372036854775807 or json < -9223372036854775807:
+            raise ValueError(f"{'.'.join(path)} value was out of range for i64")
+    if primitive_type == 'double':
+        if not isinstance(json, float):
+            raise TypeError(f"{'.'.join(path)} Expected a float, found {type(json)}")
+    if primitive_type == 'string':
+        if not isinstance(json, str):
+            raise TypeError(f"{'.'.join(path)} Expected a str, found {type(json)}")
+    if primitive_type == 'boolean':
+        if not isinstance(json, bool):
+            raise TypeError(f"{'.'.join(path)} Expected a bool, found {type(json)}")
+
+def inner_kind(cls):
+    if cls.is_container():
+        kcls = cls
+        while not hasattr(cls, '__args__'):
+            cls = cls.__orig_bases__[0]
+        result = cls.__args__[0]
+        if type(result) is TypeVar:
+            raise TypeError("Logic bug!  inner kind was a TypeVar instead of a concrete type")
+        return result
 
 
 class WrapsValue:
@@ -153,16 +160,8 @@ class WrapsValue:
 
     is_valid = classmethod(is_valid)
 
-    def _inner_kind(cls):
-        if cls.is_container():
-            return cls.__args__[0]
-
-    @classmethod
-    def inner_kind(cls):
-        return WrapsValue._inner_kind(cls)
-
     def inst_inner_kind(self):
-        return WrapsValue._inner_kind(self.__orig_class__)
+        return inner_kind(self.__orig_class__)
 
     def unwrap(self):
         pass
@@ -174,15 +173,19 @@ class Literal(WrapsValue, Generic[T]):
 
 
     @classmethod
-    def validate(cls, json, path=[]):
-        metadata = cls.__metadata__
+    def validate(cls, json, path=[], concrete_cls=None):
+        if concrete_cls:
+            cls = concrete_cls
 
         if json != cls.literal:
-            raise ValueError(f"{path.join('.')} Expected to find literal {cls.literal}")
+            raise ValueError(f"{'.'.join(path)} Expected to find literal {cls.literal}")
 
 
     @classmethod
-    def expand(cls, json):
+    def expand(cls, json, concrete_cls=None):
+        if concrete_cls:
+            cls = concrete_cls
+
         metadata = cls.__metadata__
         json = get_list_scalar(json)
 
@@ -198,82 +201,93 @@ class Enum(WrapsValue, enumEnum):
 
 
     @classmethod
-    def validate(cls, json, path=[]):
+    def validate(cls, json, path=[], concrete_cls=None):
         """
         TypeError is raised when the json is not a string.
         ValueError is raised when the json does not match any enum entry given string
         """
+        if concrete_cls:
+            cls = concrete_cls
+
         metadata = cls.__metadata__
 
-        if not isinstance(json, string):
-            raise TypeError(f"{path.join('.')} Expected a string, found {type(json)}")
+        if not isinstance(json, str):
+            raise TypeError(f"{'.'.join(path)} Expected a string, found {type(json)}")
 
         try:
             cls(json)
         except ValueError:
-            raise ValueError(f"{path.join('.')} Value does not match enum type {cls}")
+            raise ValueError(f"{'.'.join(path)} Value does not match enum type {cls}")
 
 
     @classmethod
-    def expand(cls, json):
+    def expand(cls, json, concrete_cls=None):
         """
         Recursively expands all entries of this map.
         """
+        if concrete_cls:
+            cls = concrete_cls
+
         metadata = cls.__metadata__
         json = get_list_scalar(json)
 
         if json is None:
-            json = getattr(cls, iter(cls._member_map_).__next__()).value()
+            json = getattr(cls, iter(cls._member_map_).__next__()).value
 
         return json
 
 
-class List(MutableSequence[T], WrapsValue):
+class List(Generic[T], MutableSequence[T], WrapsValue):
     @classmethod
     def is_container(cls):
         return True
 
 
     @classmethod
-    def validate(cls, json, path=[]):
+    def validate(cls, json, path=[], concrete_cls=None):
         """
         Recursively validates all items of this list.
         TypeError is raised when the json is not a list object.
         Otherwise, the inner item's value is validated against its respective type.
         """
-        metadata = cls.__metadata__
+        if concrete_cls:
+            cls = concrete_cls
+
+        metadata = getattr(cls, '__metadata__', dict(tags=[]))
 
         if not isinstance(json, list):
-            raise TypeError(f"{path.join('.')} Expected a list, found {type(json)}")
+            raise TypeError(f"{'.'.join(path)} Expected a list, found {type(json)}")
 
         if 'atleast_one' in metadata['tags']:
             if not len(json):
-                raise ValueError(f"{path.join('.')} Expected atleast one item, but it was empty")
+                raise ValueError(f"{'.'.join(path)} Expected atleast one item, but it was empty")
 
-        for val, i in enumerate(json):
-            cls.inner_kind().validate(val, path.concat([str(i)]))
+        for i, val in enumerate(json):
+            validate(inner_kind(cls), val, path + [str(i)])
 
 
     @classmethod
-    def expand(cls, json):
+    def expand(cls, json, concrete_cls=None):
         """
         Recursively expands all items of this map.
         """
-        metadata = cls.__metadata__
-        json = get_list_scalar(json)
+        if concrete_cls:
+            cls = concrete_cls
+
+        metadata = getattr(cls, '__metadata__', dict(tags=[]))
 
         if json is None:
             json = [] 
 
         if not isinstance(json, list):
-            return json
+            json = [json]
 
         if 'atleast_one' in metadata['tags']:
             if not len(json):
-                json.push(None)
+                json.append(None)
 
-        for val, i in enumerate(json):
-            json[i] = cls.inner_kind().expand(val)
+        for i, val in enumerate(json):
+            json[i] = expand(inner_kind(cls), val)
 
         return json
 
@@ -306,28 +320,31 @@ class Map(Generic[T], MutableMapping[str, T], WrapsValue):
 
 
     @classmethod
-    def validate(cls, json, path=[]):
+    def validate(cls, json, path=[], concrete_cls=None):
         """
         Recursively validates all entries of this struct.
         TypeError is raised when the json is not a dict object.
         Otherwise, the inner entry's value is validated against its respective type.
         """
-        metadata = cls.__metadata__
+        if concrete_cls:
+            cls = concrete_cls
 
         if not isinstance(json, dict):
-            raise TypeError(f"{path.join('.')} Expected a dict, found {type(json)}")
+            raise TypeError(f"{'.'.join(path)} Expected a dict, found {type(json)}")
 
         for key, field in json.items():
             val = json.get(key, None)
-            cls.inner_kind().validate(val, path.concat([key]))
+            validate(inner_kind(cls), val, path + [key])
 
 
     @classmethod
-    def expand(cls, json):
+    def expand(cls, json, concrete_cls=None):
         """
         Recursively expands all entries of this map.
         """
-        metadata = cls.__metadata__
+        if concrete_cls:
+            cls = concrete_cls
+
         json = get_list_scalar(json)
 
         if json is None:
@@ -338,7 +355,7 @@ class Map(Generic[T], MutableMapping[str, T], WrapsValue):
 
         for key, field in json.items():
             val = json.get(key, None)
-            json[field_name] = cls.inner_kind().expand(val)
+            json[key] = expand(inner_kind(cls), val)
 
         return json
 
@@ -416,7 +433,7 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
         return str(self.orig_data)
 
     @classmethod
-    def validate(cls, json, path=[]):
+    def validate(cls, json, path=[], concrete_cls=None):
         """
         Recursively validates all fields of this struct.
         Fields marked as optional will not be validated when they are null.
@@ -424,37 +441,43 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
         TypeError is raised when the json is not a dict object.
         Otherwise, the inner field's value is validated against its respective type.
         """
+        if concrete_cls:
+            cls = concrete_cls
+
         metadata = cls.__metadata__
 
         if not isinstance(json, dict):
-            raise TypeError(f"{path.join('.')} Expected a dict, found {type(json)}")
+            raise TypeError(f"{'.'.join(path)} Expected a dict, found {type(json)}")
 
         for field_name, field in metadata['fields'].items():
             val = json.get(field_name, None)
-            optional = 'option' in field['tags']
+            optional = 'optional' in field['tags']
 
             if val is None:
                 if optional:
                     continue
                 else:
-                    raise KeyError(f"{path.join('.')} Missing required key {repr(field_name)}")
+                    raise KeyError(f"{'.'.join(path)} Missing required key {repr(field_name)}")
 
             annotation_name = field_name
             if field_name in KEYWORDS:
                 annotation_name += '_'
 
             if optional:
-                cls.__annotations__[annotation_name].__args__[0].validate(val, path.concat([field_name]))
+                validate(cls.__annotations__[annotation_name].__args__[0], val, path + [field_name])
             else:
-                cls.__annotations__[annotation_name].validate(val, path.concat([field_name]))
+                validate(cls.__annotations__[annotation_name], val, path + [field_name])
 
     @classmethod
-    def expand(cls, json):
+    def expand(cls, json, concrete_cls=None):
         """
         Recursively expands all fields of this struct.
         Fields marked as optional will not be expanded when they are null.
         Otherwise, the inner field's value is expanded against its respective type.
         """
+        if concrete_cls:
+            cls = concrete_cls
+
         metadata = cls.__metadata__
         json = get_list_scalar(json)
 
@@ -466,10 +489,11 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
 
         for field_name, field in metadata['fields'].items():
             val = json.get(field_name, None)
-            optional = 'option' in field['tags']
+            optional = 'optional' in field['tags']
 
             if val is None:
                 if optional:
+                    json[field_name] = None
                     continue
 
             annotation_name = field_name
@@ -477,9 +501,9 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
                 annotation_name += '_'
 
             if optional:
-                json[field_name] = cls.__annotations__[annotation_name].__args__[0].expand(val)
+                json[field_name] = expand(cls.__annotations__[annotation_name].__args__[0], val)
             else:
-                json[field_name] = cls.__annotations__[annotation_name].expand(val)
+                json[field_name] = expand(cls.__annotations__[annotation_name], val)
 
         return json
 

@@ -252,7 +252,7 @@ class ModuleBuildEnv:
 
     def gen_wrap_type(self, type: TypeExt):
         type_name_as_str = json.dumps(type.type_name)
-        yield f"locals()[{type_name_as_str}] = types.new_class({type_name_as_str}, (locals()[{type_name_as_str}]),))"
+        yield f"locals()[{type_name_as_str}] = types.new_class({type_name_as_str}, (locals()[{type_name_as_str}],))"
         yield f"{type.type_name}.__metadata__ = {self.metadata_as_pycode(type)}"
 
     def gen_scalar_impl(self, module: Module, type: TypeExt):

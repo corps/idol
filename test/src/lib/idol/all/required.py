@@ -28,7 +28,7 @@ class TripletOfSideImport2(_Struct):
 
 
 ListOfTestKind = _List[idol.tests.basic.TestKind]
-locals()["ListOfTestKind"] = types.new_class("ListOfTestKind", (locals()["ListOfTestKind"]),))
+locals()["ListOfTestKind"] = types.new_class("ListOfTestKind", (locals()["ListOfTestKind"],))
 ListOfTestKind.__metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestKind", "type_name": "TestKind"}, "struct_kind": "Repeated"}, "options": [], "tags": ["atleast_one"], "type_name": "ListOfTestKind", "type_vars": []}')
 
 

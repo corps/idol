@@ -1,0 +1,52 @@
+{
+  "test_atleast_one": [
+    "abc"
+  ],
+  "test_enum": "a",
+  "test_kind": "",
+  "test_list_of": [
+    "abc"
+  ],
+  "test_list_of_list_struct": {
+    "list_of_list": [
+      [
+        "a"
+      ]
+    ]
+  },
+  "test_literal_struct": {
+    "five": 0,
+    "four": false,
+    "one": 0,
+    "three": 1.4,
+    "two": "two"
+  },
+  "test_literal_top": "mooo",
+  "test_map": {},
+  "test_optional_field": {
+    "optional": null
+  },
+  "test_struct": {
+    "a": "bcd",
+    "b": 0,
+    "c": {
+      "d": true,
+      "e": 2,
+      "f": 3
+    }
+  },
+  "test_triplet": {
+    "a": {
+      "side_import2": 0
+    },
+    "b": [
+      "mooo"
+    ],
+    "c": {
+      "a": 1
+    },
+    "side_import": {
+      "side_import": ""
+    }
+  }
+}

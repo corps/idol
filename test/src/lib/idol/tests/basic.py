@@ -90,19 +90,19 @@ class TestStruct(_Struct):
 
 
 TestKind = str
-locals()["TestKind"] = types.new_class("TestKind", (locals()["TestKind"]),))
+locals()["TestKind"] = types.new_class("TestKind", (locals()["TestKind"],))
 TestKind.__metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "options": [], "tags": [], "type_name": "TestKind", "type_vars": []}')
 TestKind.expand = classmethod(_expand_primitive)
 TestKind.validate = classmethod(_validate_primitive)
 
 
 TestAtleastOne = _List[TestKind]
-locals()["TestAtleastOne"] = types.new_class("TestAtleastOne", (locals()["TestAtleastOne"]),))
+locals()["TestAtleastOne"] = types.new_class("TestAtleastOne", (locals()["TestAtleastOne"],))
 TestAtleastOne.__metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestKind", "type_name": "TestKind"}, "struct_kind": "Repeated"}, "options": [], "tags": ["atleast_one"], "type_name": "TestAtleastOne", "type_vars": []}')
 
 
 TestMap = _Map[TestAtleastOne]
-locals()["TestMap"] = types.new_class("TestMap", (locals()["TestMap"]),))
+locals()["TestMap"] = types.new_class("TestMap", (locals()["TestMap"],))
 TestMap.__metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestAtleastOne", "type_name": "TestAtleastOne"}, "struct_kind": "Map"}, "options": [], "tags": [], "type_name": "TestMap", "type_vars": []}')
 
 

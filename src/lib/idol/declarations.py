@@ -15,7 +15,7 @@ __all__ = [
 
 
 FieldDec = _List[str]
-locals()["FieldDec"] = types.new_class("FieldDec", (locals()["FieldDec"]),))
+locals()["FieldDec"] = types.new_class("FieldDec", (locals()["FieldDec"],))
 FieldDec.__metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Repeated"}, "options": [], "tags": ["atleast_one"], "type_name": "FieldDec", "type_vars": []}')
 
 
@@ -32,5 +32,5 @@ class TypeDec(_Struct):
 
 
 ModuleDec = _Map[TypeDec]
-locals()["ModuleDec"] = types.new_class("ModuleDec", (locals()["ModuleDec"]),))
+locals()["ModuleDec"] = types.new_class("ModuleDec", (locals()["ModuleDec"],))
 ModuleDec.__metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "declarations", "qualified_name": "declarations.TypeDec", "type_name": "TypeDec"}, "struct_kind": "Map"}, "options": [], "tags": [], "type_name": "ModuleDec", "type_vars": []}')
