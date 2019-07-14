@@ -1,5 +1,7 @@
-from idol.__idol__ import Struct as _Struct, List as _List, Map as _Map, Optional as _Optional, Enum as _Enum, Any as _Any, Literal as _Literal
+from idol.__idol__ import Struct as _Struct, List as _List, Map as _Map, Optional as _Optional, Enum as _Enum, Any as _Any, Literal as _Literal, expand_primitive as _expand_primitive, validate_primitive as _validate_primitive
 import json
+import types
+
 import idol.tests.abs.three
 import idol.tests.basic
 import idol.tests.abs.two
@@ -26,6 +28,8 @@ class TripletOfSideImport2(_Struct):
 
 
 ListOfTestKind = _List[idol.tests.basic.TestKind]
+locals()["ListOfTestKind"] = types.new_class("ListOfTestKind", (locals()["ListOfTestKind"]),))
+ListOfTestKind.__metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestKind", "type_name": "TestKind"}, "struct_kind": "Repeated"}, "options": [], "tags": ["atleast_one"], "type_name": "ListOfTestKind", "type_vars": []}')
 
 
 class Assembled(_Struct):

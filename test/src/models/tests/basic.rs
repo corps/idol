@@ -44,13 +44,21 @@ impl Into<usize> for TestEnum {
 
 impl idol::ExpandsJson for TestEnum {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match TestEnum::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
     if value.is_null() {
       return serde_json::to_value(TestEnum::default()).ok();
-    }
-
-    if value.is_i64() {
-      let i: i64 = serde_json::from_value(value.to_owned()).ok()?;
-      return serde_json::value::to_value(TestEnum::from(usize::try_from(i).ok()?)).ok();
     }
 
     None
@@ -140,7 +148,24 @@ impl Default for TestLiteralTop {
 
 impl idol::ExpandsJson for TestLiteralTop {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
-    Some(serde_json::Value::from("mooo"))
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match String::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+    if value.is_null() || value.is_string() {
+      Some(serde_json::Value::from("mooo"))
+    } else {
+      None
+    }
   }
 }
 

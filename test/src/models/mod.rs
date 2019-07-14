@@ -11,6 +11,19 @@ pub mod idol {
   pub struct ValidationError(pub String);
   pub type ValidationResult = Result<(), ValidationError>;
 
+  pub fn get_list_scalar(value: &serde_json::Value) -> Option<serde_json::Value> {
+    if let serde_json::Value::Array(array) = value {
+      let mut value = Some(value);
+      while let Some(serde_json::Value::Array(array)) = value {
+        value = array.get(0).or(Some(&serde_json::Value::Null));
+      }
+
+      return value.cloned();
+    }
+
+    None
+  }
+
   impl fmt::Display for ValidationError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
@@ -30,6 +43,16 @@ pub mod idol {
     T: ExpandsJson,
   {
     fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+      match get_list_scalar(value) {
+        Some(mut v) => {
+          return match Option::<T>::expand_json(&mut v) {
+            Some(v_) => Some(v_),
+            None => Some(v),
+          };
+        }
+        None => (),
+      };
+
       if value.is_null() {
         return Some(serde_json::Value::Null);
       }
@@ -83,6 +106,16 @@ pub mod idol {
     T: ExpandsJson,
   {
     fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+      match get_list_scalar(value) {
+        Some(mut v) => {
+          return match HashMap::<String, T>::expand_json(&mut v) {
+            Some(v_) => Some(v_),
+            None => Some(v),
+          };
+        }
+        None => (),
+      };
+
       if value.is_null() {
         return Some(serde_json::Value::Object(serde_json::Map::new()));
       }
@@ -101,12 +134,18 @@ pub mod idol {
 
   impl ExpandsJson for i64 {
     fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+      match get_list_scalar(value) {
+        Some(mut v) => {
+          return match i64::expand_json(&mut v) {
+            Some(v_) => Some(v_),
+            None => Some(v),
+          };
+        }
+        None => (),
+      };
+
       match value {
         serde_json::Value::Null => serde_json::to_value(0).ok(),
-        serde_json::Value::String(s) => s
-          .parse::<i64>()
-          .ok()
-          .and_then(|i| serde_json::to_value(i).ok()),
         _ => None,
       }
     }
@@ -114,6 +153,16 @@ pub mod idol {
 
   impl ExpandsJson for String {
     fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+      match get_list_scalar(value) {
+        Some(mut v) => {
+          return match String::expand_json(&mut v) {
+            Some(v_) => Some(v_),
+            None => Some(v),
+          };
+        }
+        None => (),
+      };
+
       match value {
         serde_json::Value::Null => serde_json::to_value("").ok(),
         _ => None,
@@ -123,6 +172,16 @@ pub mod idol {
 
   impl ExpandsJson for bool {
     fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+      match get_list_scalar(value) {
+        Some(mut v) => {
+          return match bool::expand_json(&mut v) {
+            Some(v_) => Some(v_),
+            None => Some(v),
+          };
+        }
+        None => (),
+      };
+
       match value {
         serde_json::Value::Null => serde_json::to_value(false).ok(),
         _ => None,
@@ -132,12 +191,18 @@ pub mod idol {
 
   impl ExpandsJson for f64 {
     fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+      match get_list_scalar(value) {
+        Some(mut v) => {
+          return match f64::expand_json(&mut v) {
+            Some(v_) => Some(v_),
+            None => Some(v),
+          };
+        }
+        None => (),
+      };
+
       match value {
         serde_json::Value::Null => serde_json::to_value(0.0).ok(),
-        serde_json::Value::String(s) => s
-          .parse::<f64>()
-          .ok()
-          .and_then(|i| serde_json::to_value(i).ok()),
         _ => None,
       }
     }
@@ -145,12 +210,18 @@ pub mod idol {
 
   impl ExpandsJson for i53 {
     fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+      match get_list_scalar(value) {
+        Some(mut v) => {
+          return match i53::expand_json(&mut v) {
+            Some(v_) => Some(v_),
+            None => Some(v),
+          };
+        }
+        None => (),
+      };
+
       match value {
         serde_json::Value::Null => serde_json::to_value(0).ok(),
-        serde_json::Value::String(s) => s
-          .parse::<i64>()
-          .ok()
-          .and_then(|i| serde_json::to_value(i).ok()),
         _ => None,
       }
     }

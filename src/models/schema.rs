@@ -44,13 +44,21 @@ impl Into<usize> for StructKind {
 
 impl idol::ExpandsJson for StructKind {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match StructKind::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
     if value.is_null() {
       return serde_json::to_value(StructKind::default()).ok();
-    }
-
-    if value.is_i64() {
-      let i: i64 = serde_json::from_value(value.to_owned()).ok()?;
-      return serde_json::value::to_value(StructKind::from(usize::try_from(i).ok()?)).ok();
     }
 
     None
@@ -116,13 +124,21 @@ impl Into<usize> for PrimitiveType {
 
 impl idol::ExpandsJson for PrimitiveType {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match PrimitiveType::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
     if value.is_null() {
       return serde_json::to_value(PrimitiveType::default()).ok();
-    }
-
-    if value.is_i64() {
-      let i: i64 = serde_json::from_value(value.to_owned()).ok()?;
-      return serde_json::value::to_value(PrimitiveType::from(usize::try_from(i).ok()?)).ok();
     }
 
     None
