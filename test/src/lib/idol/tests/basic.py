@@ -23,9 +23,9 @@ __all__ = [
 
 
 class TestEnum(_Enum):
-    a = 'a'
-    b = 'b'
-    c = 'c'
+    A = 'a'
+    B = 'b'
+    C = 'c'
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.

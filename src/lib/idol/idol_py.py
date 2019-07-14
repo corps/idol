@@ -38,15 +38,15 @@ class TypeStructExt(TypeStruct):
 
     @property
     def literal_value(self):
-        if self.primitive_type == PrimitiveType.bool:
+        if self.primitive_type == PrimitiveType.BOOL:
             return self.literal_bool
-        elif self.primitive_type == PrimitiveType.double:
+        elif self.primitive_type == PrimitiveType.DOUBLE:
             return self.literal_double
-        elif self.primitive_type == PrimitiveType.int53:
+        elif self.primitive_type == PrimitiveType.INT53:
             return self.literal_int53
-        elif self.primitive_type == PrimitiveType.int64:
+        elif self.primitive_type == PrimitiveType.INT64:
             return self.literal_int64
-        elif self.primitive_type == PrimitiveType.string:
+        elif self.primitive_type == PrimitiveType.STRING:
             return self.literal_string
 
 
@@ -173,14 +173,14 @@ class ModuleBuildEnv:
 
             if type.is_a:
                 type_struct = type.is_a
-                if type_struct.struct_kind == StructKind.Scalar:
+                if type_struct.struct_kind == StructKind.SCALAR:
                     if type_struct.is_literal:
                         yield from self.gen_literal_impl(module, type)
                     else:
                         yield from self.gen_scalar_impl(module, type)
-                elif type_struct.struct_kind == StructKind.Repeated:
+                elif type_struct.struct_kind == StructKind.REPEATED:
                     yield from self.gen_repeated_impl(module, type)
-                elif type_struct.struct_kind == StructKind.Map:
+                elif type_struct.struct_kind == StructKind.MAP:
                     yield from self.gen_map_impl(module, type)
             elif len(type.fields):
                 yield from self.gen_struct_impl(module, type)
@@ -218,10 +218,7 @@ class ModuleBuildEnv:
         with self.in_block():
             options = sorted(type.options)
             for option in options:
-                option_name = option
-                if option in KEYWORDS:
-                    option_name += "_"
-
+                option_name = option.upper()
                 yield f"{option_name} = {repr(option)}"
 
             yield from self.gen_class_extensions(type)
@@ -281,20 +278,20 @@ class ModuleBuildEnv:
         yield from self.gen_wrap_type(type)
 
     scalar_name_mappings = {
-        PrimitiveType.bool: 'bool',
-        PrimitiveType.int64: 'int',
-        PrimitiveType.int53: 'int',
-        PrimitiveType.string: 'str',
-        PrimitiveType.double: 'float',
-        PrimitiveType.any: '_Any',
+        PrimitiveType.BOOL: 'bool',
+        PrimitiveType.INT64: 'int',
+        PrimitiveType.INT53: 'int',
+        PrimitiveType.STRING: 'str',
+        PrimitiveType.DOUBLE: 'float',
+        PrimitiveType.ANY: '_Any',
     }
 
     def display_type(self, type_struct: TypeStructExt):
-        if type_struct.struct_kind == StructKind.Scalar:
+        if type_struct.struct_kind == StructKind.SCALAR:
             return self.display_scalar_type(type_struct)
-        elif type_struct.struct_kind == StructKind.Map:
+        elif type_struct.struct_kind == StructKind.MAP:
             return f"_Map[{self.display_scalar_type(type_struct)}]"
-        elif type_struct.struct_kind == StructKind.Repeated:
+        elif type_struct.struct_kind == StructKind.REPEATED:
             return f"_List[{self.display_scalar_type(type_struct)}]"
 
     def display_scalar_type(self, type_struct: TypeStructExt):

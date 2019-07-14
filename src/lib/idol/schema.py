@@ -20,9 +20,9 @@ __all__ = [
 
 
 class StructKind(_Enum):
-    Map = 'Map'
-    Repeated = 'Repeated'
-    Scalar = 'Scalar'
+    MAP = 'Map'
+    REPEATED = 'Repeated'
+    SCALAR = 'Scalar'
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
@@ -30,12 +30,12 @@ class StructKind(_Enum):
 
 
 class PrimitiveType(_Enum):
-    any = 'any'
-    bool = 'bool'
-    double = 'double'
-    int53 = 'int53'
-    int64 = 'int64'
-    string = 'string'
+    ANY = 'any'
+    BOOL = 'bool'
+    DOUBLE = 'double'
+    INT53 = 'int53'
+    INT64 = 'int64'
+    STRING = 'string'
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.

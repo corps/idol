@@ -24,6 +24,7 @@ models: $(MODELS)
 
 test: target/debug/idol target/debug/idol_rs models
 	cargo test
+	export PATH="$(dirname $(type -p python3.6)):$PATH"
 	make -C test
 
 .PHONY: models dev test release
