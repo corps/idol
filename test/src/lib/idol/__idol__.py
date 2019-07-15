@@ -1,8 +1,92 @@
 from typing import TypeVar, MutableSequence, Optional, MutableMapping, Generic, Any, Iterable, \
     Tuple, Union
 from enum import Enum as enumEnum
+import sys
+
+NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
+if NEW_TYPING:
+    import collections.abc
+    from typing import (
+        Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias
+    )
+else:
+    from typing import (
+        Callable, CallableMeta, Union, _Union, TupleMeta, TypeVar,
+        _ClassVar, GenericMeta,
+    )
 
 T = TypeVar('T')
+
+
+def _gorg(cls):
+    assert isinstance(cls, GenericMeta)
+    if hasattr(cls, '_gorg'):
+        return cls._gorg
+    while cls.__origin__ is not None:
+        cls = cls.__origin__
+    return cls
+
+
+def is_union_type(tp):
+    if NEW_TYPING:
+        return (tp is Union or
+                isinstance(tp, _GenericAlias) and tp.__origin__ is Union)
+    return type(tp) is _Union
+
+
+def get_origin(tp):
+    if NEW_TYPING:
+        if isinstance(tp, _GenericAlias):
+            return tp.__origin__ if tp.__origin__ is not ClassVar else None
+        if tp is Generic:
+            return Generic
+        return None
+    if isinstance(tp, GenericMeta):
+        return _gorg(tp)
+    if is_union_type(tp):
+        return Union
+
+    return None
+
+
+def _eval_args(args):
+    res = []
+    for arg in args:
+        if not isinstance(arg, tuple):
+            res.append(arg)
+        else:
+            res.append(type(arg[0]).__getitem__(arg[0], _eval_args(arg[1:])))
+    return tuple(res)
+
+
+def is_generic_type(tp):
+    if NEW_TYPING:
+        return (isinstance(tp, type) and issubclass(tp, Generic) or
+                isinstance(tp, _GenericAlias) and
+                tp.__origin__ not in (Union, tuple))
+    return (isinstance(tp, GenericMeta) and not
+    isinstance(tp, (CallableMeta, TupleMeta)))
+
+
+def is_tuple_type(tp):
+    if NEW_TYPING:
+        return (tp is Tuple or isinstance(tp, _GenericAlias) and
+                tp.__origin__ is tuple or
+                isinstance(tp, type) and issubclass(tp, Generic) and
+                issubclass(tp, tuple))
+    return type(tp) is TupleMeta
+
+
+def get_args(tp):
+    if NEW_TYPING:
+        if isinstance(tp, _GenericAlias):
+            return tp.__args__
+        return ()
+    if is_generic_type(tp) or is_union_type(tp) or is_tuple_type(tp):
+        tree = tp._subs_tree()
+        if isinstance(tree, tuple) and len(tree) > 1:
+            return _eval_args(tree[1:])
+    return ()
 
 
 def with_metaclass(meta, *bases):
@@ -21,10 +105,10 @@ def wrap_value(expected_type, value):
     if expected_type in (Any, Optional, Union):
         return value
 
-    origin = getattr(expected_type, '__origin__', None)
+    origin = get_origin(expected_type)
 
-    if origin is Union:
-        args = expected_type.__args__
+    if is_union_type(expected_type):
+        args = get_args(expected_type)
         if len(args) != 2 or args[1] != type(None):
             raise TypeError("Only Optional is supported, other Unions are not")
 
@@ -142,11 +226,13 @@ def validate_primitive(cls, json, path=[], concrete_cls=None):
         if not isinstance(json, bool):
             raise TypeError(f"{'.'.join(path)} Expected a bool, found {type(json)}")
 
+
 def inner_kind(cls):
     if cls.is_container():
-        kcls = cls
-        while not hasattr(cls, '__args__'):
+        args = get_args(cls)
+        while not args:
             cls = cls.__orig_bases__[0]
+            args = get_args(cls)
         result = cls.__args__[0]
         if type(result) is TypeVar:
             raise TypeError("Logic bug!  inner kind was a TypeVar instead of a concrete type")
@@ -171,7 +257,6 @@ class Literal(WrapsValue, Generic[T]):
     def __new__(cls, *args) -> T:
         return cls.literal
 
-
     @classmethod
     def validate(cls, json, path=[], concrete_cls=None):
         if concrete_cls:
@@ -180,7 +265,6 @@ class Literal(WrapsValue, Generic[T]):
         if json != cls.literal:
             raise ValueError(f"{'.'.join(path)} Expected to find literal {cls.literal}")
 
-
     @classmethod
     def expand(cls, json, concrete_cls=None):
         if concrete_cls:
@@ -188,7 +272,6 @@ class Literal(WrapsValue, Generic[T]):
 
         metadata = cls.__metadata__
         json = get_list_scalar(json)
-
 
         if json is None or type(json) is type(cls.literal):
             json = cls.literal
@@ -199,7 +282,6 @@ class Literal(WrapsValue, Generic[T]):
 class Enum(WrapsValue, enumEnum):
     def unwrap(self):
         return self.value
-
 
     @classmethod
     def validate(cls, json, path=[], concrete_cls=None):
@@ -219,7 +301,6 @@ class Enum(WrapsValue, enumEnum):
             cls(json)
         except ValueError:
             raise ValueError(f"{'.'.join(path)} Value does not match enum type {cls}")
-
 
     @classmethod
     def expand(cls, json, concrete_cls=None):
@@ -243,7 +324,6 @@ class List(Generic[T], MutableSequence[T], WrapsValue):
     def is_container(cls):
         return True
 
-
     @classmethod
     def validate(cls, json, path=[], concrete_cls=None):
         """
@@ -266,7 +346,6 @@ class List(Generic[T], MutableSequence[T], WrapsValue):
         for i, val in enumerate(json):
             validate(inner_kind(cls), val, path + [str(i)])
 
-
     @classmethod
     def expand(cls, json, concrete_cls=None):
         """
@@ -278,7 +357,7 @@ class List(Generic[T], MutableSequence[T], WrapsValue):
         metadata = getattr(cls, '__metadata__', dict(tags=[]))
 
         if json is None:
-            json = [] 
+            json = []
 
         if not isinstance(json, list):
             json = [json]
@@ -319,7 +398,6 @@ class Map(Generic[T], MutableMapping[str, T], WrapsValue):
     def is_container(cls):
         return True
 
-
     @classmethod
     def validate(cls, json, path=[], concrete_cls=None):
         """
@@ -336,7 +414,6 @@ class Map(Generic[T], MutableMapping[str, T], WrapsValue):
         for key, field in json.items():
             val = json.get(key, None)
             validate(inner_kind(cls), val, path + [key])
-
 
     @classmethod
     def expand(cls, json, concrete_cls=None):
@@ -359,7 +436,6 @@ class Map(Generic[T], MutableMapping[str, T], WrapsValue):
             json[key] = expand(inner_kind(cls), val)
 
         return json
-
 
     def __setitem__(self, k: str, v: T):
         self.orig_map.__setitem__(k, unwrap_value(v))
@@ -512,6 +588,7 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
                 json[field_name] = expand(cls.__annotations__[annotation_name], val)
 
         return json
+
 
 KEYWORDS = {
     'False',
