@@ -2,12 +2,27 @@
 tags = ["tag-a", "tag-b"]
 fields.a = "int53"
 
+[Literal1]
+is_a = "literal:int53:1"
+
+[LiteralHello]
+is_a = "literal:string:hello"
+
+[LiteralThreeO]
+is_a = "literal:double:3.0"
+
+[LiteralTrue]
+is_a = "literal:bool:true"
+
+[LiteralFive]
+is_a = "literal:int64:5"
+
 [TestLiteralStruct.fields]
-one = "literal:int53:1"
-two = "literal:string:hello"
-three = "literal:double:3.0"
-four = "literal:bool:true"
-five = ["literal:int64:5", "optional"]
+one = "Literal1"
+two = "LiteralHello"
+three = "LiteralThreeO"
+four = "LiteralTrue"
+five = ["LiteralFive", "optional"]
 
 [TestLiteralTop]
 is_a = "literal:string:mooo"

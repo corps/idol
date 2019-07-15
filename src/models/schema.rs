@@ -160,6 +160,20 @@ pub struct Reference {
 
 impl idol::ExpandsJson for Reference {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match Reference::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
     if !value.is_object() {
       return Some(serde_json::value::to_value(Reference::default()).unwrap());
     }
@@ -213,6 +227,20 @@ pub struct TypeStruct {
 
 impl idol::ExpandsJson for TypeStruct {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match TypeStruct::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
     if !value.is_object() {
       return Some(serde_json::value::to_value(TypeStruct::default()).unwrap());
     }
@@ -301,6 +329,20 @@ pub struct Field {
 
 impl idol::ExpandsJson for Field {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match Field::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
     if !value.is_object() {
       return Some(serde_json::value::to_value(Field::default()).unwrap());
     }
@@ -350,6 +392,20 @@ pub struct Type {
 
 impl idol::ExpandsJson for Type {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match Type::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
     if !value.is_object() {
       return Some(serde_json::value::to_value(Type::default()).unwrap());
     }
@@ -415,6 +471,20 @@ pub struct Dependency {
 
 impl idol::ExpandsJson for Dependency {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match Dependency::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
     if !value.is_object() {
       return Some(serde_json::value::to_value(Dependency::default()).unwrap());
     }
@@ -469,6 +539,20 @@ pub struct Module {
 
 impl idol::ExpandsJson for Module {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match Module::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
     if !value.is_object() {
       return Some(serde_json::value::to_value(Module::default()).unwrap());
     }

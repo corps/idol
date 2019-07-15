@@ -14,6 +14,7 @@ pub enum FieldDecError {
     InvalidParameter(String),
     UnspecifiedType,
     LiteralAnyError,
+    LiteralInStructError,
 }
 
 #[derive(Debug, PartialEq)]
@@ -106,7 +107,8 @@ impl Display for FieldDecError {
             FieldDecError::LiteralAnyError => write!(f, "literal field cannot be 'any' type"),
             FieldDecError::InvalidParameter(s) => {
                 write!(f, "field includes an invalid type parameter: {}", s)
-            }
+            },
+            FieldDecError::LiteralInStructError => write!(f, "literals in fields must be wrapped in a type alias.  Use is_a and create a new type to wrap the literal.")
         })
     }
 }
@@ -529,9 +531,17 @@ impl<'a> TypeResolver<'a> {
                     FieldDecError::UnspecifiedType,
                 ));
             }
+
             let type_struct = self
                 .type_struct_of_dec(&field_dec.0[0])
                 .map_err(|e| TypeDecError::FieldError(field_name.to_owned(), e))?;
+
+            if type_struct.is_literal {
+                return Err(TypeDecError::FieldError(
+                    field_name.to_owned(),
+                    FieldDecError::LiteralInStructError,
+                ));
+            }
 
             result.fields.insert(
                 field_name.to_owned(),
@@ -921,6 +931,30 @@ mod tests {
             Err(ProcessingError::ModuleError(
                 "my_module2".to_string(),
                 ModuleError::BadTypeNameError("my_model".to_string())
+            ))
+        )
+    }
+
+    #[test]
+    fn test_literal_struct_restrictions() {
+        let mut registry = SchemaRegistry::new();
+
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            fields: map! { "a".to_string() => FieldDec(vec!["literal:string:1[]".to_owned()]) },
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("A".to_owned(), type_dec);
+        let result = registry.process_module("a".to_owned(), &module_dec);
+
+        assert_eq!(
+            result,
+            Err(ProcessingError::ModuleError(
+                "a".to_string(),
+                ModuleError::TypeDecError(
+                    "A".to_string(),
+                    TypeDecError::FieldError("a".to_owned(), FieldDecError::LiteralInStructError)
+                )
             ))
         )
     }

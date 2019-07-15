@@ -264,6 +264,8 @@ impl<'a> ModuleBuildEnv<'a> {
     self
       .start_block("fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value>")?;
 
+    self.gen_get_scalar(&t.type_name)?;
+    self.write_nl()?;
     self.start_block(format!("if !value.is_object()"))?;
     self.write(format!(
       "return Some(serde_json::value::to_value({}::default()).unwrap());",
@@ -350,24 +352,14 @@ impl<'a> ModuleBuildEnv<'a> {
     Ok(())
   }
 
-  fn gen_get_scalar(&mut self, type_root: String) -> BResult {
-    // match get_list_scalar(value) {
-    //   Some(mut v) => {
-    //     return match i53::expand_json(&mut v) {
-    //       Some(v_) => Some(v_),
-    //       None => Some(v),
-    //     };
-    //   }
-    //   None => (),
-    // };
-
+  fn gen_get_scalar(&mut self, type_root: &String) -> BResult {
     self.write_nl()?;
     self.start_block("match idol::get_list_scalar(value)".to_string())?;
     self.start_block("Some(mut v) =>".to_string())?;
     self.start_block(format!("return match {}::expand_json(&mut v)", type_root))?;
     self.write("Some(v_) => Some(v_),".to_string())?;
     self.write("None => Some(v),".to_string())?;
-    self.end_block();
+    self.end_block()?;
     self.write(";".to_string())?;
     self.end_block()?;
     self.write("None => (),".to_string())?;
@@ -391,11 +383,13 @@ impl<'a> ModuleBuildEnv<'a> {
     self.write_nl()?;
     self.start_block(format!("impl Default for {}", t.type_name))?;
     self.start_block(format!("fn default() -> {}", t.type_name))?;
-    self.write(format!(
-      "{}(({}).to_owned())",
-      t.type_name,
-      type_struct.literal_value()
-    ))?;
+
+    let literal_wrapper = type_struct.literal_value();
+    if type_struct.primitive_type == PrimitiveType::int53 {
+      literal_wrapper = format!()
+    }
+
+    self.write(format!("{}(({}).to_owned())", t.type_name, literal_wrapper))?;
     self.end_block()?;
     self.end_block()?;
 
@@ -404,7 +398,7 @@ impl<'a> ModuleBuildEnv<'a> {
     self
       .start_block("fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value>")?;
     self.gen_get_scalar(
-      type_struct.display_type_root(&self.build_env.root_rust_module, &self.idol_module_name),
+      &type_struct.display_type_root(&self.build_env.root_rust_module, &self.idol_module_name),
     )?;
 
     match type_struct.primitive_type {
@@ -596,7 +590,7 @@ impl<'a> ModuleBuildEnv<'a> {
     self.start_block(format!("impl idol::ExpandsJson for {}", t.type_name))?;
     self
       .start_block("fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value>")?;
-    self.gen_get_scalar(t.type_name.clone())?;
+    self.gen_get_scalar(&t.type_name)?;
     self.start_block("if value.is_null()")?;
     self.write(format!(
       "return serde_json::to_value({}::default()).ok();",

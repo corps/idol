@@ -56,6 +56,20 @@ pub struct TypeDec {
 
 impl idol::ExpandsJson for TypeDec {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match TypeDec::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
     if !value.is_object() {
       return Some(serde_json::value::to_value(TypeDec::default()).unwrap());
     }

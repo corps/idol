@@ -71,66 +71,6 @@ impl idol::ValidatesJson for TestEnum {
   }
 }
 
-#[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
-pub struct TestLiteralStruct {
-  pub r#five: Option<i64>,
-  pub r#four: bool,
-  pub r#one: idol::i53,
-  pub r#three: f64,
-  pub r#two: String,
-}
-
-impl idol::ExpandsJson for TestLiteralStruct {
-  fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
-    if !value.is_object() {
-      return Some(serde_json::value::to_value(TestLiteralStruct::default()).unwrap());
-    }
-
-    match Option::<i64>::expand_json(&mut value["five"]) {
-      Some(v) => value["five"] = v,
-      None => (),
-    }
-
-    match bool::expand_json(&mut value["four"]) {
-      Some(v) => value["four"] = v,
-      None => (),
-    }
-
-    match idol::i53::expand_json(&mut value["one"]) {
-      Some(v) => value["one"] = v,
-      None => (),
-    }
-
-    match f64::expand_json(&mut value["three"]) {
-      Some(v) => value["three"] = v,
-      None => (),
-    }
-
-    match String::expand_json(&mut value["two"]) {
-      Some(v) => value["two"] = v,
-      None => (),
-    }
-
-    None
-  }
-}
-
-impl idol::ValidatesJson for TestLiteralStruct {
-  fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
-    if !value.is_object() {
-      return Err(idol::ValidationError(format!("expected an object but found {}", value)));
-    }
-
-    Option::<i64>::validate_json(&value["five"]).map_err(|e| idol::ValidationError(format!("field five: {}", e)))?;
-    bool::validate_json(&value["four"]).map_err(|e| idol::ValidationError(format!("field four: {}", e)))?;
-    idol::i53::validate_json(&value["one"]).map_err(|e| idol::ValidationError(format!("field one: {}", e)))?;
-    f64::validate_json(&value["three"]).map_err(|e| idol::ValidationError(format!("field three: {}", e)))?;
-    String::validate_json(&value["two"]).map_err(|e| idol::ValidationError(format!("field two: {}", e)))?;
-
-    Ok(())
-  }
-}
-
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
 pub struct TestLiteralTop(String);
 
@@ -186,6 +126,20 @@ pub struct TestOptionalField {
 
 impl idol::ExpandsJson for TestOptionalField {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match TestOptionalField::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
     if !value.is_object() {
       return Some(serde_json::value::to_value(TestOptionalField::default()).unwrap());
     }
@@ -218,6 +172,20 @@ pub struct TestTagsStruct {
 
 impl idol::ExpandsJson for TestTagsStruct {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match TestTagsStruct::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
     if !value.is_object() {
       return Some(serde_json::value::to_value(TestTagsStruct::default()).unwrap());
     }
@@ -252,6 +220,20 @@ pub struct TestStructInner {
 
 impl idol::ExpandsJson for TestStructInner {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match TestStructInner::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
     if !value.is_object() {
       return Some(serde_json::value::to_value(TestStructInner::default()).unwrap());
     }
@@ -298,6 +280,20 @@ pub struct TestStruct {
 
 impl idol::ExpandsJson for TestStruct {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match TestStruct::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
     if !value.is_object() {
       return Some(serde_json::value::to_value(TestStruct::default()).unwrap());
     }
@@ -407,6 +403,320 @@ impl idol::ValidatesJson for TestMap {
   }
 }
 
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
+pub struct LiteralHello(String);
+
+impl LiteralHello {
+  pub fn val(&self) -> String {
+    self.0.to_owned()
+  }
+}
+
+impl Default for LiteralHello {
+  fn default() -> LiteralHello {
+    LiteralHello(("hello").to_owned())
+  }
+}
+
+impl idol::ExpandsJson for LiteralHello {
+  fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match String::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+    if value.is_null() || value.is_string() {
+      Some(serde_json::Value::from("hello"))
+    } else {
+      None
+    }
+  }
+}
+
+impl idol::ValidatesJson for LiteralHello {
+  fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
+    if &serde_json::Value::from("hello") == value {
+      Ok(())
+    } else {
+      Err(idol::ValidationError(format!("expected literal {} but found {}", "hello", value)))
+    }
+  }
+}
+
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
+pub struct LiteralThreeO(f64);
+
+impl LiteralThreeO {
+  pub fn val(&self) -> f64 {
+    self.0.to_owned()
+  }
+}
+
+impl Default for LiteralThreeO {
+  fn default() -> LiteralThreeO {
+    LiteralThreeO((3.0).to_owned())
+  }
+}
+
+impl idol::ExpandsJson for LiteralThreeO {
+  fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match f64::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+    if value.is_null() || value.is_boolean() {
+      Some(serde_json::Value::from(3.0))
+    } else {
+      None
+    }
+  }
+}
+
+impl idol::ValidatesJson for LiteralThreeO {
+  fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
+    if &serde_json::Value::from(3.0) == value {
+      Ok(())
+    } else {
+      Err(idol::ValidationError(format!("expected literal {} but found {}", 3.0, value)))
+    }
+  }
+}
+
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
+pub struct Literal1(idol::i53);
+
+impl Literal1 {
+  pub fn val(&self) -> idol::i53 {
+    self.0.to_owned()
+  }
+}
+
+impl Default for Literal1 {
+  fn default() -> Literal1 {
+    Literal1((1).to_owned())
+  }
+}
+
+impl idol::ExpandsJson for Literal1 {
+  fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match idol::i53::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+    if value.is_null() || value.is_i64() {
+      Some(serde_json::Value::from(1))
+    } else {
+      None
+    }
+  }
+}
+
+impl idol::ValidatesJson for Literal1 {
+  fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
+    if &serde_json::Value::from(1) == value {
+      Ok(())
+    } else {
+      Err(idol::ValidationError(format!("expected literal {} but found {}", 1, value)))
+    }
+  }
+}
+
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
+pub struct LiteralTrue(bool);
+
+impl LiteralTrue {
+  pub fn val(&self) -> bool {
+    self.0.to_owned()
+  }
+}
+
+impl Default for LiteralTrue {
+  fn default() -> LiteralTrue {
+    LiteralTrue((true).to_owned())
+  }
+}
+
+impl idol::ExpandsJson for LiteralTrue {
+  fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match bool::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+    if value.is_null() || value.is_boolean() {
+      Some(serde_json::Value::from(true))
+    } else {
+      None
+    }
+  }
+}
+
+impl idol::ValidatesJson for LiteralTrue {
+  fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
+    if &serde_json::Value::from(true) == value {
+      Ok(())
+    } else {
+      Err(idol::ValidationError(format!("expected literal {} but found {}", true, value)))
+    }
+  }
+}
+
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
+pub struct LiteralFive(i64);
+
+impl LiteralFive {
+  pub fn val(&self) -> i64 {
+    self.0.to_owned()
+  }
+}
+
+impl Default for LiteralFive {
+  fn default() -> LiteralFive {
+    LiteralFive((5).to_owned())
+  }
+}
+
+impl idol::ExpandsJson for LiteralFive {
+  fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match i64::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+    if value.is_null() || value.is_i64() {
+      Some(serde_json::Value::from(5))
+    } else {
+      None
+    }
+  }
+}
+
+impl idol::ValidatesJson for LiteralFive {
+  fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
+    if &serde_json::Value::from(5) == value {
+      Ok(())
+    } else {
+      Err(idol::ValidationError(format!("expected literal {} but found {}", 5, value)))
+    }
+  }
+}
+
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
+pub struct TestLiteralStruct {
+  pub r#five: Option<LiteralFive>,
+  pub r#four: LiteralTrue,
+  pub r#one: Literal1,
+  pub r#three: LiteralThreeO,
+  pub r#two: LiteralHello,
+}
+
+impl idol::ExpandsJson for TestLiteralStruct {
+  fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match TestLiteralStruct::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
+    if !value.is_object() {
+      return Some(serde_json::value::to_value(TestLiteralStruct::default()).unwrap());
+    }
+
+    match Option::<LiteralFive>::expand_json(&mut value["five"]) {
+      Some(v) => value["five"] = v,
+      None => (),
+    }
+
+    match LiteralTrue::expand_json(&mut value["four"]) {
+      Some(v) => value["four"] = v,
+      None => (),
+    }
+
+    match Literal1::expand_json(&mut value["one"]) {
+      Some(v) => value["one"] = v,
+      None => (),
+    }
+
+    match LiteralThreeO::expand_json(&mut value["three"]) {
+      Some(v) => value["three"] = v,
+      None => (),
+    }
+
+    match LiteralHello::expand_json(&mut value["two"]) {
+      Some(v) => value["two"] = v,
+      None => (),
+    }
+
+    None
+  }
+}
+
+impl idol::ValidatesJson for TestLiteralStruct {
+  fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
+    if !value.is_object() {
+      return Err(idol::ValidationError(format!("expected an object but found {}", value)));
+    }
+
+    Option::<LiteralFive>::validate_json(&value["five"]).map_err(|e| idol::ValidationError(format!("field five: {}", e)))?;
+    LiteralTrue::validate_json(&value["four"]).map_err(|e| idol::ValidationError(format!("field four: {}", e)))?;
+    Literal1::validate_json(&value["one"]).map_err(|e| idol::ValidationError(format!("field one: {}", e)))?;
+    LiteralThreeO::validate_json(&value["three"]).map_err(|e| idol::ValidationError(format!("field three: {}", e)))?;
+    LiteralHello::validate_json(&value["two"]).map_err(|e| idol::ValidationError(format!("field two: {}", e)))?;
+
+    Ok(())
+  }
+}
+
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
 pub struct TestListOfListStruct {
   pub r#list_of_list: Vec<TestAtleastOne>,
@@ -414,6 +724,20 @@ pub struct TestListOfListStruct {
 
 impl idol::ExpandsJson for TestListOfListStruct {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match TestListOfListStruct::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
     if !value.is_object() {
       return Some(serde_json::value::to_value(TestListOfListStruct::default()).unwrap());
     }

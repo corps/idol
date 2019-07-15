@@ -13,6 +13,20 @@ pub struct TripletOfSideImport2 {
 
 impl idol::ExpandsJson for TripletOfSideImport2 {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match TripletOfSideImport2::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
     if !value.is_object() {
       return Some(serde_json::value::to_value(TripletOfSideImport2::default()).unwrap());
     }
@@ -115,6 +129,20 @@ pub struct Assembled {
 
 impl idol::ExpandsJson for Assembled {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match Assembled::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
     if !value.is_object() {
       return Some(serde_json::value::to_value(Assembled::default()).unwrap());
     }

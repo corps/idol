@@ -9,7 +9,6 @@ import idol.tests.basic
 
 __all__ = [
     "TestEnum",
-    "TestLiteralStruct",
     "TestLiteralTop",
     "TestOptionalField",
     "TestTagsStruct",
@@ -18,6 +17,12 @@ __all__ = [
     "TestKind",
     "TestAtleastOne",
     "TestMap",
+    "LiteralHello",
+    "LiteralThreeO",
+    "Literal1",
+    "LiteralTrue",
+    "LiteralFive",
+    "TestLiteralStruct",
     "TestListOfListStruct",
 ]
 
@@ -30,18 +35,6 @@ class TestEnum(_Enum):
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
     __metadata__ = json.loads('{"fields": {}, "is_a": null, "options": ["a", "b", "c"], "tags": [], "type_name": "TestEnum", "type_vars": []}')
-
-
-class TestLiteralStruct(_Struct):
-    five: _Optional[int]
-    four: bool
-    one: int
-    three: float
-    two: str
-    
-    # Required to ensure stable ordering.  str() on python dicts is unstable,
-    # but the json.dumps is stable.
-    __metadata__ = json.loads('{"fields": {"five": {"field_name": "five", "tags": ["optional"], "type_struct": {"is_literal": true, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 5, "literal_string": "", "parameters": [], "primitive_type": "int64", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "four": {"field_name": "four", "tags": [], "type_struct": {"is_literal": true, "literal_bool": true, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "bool", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "one": {"field_name": "one", "tags": [], "type_struct": {"is_literal": true, "literal_bool": false, "literal_double": 0.0, "literal_int53": 1, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "three": {"field_name": "three", "tags": [], "type_struct": {"is_literal": true, "literal_bool": false, "literal_double": 3.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "double", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "two": {"field_name": "two", "tags": [], "type_struct": {"is_literal": true, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "hello", "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}}, "is_a": null, "options": [], "tags": [], "type_name": "TestLiteralStruct", "type_vars": []}')
 
 
 class TestLiteralTop(_Literal[str]):
@@ -104,6 +97,63 @@ TestAtleastOne.__metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": 
 TestMap = _Map[TestAtleastOne]
 locals()["TestMap"] = types.new_class("TestMap", (locals()["TestMap"],))
 TestMap.__metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestAtleastOne", "type_name": "TestAtleastOne"}, "struct_kind": "Map"}, "options": [], "tags": [], "type_name": "TestMap", "type_vars": []}')
+
+
+class LiteralHello(_Literal[str]):
+    literal: str = 'hello'
+    
+    
+    # Required to ensure stable ordering.  str() on python dicts is unstable,
+    # but the json.dumps is stable.
+    __metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": true, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "hello", "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "options": [], "tags": [], "type_name": "LiteralHello", "type_vars": []}')
+
+
+class LiteralThreeO(_Literal[float]):
+    literal: float = 3.0
+    
+    
+    # Required to ensure stable ordering.  str() on python dicts is unstable,
+    # but the json.dumps is stable.
+    __metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": true, "literal_bool": false, "literal_double": 3.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "double", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "options": [], "tags": [], "type_name": "LiteralThreeO", "type_vars": []}')
+
+
+class Literal1(_Literal[int]):
+    literal: int = 1
+    
+    
+    # Required to ensure stable ordering.  str() on python dicts is unstable,
+    # but the json.dumps is stable.
+    __metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": true, "literal_bool": false, "literal_double": 0.0, "literal_int53": 1, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "options": [], "tags": [], "type_name": "Literal1", "type_vars": []}')
+
+
+class LiteralTrue(_Literal[bool]):
+    literal: bool = True
+    
+    
+    # Required to ensure stable ordering.  str() on python dicts is unstable,
+    # but the json.dumps is stable.
+    __metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": true, "literal_bool": true, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "bool", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "options": [], "tags": [], "type_name": "LiteralTrue", "type_vars": []}')
+
+
+class LiteralFive(_Literal[int]):
+    literal: int = 5
+    
+    
+    # Required to ensure stable ordering.  str() on python dicts is unstable,
+    # but the json.dumps is stable.
+    __metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": true, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 5, "literal_string": "", "parameters": [], "primitive_type": "int64", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "options": [], "tags": [], "type_name": "LiteralFive", "type_vars": []}')
+
+
+class TestLiteralStruct(_Struct):
+    five: _Optional[LiteralFive]
+    four: LiteralTrue
+    one: Literal1
+    three: LiteralThreeO
+    two: LiteralHello
+    
+    # Required to ensure stable ordering.  str() on python dicts is unstable,
+    # but the json.dumps is stable.
+    __metadata__ = json.loads('{"fields": {"five": {"field_name": "five", "tags": ["optional"], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralFive", "type_name": "LiteralFive"}, "struct_kind": "Scalar"}}, "four": {"field_name": "four", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralTrue", "type_name": "LiteralTrue"}, "struct_kind": "Scalar"}}, "one": {"field_name": "one", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.Literal1", "type_name": "Literal1"}, "struct_kind": "Scalar"}}, "three": {"field_name": "three", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralThreeO", "type_name": "LiteralThreeO"}, "struct_kind": "Scalar"}}, "two": {"field_name": "two", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralHello", "type_name": "LiteralHello"}, "struct_kind": "Scalar"}}}, "is_a": null, "options": [], "tags": [], "type_name": "TestLiteralStruct", "type_vars": []}')
 
 
 class TestListOfListStruct(_Struct):
