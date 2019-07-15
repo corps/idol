@@ -26,6 +26,7 @@ addons:
 script:
 - |
   set -e
+  export PATH="$PWD/test:$PATH"
   make test
   make release
 
