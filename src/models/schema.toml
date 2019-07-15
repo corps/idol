@@ -8,6 +8,7 @@ enum = ["int53", "int64", "double", "string", "bool", "any"]
 to = "Reference"
 from = "Reference"
 is_local = "bool"
+is_abstraction = "bool"
 
 [Reference.fields]
 qualified_name = "string"
@@ -20,12 +21,14 @@ fields = "Field{}"
 options = "string[]"
 type_name = "string"
 tags = "string[]"
+type_vars = "string[]"
 
 [Module.fields]
 module_name = "string"
 dependencies = "Dependency[]"
 types_by_name = "Type{}"
 types_dependency_ordering = "string[]"
+abstract_types_by_name = "Type{}"
 
 [TypeStruct.fields]
 struct_kind = "StructKind"
@@ -37,6 +40,7 @@ literal_int53 = "int53"
 literal_double = "double"
 literal_string = "string"
 literal_bool = "bool"
+parameters = "Reference[]"
 
 [Field.fields]
 field_name = "string"

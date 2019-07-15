@@ -8,6 +8,7 @@ in
 base.overrideAttrs (old: {
   shellHook = ''
     export PATH=$HOME/.cargo/bin:$PATH
+    export PATH=$PWD/test:$PATH
 
     type -p rustup || curl https://sh.rustup.rs -sSf | sh
     rustup toolchain add nightly
@@ -20,7 +21,7 @@ base.overrideAttrs (old: {
   '';
 
   buildInputs = old.buildInputs ++ (with pkgs; [
-    remarshal python3
+    remarshal python36
   ]);
 })
 

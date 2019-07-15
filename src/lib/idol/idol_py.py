@@ -4,7 +4,6 @@ import sys
 import os.path
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "lib")))
-print(sys.path)
 
 from idol.schema import *
 from idol.__idol__ import Map, Optional, KEYWORDS
@@ -39,15 +38,15 @@ class TypeStructExt(TypeStruct):
 
     @property
     def literal_value(self):
-        if self.primitive_type == PrimitiveType.bool:
+        if self.primitive_type == PrimitiveType.BOOL:
             return self.literal_bool
-        elif self.primitive_type == PrimitiveType.double:
+        elif self.primitive_type == PrimitiveType.DOUBLE:
             return self.literal_double
-        elif self.primitive_type == PrimitiveType.int53:
+        elif self.primitive_type == PrimitiveType.INT53:
             return self.literal_int53
-        elif self.primitive_type == PrimitiveType.int64:
+        elif self.primitive_type == PrimitiveType.INT64:
             return self.literal_int64
-        elif self.primitive_type == PrimitiveType.string:
+        elif self.primitive_type == PrimitiveType.STRING:
             return self.literal_string
 
 
@@ -136,10 +135,14 @@ class ModuleBuildEnv:
             "Optional",
             "Enum",
             "Any",
-            "Literal"
+            "Literal",
+            "expand_primitive",
+            "validate_primitive"
         ])
         yield f"from {self.root_python_module}.__idol__ import {joined_imports}"
         yield "import json"
+        yield "import types"
+        yield ""
 
         seen_modules = set()
         for dependency in module.dependencies:
@@ -170,14 +173,14 @@ class ModuleBuildEnv:
 
             if type.is_a:
                 type_struct = type.is_a
-                if type_struct.struct_kind == StructKind.Scalar:
+                if type_struct.struct_kind == StructKind.SCALAR:
                     if type_struct.is_literal:
                         yield from self.gen_literal_impl(module, type)
                     else:
                         yield from self.gen_scalar_impl(module, type)
-                elif type_struct.struct_kind == StructKind.Repeated:
+                elif type_struct.struct_kind == StructKind.REPEATED:
                     yield from self.gen_repeated_impl(module, type)
-                elif type_struct.struct_kind == StructKind.Map:
+                elif type_struct.struct_kind == StructKind.MAP:
                     yield from self.gen_map_impl(module, type)
             elif len(type.fields):
                 yield from self.gen_struct_impl(module, type)
@@ -201,16 +204,24 @@ class ModuleBuildEnv:
         as_path = "/".join(module_name.split("."))
         return f"{as_path}.py"
 
+    def metadata_as_pycode(self, type: TypeExt):
+        return f"json.loads({repr(json.dumps(type.unwrap(), sort_keys=True))})"
+
+    def gen_class_extensions(self, type: TypeExt):
+        yield ""
+        yield "# Required to ensure stable ordering.  str() on python dicts is unstable,"
+        yield "# but the json.dumps is stable."
+        yield f"__metadata__ = {self.metadata_as_pycode(type)}"
+
     def gen_enum_impl(self, module: Module, type: TypeExt):
         yield f"class {type.type_name}(_Enum):"
         with self.in_block():
             options = sorted(type.options)
             for option in options:
-                option_name = option
-                if option in KEYWORDS:
-                    option_name += "_"
-
+                option_name = option.upper()
                 yield f"{option_name} = {repr(option)}"
+
+            yield from self.gen_class_extensions(type)
 
     def gen_struct_impl(self, module: Module, type: TypeExt):
         yield f"class {type.type_name}(_Struct):"
@@ -221,51 +232,66 @@ class ModuleBuildEnv:
 
                 if field_name in KEYWORDS:
                     field_name += "_"
+                
+                field_type = self.display_type(field.type_struct)
+                if "optional" in field.tags:
+                    field_type = f"_Optional[{field_type}]"
 
-                yield f"{field_name}: {self.display_type(field.type_struct)}"
+                yield f"{field_name}: {field_type}"
 
-            yield ""
-            yield "# Required to ensure stable ordering.  str() on python dicts is unstable,"
-            yield "# but the json.dumps is stable."
-            yield f"__metadata__ = json.loads({repr(json.dumps(type.unwrap(), sort_keys=True))})"
+            yield from self.gen_class_extensions(type)
 
     def gen_literal_impl(self, module: Module, type: TypeExt):
         type_struct = type.is_a
         scalar_type = self.display_scalar_type(type_struct)
         yield f"class {type.type_name}(_Literal[{scalar_type}]):"
         with self.in_block():
-            yield f"literal: {scalar_type} = {json.dumps(type.is_a.literal_value)}"
+            yield f"literal: {scalar_type} = {repr(type.is_a.literal_value)}"
+            yield ""
+            yield from self.gen_class_extensions(type)
+
+    def gen_wrap_type(self, type: TypeExt):
+        type_name_as_str = json.dumps(type.type_name)
+        yield f"locals()[{type_name_as_str}] = types.new_class({type_name_as_str}, (locals()[{type_name_as_str}],))"
+        yield f"{type.type_name}.__metadata__ = {self.metadata_as_pycode(type)}"
 
     def gen_scalar_impl(self, module: Module, type: TypeExt):
         type_struct = type.is_a
         scalar_type = self.display_scalar_type(type_struct)
         yield f"{type.type_name} = {scalar_type}"
+        yield from self.gen_wrap_type(type)
+
+        if type_struct.is_primitive:
+            yield f"{type.type_name}.expand = classmethod(_expand_primitive)"
+            yield f"{type.type_name}.validate = classmethod(_validate_primitive)"
 
     def gen_repeated_impl(self, module: Module, type: TypeExt):
         type_struct = type.is_a
         scalar_type = self.display_scalar_type(type_struct)
         yield f"{type.type_name} = _List[{scalar_type}]"
+        yield from self.gen_wrap_type(type)
 
     def gen_map_impl(self, module: Module, type: TypeExt):
         type_struct = type.is_a
         scalar_type = self.display_scalar_type(type_struct)
         yield f"{type.type_name} = _Map[{scalar_type}]"
+        yield from self.gen_wrap_type(type)
 
     scalar_name_mappings = {
-        PrimitiveType.bool: 'bool',
-        PrimitiveType.int64: 'int',
-        PrimitiveType.int53: 'int',
-        PrimitiveType.string: 'str',
-        PrimitiveType.double: 'float',
-        PrimitiveType.any: '_Any',
+        PrimitiveType.BOOL: 'bool',
+        PrimitiveType.INT64: 'int',
+        PrimitiveType.INT53: 'int',
+        PrimitiveType.STRING: 'str',
+        PrimitiveType.DOUBLE: 'float',
+        PrimitiveType.ANY: '_Any',
     }
 
     def display_type(self, type_struct: TypeStructExt):
-        if type_struct.struct_kind == StructKind.Scalar:
+        if type_struct.struct_kind == StructKind.SCALAR:
             return self.display_scalar_type(type_struct)
-        elif type_struct.struct_kind == StructKind.Map:
+        elif type_struct.struct_kind == StructKind.MAP:
             return f"_Map[{self.display_scalar_type(type_struct)}]"
-        elif type_struct.struct_kind == StructKind.Repeated:
+        elif type_struct.struct_kind == StructKind.REPEATED:
             return f"_List[{self.display_scalar_type(type_struct)}]"
 
     def display_scalar_type(self, type_struct: TypeStructExt):
