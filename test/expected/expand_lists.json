@@ -15,11 +15,11 @@
     ]
   },
   "test_literal_struct": {
-    "five": 0,
-    "four": false,
-    "one": 0,
-    "three": 1.4,
-    "two": "two"
+    "five": null,
+    "four": true,
+    "one": 1,
+    "three": 3,
+    "two": "hello"
   },
   "test_literal_top": "mooo",
   "test_map": {},

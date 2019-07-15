@@ -27,8 +27,12 @@ impl idol::ExpandsJson for TripletOfSideImport2 {
     ;
 
 
-    if !value.is_object() {
+    if value.is_null() {
       return Some(serde_json::value::to_value(TripletOfSideImport2::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
     }
 
     match crate::models::tests::abs::three::SideImport2::expand_json(&mut value["a"]) {
@@ -143,8 +147,12 @@ impl idol::ExpandsJson for Assembled {
     ;
 
 
-    if !value.is_object() {
+    if value.is_null() {
       return Some(serde_json::value::to_value(Assembled::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
     }
 
     match crate::models::tests::basic::TestAtleastOne::expand_json(&mut value["test_atleast_one"]) {

@@ -70,8 +70,12 @@ impl idol::ExpandsJson for TypeDec {
     ;
 
 
-    if !value.is_object() {
+    if value.is_null() {
       return Some(serde_json::value::to_value(TypeDec::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
     }
 
     match Vec::<String>::expand_json(&mut value["enum"]) {

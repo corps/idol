@@ -174,8 +174,12 @@ impl idol::ExpandsJson for Reference {
     ;
 
 
-    if !value.is_object() {
+    if value.is_null() {
       return Some(serde_json::value::to_value(Reference::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
     }
 
     match String::expand_json(&mut value["module_name"]) {
@@ -241,8 +245,12 @@ impl idol::ExpandsJson for TypeStruct {
     ;
 
 
-    if !value.is_object() {
+    if value.is_null() {
       return Some(serde_json::value::to_value(TypeStruct::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
     }
 
     match bool::expand_json(&mut value["is_literal"]) {
@@ -343,8 +351,12 @@ impl idol::ExpandsJson for Field {
     ;
 
 
-    if !value.is_object() {
+    if value.is_null() {
       return Some(serde_json::value::to_value(Field::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
     }
 
     match String::expand_json(&mut value["field_name"]) {
@@ -406,8 +418,12 @@ impl idol::ExpandsJson for Type {
     ;
 
 
-    if !value.is_object() {
+    if value.is_null() {
       return Some(serde_json::value::to_value(Type::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
     }
 
     match HashMap::<String, Field>::expand_json(&mut value["fields"]) {
@@ -485,8 +501,12 @@ impl idol::ExpandsJson for Dependency {
     ;
 
 
-    if !value.is_object() {
+    if value.is_null() {
       return Some(serde_json::value::to_value(Dependency::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
     }
 
     match Reference::expand_json(&mut value["from"]) {
@@ -553,8 +573,12 @@ impl idol::ExpandsJson for Module {
     ;
 
 
-    if !value.is_object() {
+    if value.is_null() {
       return Some(serde_json::value::to_value(Module::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
     }
 
     match HashMap::<String, Type>::expand_json(&mut value["abstract_types_by_name"]) {

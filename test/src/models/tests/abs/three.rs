@@ -24,8 +24,12 @@ impl idol::ExpandsJson for SideImport2 {
     ;
 
 
-    if !value.is_object() {
+    if value.is_null() {
       return Some(serde_json::value::to_value(SideImport2::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
     }
 
     match idol::i53::expand_json(&mut value["side_import2"]) {

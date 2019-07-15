@@ -109,7 +109,7 @@ def expand_primitive(cls, json, concrete_cls=None):
     return json
 
 
-def validate_primitive(cls, json, path=[]):
+def validate_primitive(cls, json, path=[], concrete_cls=None):
     if concrete_cls:
         cls = concrete_cls
 
@@ -189,7 +189,8 @@ class Literal(WrapsValue, Generic[T]):
         metadata = cls.__metadata__
         json = get_list_scalar(json)
 
-        if json is None:
+
+        if json is None or type(json) is type(cls.literal):
             json = cls.literal
 
         return json
@@ -501,7 +502,12 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
                 annotation_name += '_'
 
             if optional:
-                json[field_name] = expand(cls.__annotations__[annotation_name].__args__[0], val)
+                if field['type_struct']['struct_kind'] != 'repeated':
+                    val = get_list_scalar(val)
+                if val is not None:
+                    expand(cls.__annotations__[annotation_name].__args__[0], val)
+
+                json[field_name] = val
             else:
                 json[field_name] = expand(cls.__annotations__[annotation_name], val)
 

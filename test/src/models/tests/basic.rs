@@ -91,7 +91,7 @@ impl idol::ExpandsJson for TestLiteralTop {
 
     match idol::get_list_scalar(value) {
       Some(mut v) => {
-        return match String::expand_json(&mut v) {
+        return match TestLiteralTop::expand_json(&mut v) {
           Some(v_) => Some(v_),
           None => Some(v),
         }
@@ -140,8 +140,12 @@ impl idol::ExpandsJson for TestOptionalField {
     ;
 
 
-    if !value.is_object() {
+    if value.is_null() {
       return Some(serde_json::value::to_value(TestOptionalField::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
     }
 
     match Option::<String>::expand_json(&mut value["optional"]) {
@@ -186,8 +190,12 @@ impl idol::ExpandsJson for TestTagsStruct {
     ;
 
 
-    if !value.is_object() {
+    if value.is_null() {
       return Some(serde_json::value::to_value(TestTagsStruct::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
     }
 
     match idol::i53::expand_json(&mut value["a"]) {
@@ -234,8 +242,12 @@ impl idol::ExpandsJson for TestStructInner {
     ;
 
 
-    if !value.is_object() {
+    if value.is_null() {
       return Some(serde_json::value::to_value(TestStructInner::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
     }
 
     match bool::expand_json(&mut value["d"]) {
@@ -294,8 +306,12 @@ impl idol::ExpandsJson for TestStruct {
     ;
 
 
-    if !value.is_object() {
+    if value.is_null() {
       return Some(serde_json::value::to_value(TestStruct::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
     }
 
     match String::expand_json(&mut value["a"]) {
@@ -423,7 +439,7 @@ impl idol::ExpandsJson for LiteralHello {
 
     match idol::get_list_scalar(value) {
       Some(mut v) => {
-        return match String::expand_json(&mut v) {
+        return match LiteralHello::expand_json(&mut v) {
           Some(v_) => Some(v_),
           None => Some(v),
         }
@@ -471,7 +487,7 @@ impl idol::ExpandsJson for LiteralThreeO {
 
     match idol::get_list_scalar(value) {
       Some(mut v) => {
-        return match f64::expand_json(&mut v) {
+        return match LiteralThreeO::expand_json(&mut v) {
           Some(v_) => Some(v_),
           None => Some(v),
         }
@@ -481,7 +497,7 @@ impl idol::ExpandsJson for LiteralThreeO {
     }
     ;
 
-    if value.is_null() || value.is_boolean() {
+    if value.is_null() || value.is_f64() {
       Some(serde_json::Value::from(3.0))
     } else {
       None
@@ -510,7 +526,7 @@ impl Literal1 {
 
 impl Default for Literal1 {
   fn default() -> Literal1 {
-    Literal1((1).to_owned())
+    Literal1((idol::i53(1)).to_owned())
   }
 }
 
@@ -519,7 +535,7 @@ impl idol::ExpandsJson for Literal1 {
 
     match idol::get_list_scalar(value) {
       Some(mut v) => {
-        return match idol::i53::expand_json(&mut v) {
+        return match Literal1::expand_json(&mut v) {
           Some(v_) => Some(v_),
           None => Some(v),
         }
@@ -567,7 +583,7 @@ impl idol::ExpandsJson for LiteralTrue {
 
     match idol::get_list_scalar(value) {
       Some(mut v) => {
-        return match bool::expand_json(&mut v) {
+        return match LiteralTrue::expand_json(&mut v) {
           Some(v_) => Some(v_),
           None => Some(v),
         }
@@ -615,7 +631,7 @@ impl idol::ExpandsJson for LiteralFive {
 
     match idol::get_list_scalar(value) {
       Some(mut v) => {
-        return match i64::expand_json(&mut v) {
+        return match LiteralFive::expand_json(&mut v) {
           Some(v_) => Some(v_),
           None => Some(v),
         }
@@ -668,8 +684,12 @@ impl idol::ExpandsJson for TestLiteralStruct {
     ;
 
 
-    if !value.is_object() {
+    if value.is_null() {
       return Some(serde_json::value::to_value(TestLiteralStruct::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
     }
 
     match Option::<LiteralFive>::expand_json(&mut value["five"]) {
@@ -738,8 +758,12 @@ impl idol::ExpandsJson for TestListOfListStruct {
     ;
 
 
-    if !value.is_object() {
+    if value.is_null() {
       return Some(serde_json::value::to_value(TestListOfListStruct::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
     }
 
     match Vec::<TestAtleastOne>::expand_json(&mut value["list_of_list"]) {

@@ -265,12 +265,18 @@ impl<'a> ModuleBuildEnv<'a> {
       .start_block("fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value>")?;
 
     self.gen_get_scalar(&t.type_name)?;
+
     self.write_nl()?;
-    self.start_block(format!("if !value.is_object()"))?;
+    self.start_block(format!("if value.is_null()"))?;
     self.write(format!(
       "return Some(serde_json::value::to_value({}::default()).unwrap());",
       t.type_name
     ))?;
+    self.end_block()?;
+
+    self.write_nl()?;
+    self.start_block(format!("if !value.is_object()"))?;
+    self.write("return None;")?;
     self.end_block()?;
 
     let mut field_names = t.fields.keys().cloned().collect::<Vec<String>>();
@@ -384,9 +390,9 @@ impl<'a> ModuleBuildEnv<'a> {
     self.start_block(format!("impl Default for {}", t.type_name))?;
     self.start_block(format!("fn default() -> {}", t.type_name))?;
 
-    let literal_wrapper = type_struct.literal_value();
+    let mut literal_wrapper = format!("{}", type_struct.literal_value());
     if type_struct.primitive_type == PrimitiveType::int53 {
-      literal_wrapper = format!()
+      literal_wrapper = format!("idol::i53({})", literal_wrapper);
     }
 
     self.write(format!("{}(({}).to_owned())", t.type_name, literal_wrapper))?;
@@ -397,17 +403,13 @@ impl<'a> ModuleBuildEnv<'a> {
     self.start_block(format!("impl idol::ExpandsJson for {}", t.type_name))?;
     self
       .start_block("fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value>")?;
-    self.gen_get_scalar(
-      &type_struct.display_type_root(&self.build_env.root_rust_module, &self.idol_module_name),
-    )?;
+    self.gen_get_scalar(&t.type_name)?;
 
     match type_struct.primitive_type {
       PrimitiveType::bool => {
         self.start_block(format!("if value.is_null() || value.is_boolean()"))?
       }
-      PrimitiveType::double => {
-        self.start_block(format!("if value.is_null() || value.is_boolean()"))?
-      }
+      PrimitiveType::double => self.start_block(format!("if value.is_null() || value.is_f64()"))?,
       PrimitiveType::int53 => self.start_block(format!("if value.is_null() || value.is_i64()"))?,
       PrimitiveType::int64 => self.start_block(format!("if value.is_null() || value.is_i64()"))?,
       PrimitiveType::string => {
@@ -804,7 +806,7 @@ impl FieldExt for Field {
   }
 }
 
-static indentions: [&str; 10] = [
+static indentions: [&str; 12] = [
   "",
   "  ",
   "    ",
@@ -815,6 +817,8 @@ static indentions: [&str; 10] = [
   "              ",
   "                ",
   "                  ",
+  "                    ",
+  "                      ",
 ];
 
 static root_mod_extras: &str = "

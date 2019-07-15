@@ -12,10 +12,10 @@
   },
   "test_literal_struct": {
     "five": null,
-    "four": false,
-    "one": 0,
-    "three": 0.0,
-    "two": ""
+    "four": true,
+    "one": 1,
+    "three": 3.0,
+    "two": "hello"
   },
   "test_literal_top": "mooo",
   "test_map": {},
