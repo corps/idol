@@ -4,19 +4,32 @@
 
 ---
 
-Create a json file, _or an executable that outputs json_, describing your model
+Create a toml file, or a json file, _or an executable that outputs json_ (if you prefer config as code), describing your model
 
 ```toml
-#! /usr/bin/env remarshal -if toml -of json
 [ModuleDec]
 is_a = "TypeDec{}"
 
 [FieldDec]
+# Fields can be defined as an array of strings, where the first entry is the logical
+# type of the field, and each additional string is a semantic 'tag' attached to the
+# field, which can be (optionally) used by codegen tools or the runtime to provide
+# additional behavior.
 is_a = "string[]"
 
 [TypeDec.fields]
+# Is exclusive with is_a and fields properties.  Specifies an enum type whose
+# resident values are the given string elements of this enum.
 enum = "string[]"
-is_a = "string"
+
+# Is exclusive with enum and fields properties.  Specifies a 'type alias' which will
+# code gen into a new type representing the given logical type.  ie: is_a = "string[]"
+# would create a new alias type for a string arrays.
+is_a = ["string", "optional"]
+
+# Is exlcusive with is_a and enum properties.
+# Defines fields in a a struct type, where each key is a field name and each entry is the type of that
+# field.
 fields = "FieldDec{}"
 tags = "string[]"
 ```
@@ -24,7 +37,7 @@ tags = "string[]"
 Run idol 
 
 ```bash
-idol src/models/declarations.toml
+idol src/models/declarations.toml > build.json
 ```
 
 Get a json output describing the schema of all modules, dependencies, and types
@@ -35,33 +48,70 @@ Get a json output describing the schema of all modules, dependencies, and types
 
 Run that output through a codegen tool for each target language.
 
-## But why?
+```bash
+cat build.json | idol_py.py --output src/generated/models --mod "project.generated.models"
+cat build.json | idol_rs --output src/generated --mod "mytomlproject.generated"
+```
 
-At numerous previous small companies, there comes a point when the amount of schema-less data, configuration, and apis becomes
-impossible for a small team to wrap their mind around alone, much less document and share as they continue to develop.
+You'll get auto generated classes / structs that look something like
 
-At this point, two related problems are considered:
-1.  How to document / validate data schemas
-2.  How to document / share service interfaces
+```python
+...
 
-Both of these problems are solved traditionally using an *I*nterface *D*ata *L*anguage.  But in practice,
-implementing such a tool at this stage is hard for startups I've worked with.
+class StructKind(_Enum):
+    MAP = 'Map'
+    REPEATED = 'Repeated'
+    SCALAR = 'Scalar'
 
-1.  Writing and keeping data models and interface definitions up to date between two or more (frontend / backend) languages is error prone and time costly.
-2.  Moving to *protobufs*, *flatbuffers*, or *Thrift* involves complex new tooling, and they are often _also concerned with a binary transport and other opinionated architecture decisions_.  The json fit is usually not strong, or the opinions of the IDL itself do not feet the languages the company wants to use in practice.
-3.  JSON Schema is both not well maintained, and also _extraordinarily complex_ involving JSON pointers, regexes, a huge list of types, and no one decisive tooling that covers the full spec.
+...
+class TypeStruct(_Struct):
+    is_literal: bool
+    literal_bool: bool
+    literal_double: float
+    literal_int53: int
+    literal_int64: int
+    literal_string: str
+    parameters: _List[Reference]
+    primitive_type: PrimitiveType
+    reference: Reference
+    struct_kind: StructKind
+    
+...
+```
 
-__idol__ then aims to solve these main criteria:
+And additional interfaces:
 
-1.  Easy to setup.  Install the `idol` binary and any other language specific generates from this repo, and copy the `Makefile` as a good starting place.  In fact, _idol itself is generated from idol_, so it's a great reference project for getting off the ground.
+### validate
+Validates a raw json payload matches the given schema (ignores extra fields by default).
 
-2.  Javascript minded out of the box.  Enough functionality to support, for instance, explicit distinction between i64 and i53 types (where only the later is guaranteed to fit in Javascript Number type)
+### expand
+"Expands" a raw json by providing default values for missing fields, and negotiating arrays and scalars by performing 
+packing or unpacking as necessary.
 
-3.  Easily extensible.  Use field and model tags to add metadata and build a service layer, or add slot ids and generate protobufs.  `idol` can start out doing one thing well, and easily grow into many other use cases, *while unifying your data language itself*.
+## Model Files
 
+Definition idol models is very simple.  In fact, the entire grammar of idol is captured as idol models itself, in the example given above.
+
+Type values that can be given to `TypeDec` include:
+
+1. `int53` a signed int type that should fit into 53 bits, and thus guaranteed to render correctly from a `JSON.parse` call in javascript.  Defaults to 0 from `expand`
+2.  `int64` a signed int type that can grow to fit 64 bits, and thus is not guaranteed to lose precision from a `JSON.parse` call in javascript.  In this case, frontends will need special logic to parsing the json payloads.  `idol` itself does not provide this special logic, which is implementation dependent, but the type information can inform clients.  Defaults to 0 from `expand`
+3.  `string` a string type.  Defaults to "" from `expand`
+4.  `double` a 64 bit precision float type, mapping directly to Javascript's Numeric type.  Defaults to 0.0 from `expand`.
+5.  `bool` a boolean type of true or false.  Defaults to false from `expand`
+
+Types can also be decorated with container types:
+
+1.  `int53[]` is a list of int53s.
+2.  `bool{}` is a map of string -> bool entries.
+
+Finally, tags can be used to provide additional typing / code gen information.  idol supports 2 by default.
+
+1.  `atleast_one`.  When included in TypeDec.tags for a list type, the resulting list will validate only if atleast one entry exists, and `expand` will prefill atleast one value.  This is to support a safe upgrade path from a scalar to a list type in an existing field.
+
+2.  `optional`.  When included in a FieldDec, the resulting field supports null as a default value.  Note: all fields are technically nullable in idol, however they will always be converted recursively into a default value when passed through `expand`.  When `optional` is added, the resulting codegen modifies that field's type to indicate the union with null explicitly, and the resulting `expand` will simply leave null values rather than change the into default values.
 
 ## Project Status
 
-The tooling itself is a work in progress. Currently a code generator for Rust exists which bootstraps idol directly.  Generators in other languages are to come.
-
-The declarative meta language, however, is so simple as to be declared stable.  You can begin defining models using `idol` and expect them to continue to be compatible for the next few years of development.
+Current support languages: python and rust.
+Target future languages: nodejs, graphql, ruby, flowjs, typescript.
