@@ -34,7 +34,7 @@ class TestEnum(_Enum):
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
-    __metadata__ = json.loads('{"fields": {}, "is_a": null, "options": ["a", "b", "c"], "tags": [], "type_name": "TestEnum", "type_vars": []}')
+    __metadata__ = json.loads('{"dependencies": [], "fields": {}, "is_a": null, "named": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestEnum", "type_name": "TestEnum"}, "options": ["a", "b", "c"], "tags": [], "type_vars": []}')
 
 
 class TestLiteralTop(_Literal[str]):
@@ -43,7 +43,7 @@ class TestLiteralTop(_Literal[str]):
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
-    __metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": true, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "mooo", "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "options": [], "tags": [], "type_name": "TestLiteralTop", "type_vars": []}')
+    __metadata__ = json.loads('{"dependencies": [], "fields": {}, "is_a": {"literal": {"literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "mooo"}, "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "named": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestLiteralTop", "type_name": "TestLiteralTop"}, "options": [], "tags": [], "type_vars": []}')
 
 
 class TestOptionalField(_Struct):
@@ -51,7 +51,7 @@ class TestOptionalField(_Struct):
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
-    __metadata__ = json.loads('{"fields": {"optional": {"field_name": "optional", "tags": ["optional"], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}}, "is_a": null, "options": [], "tags": [], "type_name": "TestOptionalField", "type_vars": []}')
+    __metadata__ = json.loads('{"dependencies": [], "fields": {"optional": {"field_name": "optional", "tags": ["optional"], "type_struct": {"literal": null, "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}}, "is_a": null, "named": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestOptionalField", "type_name": "TestOptionalField"}, "options": [], "tags": [], "type_vars": []}')
 
 
 class TestTagsStruct(_Struct):
@@ -59,7 +59,7 @@ class TestTagsStruct(_Struct):
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
-    __metadata__ = json.loads('{"fields": {"a": {"field_name": "a", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}}, "is_a": null, "options": [], "tags": ["tag-a", "tag-b"], "type_name": "TestTagsStruct", "type_vars": []}')
+    __metadata__ = json.loads('{"dependencies": [], "fields": {"a": {"field_name": "a", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int53", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}}, "is_a": null, "named": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestTagsStruct", "type_name": "TestTagsStruct"}, "options": [], "tags": ["tag-a", "tag-b"], "type_vars": []}')
 
 
 class TestStructInner(_Struct):
@@ -69,7 +69,7 @@ class TestStructInner(_Struct):
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
-    __metadata__ = json.loads('{"fields": {"d": {"field_name": "d", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "bool", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "e": {"field_name": "e", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "double", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "f": {"field_name": "f", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int64", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}}, "is_a": null, "options": [], "tags": [], "type_name": "TestStructInner", "type_vars": []}')
+    __metadata__ = json.loads('{"dependencies": [], "fields": {"d": {"field_name": "d", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "bool", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "e": {"field_name": "e", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "double", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "f": {"field_name": "f", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int64", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}}, "is_a": null, "named": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestStructInner", "type_name": "TestStructInner"}, "options": [], "tags": [], "type_vars": []}')
 
 
 class TestStruct(_Struct):
@@ -79,24 +79,24 @@ class TestStruct(_Struct):
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
-    __metadata__ = json.loads('{"fields": {"a": {"field_name": "a", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "b": {"field_name": "b", "tags": ["tag"], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "c": {"field_name": "c", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestStructInner", "type_name": "TestStructInner"}, "struct_kind": "Scalar"}}}, "is_a": null, "options": [], "tags": [], "type_name": "TestStruct", "type_vars": []}')
+    __metadata__ = json.loads('{"dependencies": [{"from": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestStruct", "type_name": "TestStruct"}, "is_abstraction": false, "is_local": true, "to": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestStructInner", "type_name": "TestStructInner"}}], "fields": {"a": {"field_name": "a", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "b": {"field_name": "b", "tags": ["tag"], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int53", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "c": {"field_name": "c", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestStructInner", "type_name": "TestStructInner"}, "struct_kind": "Scalar"}}}, "is_a": null, "named": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestStruct", "type_name": "TestStruct"}, "options": [], "tags": [], "type_vars": []}')
 
 
 TestKind = str
 locals()["TestKind"] = types.new_class("TestKind", (locals()["TestKind"],))
-TestKind.__metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "options": [], "tags": [], "type_name": "TestKind", "type_vars": []}')
+TestKind.__metadata__ = json.loads('{"dependencies": [], "fields": {}, "is_a": {"literal": null, "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "named": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestKind", "type_name": "TestKind"}, "options": [], "tags": [], "type_vars": []}')
 TestKind.expand = classmethod(_expand_primitive)
 TestKind.validate = classmethod(_validate_primitive)
 
 
 TestAtleastOne = _List[TestKind]
 locals()["TestAtleastOne"] = types.new_class("TestAtleastOne", (locals()["TestAtleastOne"],))
-TestAtleastOne.__metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestKind", "type_name": "TestKind"}, "struct_kind": "Repeated"}, "options": [], "tags": ["atleast_one"], "type_name": "TestAtleastOne", "type_vars": []}')
+TestAtleastOne.__metadata__ = json.loads('{"dependencies": [{"from": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestAtleastOne", "type_name": "TestAtleastOne"}, "is_abstraction": false, "is_local": true, "to": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestKind", "type_name": "TestKind"}}], "fields": {}, "is_a": {"literal": null, "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestKind", "type_name": "TestKind"}, "struct_kind": "Repeated"}, "named": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestAtleastOne", "type_name": "TestAtleastOne"}, "options": [], "tags": ["atleast_one"], "type_vars": []}')
 
 
 TestMap = _Map[TestAtleastOne]
 locals()["TestMap"] = types.new_class("TestMap", (locals()["TestMap"],))
-TestMap.__metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestAtleastOne", "type_name": "TestAtleastOne"}, "struct_kind": "Map"}, "options": [], "tags": [], "type_name": "TestMap", "type_vars": []}')
+TestMap.__metadata__ = json.loads('{"dependencies": [{"from": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestMap", "type_name": "TestMap"}, "is_abstraction": false, "is_local": true, "to": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestAtleastOne", "type_name": "TestAtleastOne"}}], "fields": {}, "is_a": {"literal": null, "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestAtleastOne", "type_name": "TestAtleastOne"}, "struct_kind": "Map"}, "named": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestMap", "type_name": "TestMap"}, "options": [], "tags": [], "type_vars": []}')
 
 
 class LiteralHello(_Literal[str]):
@@ -105,7 +105,7 @@ class LiteralHello(_Literal[str]):
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
-    __metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": true, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "hello", "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "options": [], "tags": [], "type_name": "LiteralHello", "type_vars": []}')
+    __metadata__ = json.loads('{"dependencies": [], "fields": {}, "is_a": {"literal": {"literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "hello"}, "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "named": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralHello", "type_name": "LiteralHello"}, "options": [], "tags": [], "type_vars": []}')
 
 
 class LiteralThreeO(_Literal[float]):
@@ -114,7 +114,7 @@ class LiteralThreeO(_Literal[float]):
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
-    __metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": true, "literal_bool": false, "literal_double": 3.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "double", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "options": [], "tags": [], "type_name": "LiteralThreeO", "type_vars": []}')
+    __metadata__ = json.loads('{"dependencies": [], "fields": {}, "is_a": {"literal": {"literal_bool": false, "literal_double": 3.0, "literal_int53": 0, "literal_int64": 0, "literal_string": ""}, "parameters": [], "primitive_type": "double", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "named": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralThreeO", "type_name": "LiteralThreeO"}, "options": [], "tags": [], "type_vars": []}')
 
 
 class Literal1(_Literal[int]):
@@ -123,7 +123,7 @@ class Literal1(_Literal[int]):
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
-    __metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": true, "literal_bool": false, "literal_double": 0.0, "literal_int53": 1, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "options": [], "tags": [], "type_name": "Literal1", "type_vars": []}')
+    __metadata__ = json.loads('{"dependencies": [], "fields": {}, "is_a": {"literal": {"literal_bool": false, "literal_double": 0.0, "literal_int53": 1, "literal_int64": 0, "literal_string": ""}, "parameters": [], "primitive_type": "int53", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "named": {"module_name": "tests.basic", "qualified_name": "tests.basic.Literal1", "type_name": "Literal1"}, "options": [], "tags": [], "type_vars": []}')
 
 
 class LiteralTrue(_Literal[bool]):
@@ -132,7 +132,7 @@ class LiteralTrue(_Literal[bool]):
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
-    __metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": true, "literal_bool": true, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "bool", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "options": [], "tags": [], "type_name": "LiteralTrue", "type_vars": []}')
+    __metadata__ = json.loads('{"dependencies": [], "fields": {}, "is_a": {"literal": {"literal_bool": true, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": ""}, "parameters": [], "primitive_type": "bool", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "named": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralTrue", "type_name": "LiteralTrue"}, "options": [], "tags": [], "type_vars": []}')
 
 
 class LiteralFive(_Literal[int]):
@@ -141,7 +141,7 @@ class LiteralFive(_Literal[int]):
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
-    __metadata__ = json.loads('{"fields": {}, "is_a": {"is_literal": true, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 5, "literal_string": "", "parameters": [], "primitive_type": "int64", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "options": [], "tags": [], "type_name": "LiteralFive", "type_vars": []}')
+    __metadata__ = json.loads('{"dependencies": [], "fields": {}, "is_a": {"literal": {"literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 5, "literal_string": ""}, "parameters": [], "primitive_type": "int64", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}, "named": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralFive", "type_name": "LiteralFive"}, "options": [], "tags": [], "type_vars": []}')
 
 
 class TestLiteralStruct(_Struct):
@@ -153,7 +153,7 @@ class TestLiteralStruct(_Struct):
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
-    __metadata__ = json.loads('{"fields": {"five": {"field_name": "five", "tags": ["optional"], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralFive", "type_name": "LiteralFive"}, "struct_kind": "Scalar"}}, "four": {"field_name": "four", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralTrue", "type_name": "LiteralTrue"}, "struct_kind": "Scalar"}}, "one": {"field_name": "one", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.Literal1", "type_name": "Literal1"}, "struct_kind": "Scalar"}}, "three": {"field_name": "three", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralThreeO", "type_name": "LiteralThreeO"}, "struct_kind": "Scalar"}}, "two": {"field_name": "two", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralHello", "type_name": "LiteralHello"}, "struct_kind": "Scalar"}}}, "is_a": null, "options": [], "tags": [], "type_name": "TestLiteralStruct", "type_vars": []}')
+    __metadata__ = json.loads('{"dependencies": [{"from": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestLiteralStruct", "type_name": "TestLiteralStruct"}, "is_abstraction": false, "is_local": true, "to": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralFive", "type_name": "LiteralFive"}}, {"from": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestLiteralStruct", "type_name": "TestLiteralStruct"}, "is_abstraction": false, "is_local": true, "to": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralTrue", "type_name": "LiteralTrue"}}, {"from": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestLiteralStruct", "type_name": "TestLiteralStruct"}, "is_abstraction": false, "is_local": true, "to": {"module_name": "tests.basic", "qualified_name": "tests.basic.Literal1", "type_name": "Literal1"}}, {"from": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestLiteralStruct", "type_name": "TestLiteralStruct"}, "is_abstraction": false, "is_local": true, "to": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralThreeO", "type_name": "LiteralThreeO"}}, {"from": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestLiteralStruct", "type_name": "TestLiteralStruct"}, "is_abstraction": false, "is_local": true, "to": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralHello", "type_name": "LiteralHello"}}], "fields": {"five": {"field_name": "five", "tags": ["optional"], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralFive", "type_name": "LiteralFive"}, "struct_kind": "Scalar"}}, "four": {"field_name": "four", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralTrue", "type_name": "LiteralTrue"}, "struct_kind": "Scalar"}}, "one": {"field_name": "one", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.Literal1", "type_name": "Literal1"}, "struct_kind": "Scalar"}}, "three": {"field_name": "three", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralThreeO", "type_name": "LiteralThreeO"}, "struct_kind": "Scalar"}}, "two": {"field_name": "two", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.LiteralHello", "type_name": "LiteralHello"}, "struct_kind": "Scalar"}}}, "is_a": null, "named": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestLiteralStruct", "type_name": "TestLiteralStruct"}, "options": [], "tags": [], "type_vars": []}')
 
 
 class TestListOfListStruct(_Struct):
@@ -161,4 +161,4 @@ class TestListOfListStruct(_Struct):
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
-    __metadata__ = json.loads('{"fields": {"list_of_list": {"field_name": "list_of_list", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestAtleastOne", "type_name": "TestAtleastOne"}, "struct_kind": "Repeated"}}}, "is_a": null, "options": [], "tags": [], "type_name": "TestListOfListStruct", "type_vars": []}')
+    __metadata__ = json.loads('{"dependencies": [{"from": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestListOfListStruct", "type_name": "TestListOfListStruct"}, "is_abstraction": false, "is_local": true, "to": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestAtleastOne", "type_name": "TestAtleastOne"}}], "fields": {"list_of_list": {"field_name": "list_of_list", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int53", "reference": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestAtleastOne", "type_name": "TestAtleastOne"}, "struct_kind": "Repeated"}}}, "is_a": null, "named": {"module_name": "tests.basic", "qualified_name": "tests.basic.TestListOfListStruct", "type_name": "TestListOfListStruct"}, "options": [], "tags": [], "type_vars": []}')

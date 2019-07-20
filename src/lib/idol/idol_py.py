@@ -39,15 +39,15 @@ class TypeStructExt(TypeStruct):
     @property
     def literal_value(self):
         if self.primitive_type == PrimitiveType.BOOL:
-            return self.literal_bool
+            return self.literal.literal_bool
         elif self.primitive_type == PrimitiveType.DOUBLE:
-            return self.literal_double
+            return self.literal.literal_double
         elif self.primitive_type == PrimitiveType.INT53:
-            return self.literal_int53
+            return self.literal.literal_int53
         elif self.primitive_type == PrimitiveType.INT64:
-            return self.literal_int64
+            return self.literal.literal_int64
         elif self.primitive_type == PrimitiveType.STRING:
-            return self.literal_string
+            return self.literal.literal_string
 
 
 class FieldExt(Field):
@@ -174,7 +174,7 @@ class ModuleBuildEnv:
             if type.is_a:
                 type_struct = type.is_a
                 if type_struct.struct_kind == StructKind.SCALAR:
-                    if type_struct.is_literal:
+                    if type_struct.literal:
                         yield from self.gen_literal_impl(module, type)
                     else:
                         yield from self.gen_scalar_impl(module, type)
@@ -214,7 +214,7 @@ class ModuleBuildEnv:
         yield f"__metadata__ = {self.metadata_as_pycode(type)}"
 
     def gen_enum_impl(self, module: Module, type: TypeExt):
-        yield f"class {type.type_name}(_Enum):"
+        yield f"class {type.named.type_name}(_Enum):"
         with self.in_block():
             options = sorted(type.options)
             for option in options:
@@ -224,7 +224,7 @@ class ModuleBuildEnv:
             yield from self.gen_class_extensions(type)
 
     def gen_struct_impl(self, module: Module, type: TypeExt):
-        yield f"class {type.type_name}(_Struct):"
+        yield f"class {type.named.type_name}(_Struct):"
         with self.in_block():
             field_names = sorted(type.fields.keys())
             for field_name in field_names:
@@ -244,37 +244,37 @@ class ModuleBuildEnv:
     def gen_literal_impl(self, module: Module, type: TypeExt):
         type_struct = type.is_a
         scalar_type = self.display_scalar_type(type_struct)
-        yield f"class {type.type_name}(_Literal[{scalar_type}]):"
+        yield f"class {type.named.type_name}(_Literal[{scalar_type}]):"
         with self.in_block():
             yield f"literal: {scalar_type} = {repr(type.is_a.literal_value)}"
             yield ""
             yield from self.gen_class_extensions(type)
 
     def gen_wrap_type(self, type: TypeExt):
-        type_name_as_str = json.dumps(type.type_name)
+        type_name_as_str = json.dumps(type.named.type_name)
         yield f"locals()[{type_name_as_str}] = types.new_class({type_name_as_str}, (locals()[{type_name_as_str}],))"
-        yield f"{type.type_name}.__metadata__ = {self.metadata_as_pycode(type)}"
+        yield f"{type.named.type_name}.__metadata__ = {self.metadata_as_pycode(type)}"
 
     def gen_scalar_impl(self, module: Module, type: TypeExt):
         type_struct = type.is_a
         scalar_type = self.display_scalar_type(type_struct)
-        yield f"{type.type_name} = {scalar_type}"
+        yield f"{type.named.type_name} = {scalar_type}"
         yield from self.gen_wrap_type(type)
 
         if type_struct.is_primitive:
-            yield f"{type.type_name}.expand = classmethod(_expand_primitive)"
-            yield f"{type.type_name}.validate = classmethod(_validate_primitive)"
+            yield f"{type.named.type_name}.expand = classmethod(_expand_primitive)"
+            yield f"{type.named.type_name}.validate = classmethod(_validate_primitive)"
 
     def gen_repeated_impl(self, module: Module, type: TypeExt):
         type_struct = type.is_a
         scalar_type = self.display_scalar_type(type_struct)
-        yield f"{type.type_name} = _List[{scalar_type}]"
+        yield f"{type.named.type_name} = _List[{scalar_type}]"
         yield from self.gen_wrap_type(type)
 
     def gen_map_impl(self, module: Module, type: TypeExt):
         type_struct = type.is_a
         scalar_type = self.display_scalar_type(type_struct)
-        yield f"{type.type_name} = _Map[{scalar_type}]"
+        yield f"{type.named.type_name} = _Map[{scalar_type}]"
         yield from self.gen_wrap_type(type)
 
     scalar_name_mappings = {

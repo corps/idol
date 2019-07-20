@@ -16,4 +16,4 @@ class SideImport(_Struct):
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
-    __metadata__ = json.loads('{"fields": {"side_import": {"field_name": "side_import", "tags": [], "type_struct": {"is_literal": false, "literal_bool": false, "literal_double": 0.0, "literal_int53": 0, "literal_int64": 0, "literal_string": "", "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}}, "is_a": null, "options": [], "tags": [], "type_name": "SideImport", "type_vars": []}')
+    __metadata__ = json.loads('{"dependencies": [], "fields": {"side_import": {"field_name": "side_import", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}}, "is_a": null, "named": {"module_name": "tests.abs.two", "qualified_name": "tests.abs.two.SideImport", "type_name": "SideImport"}, "options": [], "tags": [], "type_vars": []}')
