@@ -678,11 +678,11 @@ fn parse_literal_annotation<'a>(
     let mut literal = Literal::default();
 
     match result.primitive_type {
-        PrimitiveType::int53 => literal.literal_int53 = serde_json::from_str(val)?,
-        PrimitiveType::int64 => literal.literal_int64 = serde_json::from_str(val)?,
-        PrimitiveType::string => literal.literal_string = val.to_owned(),
-        PrimitiveType::double => literal.literal_double = serde_json::from_str(val)?,
-        PrimitiveType::bool => literal.literal_bool = serde_json::from_str(val)?,
+        PrimitiveType::int53 => literal.int53 = serde_json::from_str(val)?,
+        PrimitiveType::int64 => literal.int64 = serde_json::from_str(val)?,
+        PrimitiveType::string => literal.string = val.to_owned(),
+        PrimitiveType::double => literal.double = serde_json::from_str(val)?,
+        PrimitiveType::bool => literal.bool = serde_json::from_str(val)?,
         PrimitiveType::any => return Err(FieldDecError::LiteralAnyError),
     }
 

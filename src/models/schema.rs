@@ -153,11 +153,11 @@ impl idol::ValidatesJson for PrimitiveType {
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Literal {
-  pub r#literal_bool: bool,
-  pub r#literal_double: f64,
-  pub r#literal_int53: idol::i53,
-  pub r#literal_int64: i64,
-  pub r#literal_string: String,
+  pub r#bool: bool,
+  pub r#double: f64,
+  pub r#int53: idol::i53,
+  pub r#int64: i64,
+  pub r#string: String,
 }
 
 impl idol::ExpandsJson for Literal {
@@ -184,28 +184,28 @@ impl idol::ExpandsJson for Literal {
       return None;
     }
 
-    match bool::expand_json(&mut value["literal_bool"]) {
-      Some(v) => value["literal_bool"] = v,
+    match bool::expand_json(&mut value["bool"]) {
+      Some(v) => value["bool"] = v,
       None => (),
     }
 
-    match f64::expand_json(&mut value["literal_double"]) {
-      Some(v) => value["literal_double"] = v,
+    match f64::expand_json(&mut value["double"]) {
+      Some(v) => value["double"] = v,
       None => (),
     }
 
-    match idol::i53::expand_json(&mut value["literal_int53"]) {
-      Some(v) => value["literal_int53"] = v,
+    match idol::i53::expand_json(&mut value["int53"]) {
+      Some(v) => value["int53"] = v,
       None => (),
     }
 
-    match i64::expand_json(&mut value["literal_int64"]) {
-      Some(v) => value["literal_int64"] = v,
+    match i64::expand_json(&mut value["int64"]) {
+      Some(v) => value["int64"] = v,
       None => (),
     }
 
-    match String::expand_json(&mut value["literal_string"]) {
-      Some(v) => value["literal_string"] = v,
+    match String::expand_json(&mut value["string"]) {
+      Some(v) => value["string"] = v,
       None => (),
     }
 
@@ -219,11 +219,11 @@ impl idol::ValidatesJson for Literal {
       return Err(idol::ValidationError(format!("expected an object but found {}", value)));
     }
 
-    bool::validate_json(&value["literal_bool"]).map_err(|e| idol::ValidationError(format!("field literal_bool: {}", e)))?;
-    f64::validate_json(&value["literal_double"]).map_err(|e| idol::ValidationError(format!("field literal_double: {}", e)))?;
-    idol::i53::validate_json(&value["literal_int53"]).map_err(|e| idol::ValidationError(format!("field literal_int53: {}", e)))?;
-    i64::validate_json(&value["literal_int64"]).map_err(|e| idol::ValidationError(format!("field literal_int64: {}", e)))?;
-    String::validate_json(&value["literal_string"]).map_err(|e| idol::ValidationError(format!("field literal_string: {}", e)))?;
+    bool::validate_json(&value["bool"]).map_err(|e| idol::ValidationError(format!("field bool: {}", e)))?;
+    f64::validate_json(&value["double"]).map_err(|e| idol::ValidationError(format!("field double: {}", e)))?;
+    idol::i53::validate_json(&value["int53"]).map_err(|e| idol::ValidationError(format!("field int53: {}", e)))?;
+    i64::validate_json(&value["int64"]).map_err(|e| idol::ValidationError(format!("field int64: {}", e)))?;
+    String::validate_json(&value["string"]).map_err(|e| idol::ValidationError(format!("field string: {}", e)))?;
 
     Ok(())
   }

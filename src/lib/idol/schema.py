@@ -44,15 +44,15 @@ class PrimitiveType(_Enum):
 
 
 class Literal(_Struct):
-    literal_bool: bool
-    literal_double: float
-    literal_int53: int
-    literal_int64: int
-    literal_string: str
+    bool: bool
+    double: float
+    int53: int
+    int64: int
+    string: str
     
     # Required to ensure stable ordering.  str() on python dicts is unstable,
     # but the json.dumps is stable.
-    __metadata__ = json.loads('{"dependencies": [], "fields": {"literal_bool": {"field_name": "literal_bool", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "bool", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "literal_double": {"field_name": "literal_double", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "double", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "literal_int53": {"field_name": "literal_int53", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int53", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "literal_int64": {"field_name": "literal_int64", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int64", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "literal_string": {"field_name": "literal_string", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}}, "is_a": null, "named": {"module_name": "schema", "qualified_name": "schema.Literal", "type_name": "Literal"}, "options": [], "tags": [], "type_vars": []}')
+    __metadata__ = json.loads('{"dependencies": [], "fields": {"bool": {"field_name": "bool", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "bool", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "double": {"field_name": "double", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "double", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "int53": {"field_name": "int53", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int53", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "int64": {"field_name": "int64", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int64", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "string": {"field_name": "string", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}}, "is_a": null, "named": {"module_name": "schema", "qualified_name": "schema.Literal", "type_name": "Literal"}, "options": [], "tags": [], "type_vars": []}')
 
 
 class Reference(_Struct):

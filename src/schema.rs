@@ -61,11 +61,11 @@ impl TypeStruct {
         (self.literal.to_owned()).map_or(serde_json::Value::Null, |literal| {
             match primitive_type {
                 PrimitiveType::any => unreachable!(),
-                PrimitiveType::bool => serde_json::Value::from(literal.literal_bool),
-                PrimitiveType::int64 => serde_json::Value::from(literal.literal_int64),
-                PrimitiveType::int53 => serde_json::Value::from(literal.literal_int53.0),
-                PrimitiveType::double => serde_json::Value::from(literal.literal_double),
-                PrimitiveType::string => serde_json::Value::from(literal.literal_string.to_owned()),
+                PrimitiveType::bool => serde_json::Value::from(literal.bool),
+                PrimitiveType::int64 => serde_json::Value::from(literal.int64),
+                PrimitiveType::int53 => serde_json::Value::from(literal.int53.0),
+                PrimitiveType::double => serde_json::Value::from(literal.double),
+                PrimitiveType::string => serde_json::Value::from(literal.string.to_owned()),
             }
         })
     }

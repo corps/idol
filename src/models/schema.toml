@@ -75,11 +75,11 @@ literal = ["Literal", "optional"]
 parameters = "Reference[]"
 
 [Literal.fields]
-literal_int64 = "int64"
-literal_int53 = "int53"
-literal_double = "double"
-literal_string = "string"
-literal_bool = "bool"
+int64 = "int64"
+int53 = "int53"
+double = "double"
+string = "string"
+bool = "bool"
 
 
 [Field.fields]

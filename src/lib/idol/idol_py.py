@@ -39,15 +39,15 @@ class TypeStructExt(TypeStruct):
     @property
     def literal_value(self):
         if self.primitive_type == PrimitiveType.BOOL:
-            return self.literal.literal_bool
+            return self.literal.bool
         elif self.primitive_type == PrimitiveType.DOUBLE:
-            return self.literal.literal_double
+            return self.literal.double
         elif self.primitive_type == PrimitiveType.INT53:
-            return self.literal.literal_int53
+            return self.literal.int53
         elif self.primitive_type == PrimitiveType.INT64:
-            return self.literal.literal_int64
+            return self.literal.int64
         elif self.primitive_type == PrimitiveType.STRING:
-            return self.literal.literal_string
+            return self.literal.string
 
 
 class FieldExt(Field):
