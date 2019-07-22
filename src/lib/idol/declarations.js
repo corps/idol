@@ -83,19 +83,19 @@ TypeDec.metadata = {
         "struct_kind": "Repeated"
       }
     },
-    "fields": {
-      "field_name": "fields",
+    "enum": {
+      "field_name": "enum",
       "tags": [],
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "string",
         "reference": {
-          "module_name": "declarations",
-          "qualified_name": "declarations.FieldDec",
-          "type_name": "FieldDec"
+          "module_name": "",
+          "qualified_name": "",
+          "type_name": ""
         },
-        "struct_kind": "Map"
+        "struct_kind": "Repeated"
       }
     },
     "is_a": {
@@ -113,21 +113,6 @@ TypeDec.metadata = {
         "struct_kind": "Scalar"
       }
     },
-    "enum": {
-      "field_name": "enum",
-      "tags": [],
-      "type_struct": {
-        "literal": null,
-        "parameters": [],
-        "primitive_type": "string",
-        "reference": {
-          "module_name": "",
-          "qualified_name": "",
-          "type_name": ""
-        },
-        "struct_kind": "Repeated"
-      }
-    },
     "type_vars": {
       "field_name": "type_vars",
       "tags": [],
@@ -141,6 +126,21 @@ TypeDec.metadata = {
           "type_name": ""
         },
         "struct_kind": "Repeated"
+      }
+    },
+    "fields": {
+      "field_name": "fields",
+      "tags": [],
+      "type_struct": {
+        "literal": null,
+        "parameters": [],
+        "primitive_type": "int53",
+        "reference": {
+          "module_name": "declarations",
+          "qualified_name": "declarations.FieldDec",
+          "type_name": "FieldDec"
+        },
+        "struct_kind": "Map"
       }
     }
   },

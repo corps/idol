@@ -96,6 +96,21 @@ Literal.metadata = {
         "struct_kind": "Scalar"
       }
     },
+    "string": {
+      "field_name": "string",
+      "tags": [],
+      "type_struct": {
+        "literal": null,
+        "parameters": [],
+        "primitive_type": "string",
+        "reference": {
+          "module_name": "",
+          "qualified_name": "",
+          "type_name": ""
+        },
+        "struct_kind": "Scalar"
+      }
+    },
     "int64": {
       "field_name": "int64",
       "tags": [],
@@ -133,21 +148,6 @@ Literal.metadata = {
         "literal": null,
         "parameters": [],
         "primitive_type": "bool",
-        "reference": {
-          "module_name": "",
-          "qualified_name": "",
-          "type_name": ""
-        },
-        "struct_kind": "Scalar"
-      }
-    },
-    "string": {
-      "field_name": "string",
-      "tags": [],
-      "type_struct": {
-        "literal": null,
-        "parameters": [],
-        "primitive_type": "string",
         "reference": {
           "module_name": "",
           "qualified_name": "",
@@ -316,6 +316,21 @@ TypeStruct.metadata = {
     }
   }],
   "fields": {
+    "primitive_type": {
+      "field_name": "primitive_type",
+      "tags": [],
+      "type_struct": {
+        "literal": null,
+        "parameters": [],
+        "primitive_type": "int53",
+        "reference": {
+          "module_name": "schema",
+          "qualified_name": "schema.PrimitiveType",
+          "type_name": "PrimitiveType"
+        },
+        "struct_kind": "Scalar"
+      }
+    },
     "struct_kind": {
       "field_name": "struct_kind",
       "tags": [],
@@ -327,6 +342,21 @@ TypeStruct.metadata = {
           "module_name": "schema",
           "qualified_name": "schema.StructKind",
           "type_name": "StructKind"
+        },
+        "struct_kind": "Scalar"
+      }
+    },
+    "literal": {
+      "field_name": "literal",
+      "tags": ["optional"],
+      "type_struct": {
+        "literal": null,
+        "parameters": [],
+        "primitive_type": "int53",
+        "reference": {
+          "module_name": "schema",
+          "qualified_name": "schema.Literal",
+          "type_name": "Literal"
         },
         "struct_kind": "Scalar"
       }
@@ -359,36 +389,6 @@ TypeStruct.metadata = {
           "type_name": "Reference"
         },
         "struct_kind": "Repeated"
-      }
-    },
-    "primitive_type": {
-      "field_name": "primitive_type",
-      "tags": [],
-      "type_struct": {
-        "literal": null,
-        "parameters": [],
-        "primitive_type": "int53",
-        "reference": {
-          "module_name": "schema",
-          "qualified_name": "schema.PrimitiveType",
-          "type_name": "PrimitiveType"
-        },
-        "struct_kind": "Scalar"
-      }
-    },
-    "literal": {
-      "field_name": "literal",
-      "tags": ["optional"],
-      "type_struct": {
-        "literal": null,
-        "parameters": [],
-        "primitive_type": "int53",
-        "reference": {
-          "module_name": "schema",
-          "qualified_name": "schema.Literal",
-          "type_name": "Literal"
-        },
-        "struct_kind": "Scalar"
       }
     }
   },
@@ -428,17 +428,17 @@ Field.metadata = {
     }
   }],
   "fields": {
-    "type_struct": {
-      "field_name": "type_struct",
+    "field_name": {
+      "field_name": "field_name",
       "tags": [],
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "string",
         "reference": {
-          "module_name": "schema",
-          "qualified_name": "schema.TypeStruct",
-          "type_name": "TypeStruct"
+          "module_name": "",
+          "qualified_name": "",
+          "type_name": ""
         },
         "struct_kind": "Scalar"
       }
@@ -458,17 +458,17 @@ Field.metadata = {
         "struct_kind": "Repeated"
       }
     },
-    "field_name": {
-      "field_name": "field_name",
+    "type_struct": {
+      "field_name": "type_struct",
       "tags": [],
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "string",
+        "primitive_type": "int53",
         "reference": {
-          "module_name": "",
-          "qualified_name": "",
-          "type_name": ""
+          "module_name": "schema",
+          "qualified_name": "schema.TypeStruct",
+          "type_name": "TypeStruct"
         },
         "struct_kind": "Scalar"
       }
@@ -524,8 +524,8 @@ Dependency.metadata = {
     }
   }],
   "fields": {
-    "to": {
-      "field_name": "to",
+    "from": {
+      "field_name": "from",
       "tags": [],
       "type_struct": {
         "literal": null,
@@ -569,8 +569,8 @@ Dependency.metadata = {
         "struct_kind": "Scalar"
       }
     },
-    "from": {
-      "field_name": "from",
+    "to": {
+      "field_name": "to",
       "tags": [],
       "type_struct": {
         "literal": null,
@@ -664,36 +664,6 @@ Type.metadata = {
     }
   }],
   "fields": {
-    "named": {
-      "field_name": "named",
-      "tags": [],
-      "type_struct": {
-        "literal": null,
-        "parameters": [],
-        "primitive_type": "int53",
-        "reference": {
-          "module_name": "schema",
-          "qualified_name": "schema.Reference",
-          "type_name": "Reference"
-        },
-        "struct_kind": "Scalar"
-      }
-    },
-    "options": {
-      "field_name": "options",
-      "tags": [],
-      "type_struct": {
-        "literal": null,
-        "parameters": [],
-        "primitive_type": "string",
-        "reference": {
-          "module_name": "",
-          "qualified_name": "",
-          "type_name": ""
-        },
-        "struct_kind": "Repeated"
-      }
-    },
     "type_vars": {
       "field_name": "type_vars",
       "tags": [],
@@ -709,8 +679,8 @@ Type.metadata = {
         "struct_kind": "Repeated"
       }
     },
-    "tags": {
-      "field_name": "tags",
+    "options": {
+      "field_name": "options",
       "tags": [],
       "type_struct": {
         "literal": null,
@@ -739,8 +709,23 @@ Type.metadata = {
         "struct_kind": "Scalar"
       }
     },
-    "fields": {
-      "field_name": "fields",
+    "tags": {
+      "field_name": "tags",
+      "tags": [],
+      "type_struct": {
+        "literal": null,
+        "parameters": [],
+        "primitive_type": "string",
+        "reference": {
+          "module_name": "",
+          "qualified_name": "",
+          "type_name": ""
+        },
+        "struct_kind": "Repeated"
+      }
+    },
+    "named": {
+      "field_name": "named",
       "tags": [],
       "type_struct": {
         "literal": null,
@@ -748,10 +733,10 @@ Type.metadata = {
         "primitive_type": "int53",
         "reference": {
           "module_name": "schema",
-          "qualified_name": "schema.Field",
-          "type_name": "Field"
+          "qualified_name": "schema.Reference",
+          "type_name": "Reference"
         },
-        "struct_kind": "Map"
+        "struct_kind": "Scalar"
       }
     },
     "dependencies": {
@@ -767,6 +752,21 @@ Type.metadata = {
           "type_name": "Dependency"
         },
         "struct_kind": "Repeated"
+      }
+    },
+    "fields": {
+      "field_name": "fields",
+      "tags": [],
+      "type_struct": {
+        "literal": null,
+        "parameters": [],
+        "primitive_type": "int53",
+        "reference": {
+          "module_name": "schema",
+          "qualified_name": "schema.Field",
+          "type_name": "Field"
+        },
+        "struct_kind": "Map"
       }
     }
   },
@@ -849,21 +849,6 @@ Module.metadata = {
         "struct_kind": "Scalar"
       }
     },
-    "types_dependency_ordering": {
-      "field_name": "types_dependency_ordering",
-      "tags": [],
-      "type_struct": {
-        "literal": null,
-        "parameters": [],
-        "primitive_type": "string",
-        "reference": {
-          "module_name": "",
-          "qualified_name": "",
-          "type_name": ""
-        },
-        "struct_kind": "Repeated"
-      }
-    },
     "dependencies": {
       "field_name": "dependencies",
       "tags": [],
@@ -879,8 +864,8 @@ Module.metadata = {
         "struct_kind": "Repeated"
       }
     },
-    "abstract_types_by_name": {
-      "field_name": "abstract_types_by_name",
+    "types_by_name": {
+      "field_name": "types_by_name",
       "tags": [],
       "type_struct": {
         "literal": null,
@@ -894,8 +879,23 @@ Module.metadata = {
         "struct_kind": "Map"
       }
     },
-    "types_by_name": {
-      "field_name": "types_by_name",
+    "types_dependency_ordering": {
+      "field_name": "types_dependency_ordering",
+      "tags": [],
+      "type_struct": {
+        "literal": null,
+        "parameters": [],
+        "primitive_type": "string",
+        "reference": {
+          "module_name": "",
+          "qualified_name": "",
+          "type_name": ""
+        },
+        "struct_kind": "Repeated"
+      }
+    },
+    "abstract_types_by_name": {
+      "field_name": "abstract_types_by_name",
       "tags": [],
       "type_struct": {
         "literal": null,

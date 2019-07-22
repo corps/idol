@@ -741,6 +741,26 @@ var _path = _interopRequireDefault(require("path"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
+
+function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
+
+function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
+
+function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
@@ -896,7 +916,7 @@ function () {
 
             case 15:
               if (!(i < module.typesDependencyOrdering.length)) {
-                _context2.next = 44;
+                _context2.next = 46;
                 break;
               }
 
@@ -966,15 +986,19 @@ function () {
               return _context2.delegateYield(this.genStruct(module, type), "t8", 41);
 
             case 41:
+              _context2.next = 43;
+              return "".concat(type.named.typeName, ".metadata = ").concat(JSON.stringify(sortObj(type)), ";");
+
+            case 43:
               ++i;
               _context2.next = 15;
               break;
 
-            case 44:
-              _context2.next = 46;
+            case 46:
+              _context2.next = 48;
               return "";
 
-            case 46:
+            case 48:
             case "end":
               return _context2.stop();
           }
@@ -1065,10 +1089,6 @@ function () {
               return "Literal_(".concat(type.named.typeName, ");");
 
             case 27:
-              _context4.next = 29;
-              return "".concat(type.named.typeName, ".metadata = ").concat(JSON.stringify(type), ";");
-
-            case 29:
             case "end":
               return _context4.stop();
           }
@@ -1155,10 +1175,6 @@ function () {
               return "Primitive_(".concat(type.named.typeName, ");");
 
             case 25:
-              _context6.next = 27;
-              return "".concat(type.named.typeName, ".metadata = ").concat(JSON.stringify(type), ";");
-
-            case 27:
             case "end":
               return _context6.stop();
           }
@@ -1209,10 +1225,6 @@ function () {
               return "List_(".concat(type.named.typeName, ", ").concat(this.typeStructScalarFunc(type.isA), ");");
 
             case 9:
-              _context8.next = 11;
-              return "".concat(type.named.typeName, ".metadata = ").concat(JSON.stringify(type), ";");
-
-            case 11:
             case "end":
               return _context8.stop();
           }
@@ -1263,10 +1275,6 @@ function () {
               return "Map_(".concat(type.named.typeName, ", ").concat(this.typeStructScalarFunc(type.isA), ");");
 
             case 9:
-              _context10.next = 11;
-              return "".concat(type.named.typeName, ".metadata = ").concat(JSON.stringify(type), ";");
-
-            case 11:
             case "end":
               return _context10.stop();
           }
@@ -1329,10 +1337,6 @@ function () {
               return "Enum_(".concat(type.named.typeName, ");");
 
             case 14:
-              _context12.next = 16;
-              return "".concat(type.named.typeName, ".metadata = ").concat(JSON.stringify(type), ";");
-
-            case 16:
             case "end":
               return _context12.stop();
           }
@@ -1437,10 +1441,6 @@ function () {
               }), "t2", 18);
 
             case 18:
-              _context15.next = 20;
-              return "".concat(type.named.typeName, ".metadata = ").concat(JSON.stringify(type), ";");
-
-            case 20:
             case "end":
               return _context15.stop();
           }
@@ -1600,6 +1600,25 @@ function showHelp() {
   console.error("");
 
   _process["default"].exit(1);
+} // Required to create deterministic serialization of metadata
+
+
+function sortObj(obj) {
+  return obj === null || _typeof(obj) !== 'object' ? obj : Array.isArray(obj) ? obj.map(sortObj) : Object.assign.apply(Object, [{}].concat(_toConsumableArray(Object.entries(obj).sort(function (_ref, _ref2) {
+    var _ref3 = _slicedToArray(_ref, 1),
+        keyA = _ref3[0];
+
+    var _ref4 = _slicedToArray(_ref2, 1),
+        keyB = _ref4[0];
+
+    return keyA.localeCompare(keyB);
+  }).map(function (_ref5) {
+    var _ref6 = _slicedToArray(_ref5, 2),
+        k = _ref6[0],
+        v = _ref6[1];
+
+    return _defineProperty({}, k, sortObj(v));
+  }))));
 }
 
 function recursiveCopy(src, dest) {
