@@ -11,7 +11,6 @@ class BuildEnv {
     }
 
     buildModule(module) {
-        console.log(module);
         return new ModuleBuildEnv(this, module.moduleName).writeModule(module);
     }
 

@@ -753,13 +753,12 @@ function () {
   function BuildEnv() {
     _classCallCheck(this, BuildEnv);
 
-    this.buildDir = _fs["default"].mkdtempSync('idol_js.js');
+    this.buildDir = _fs["default"].mkdtempSync('tmp');
   }
 
   _createClass(BuildEnv, [{
     key: "buildModule",
     value: function buildModule(module) {
-      console.log(module);
       return new ModuleBuildEnv(this, module.moduleName).writeModule(module);
     }
   }, {
@@ -773,11 +772,9 @@ function () {
     value: function finalizeIdolFile(outputDir) {
       _fs["default"].mkdirSync(outputDir, {
         recursive: true
-      });
+      }); // const content = fs.readFileSync(path.join(__dirname, '__idol__.js'));
+      // fs.writeFileSync(path.join(outputDir, '__idol__.js'), content);
 
-      var content = _fs["default"].readFileSync(_path["default"].join(__dirname, '__idol__.js'));
-
-      _fs["default"].writeFileSync(_path["default"].join(outputDir, '__idol__.js'), content);
     }
   }]);
 
