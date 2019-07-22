@@ -26,7 +26,7 @@ models: $(MODELS)
 
 	cat build.json | ./target/debug/idol_rs --output src/models/ --mod "crate::models"
 	cat build.json | ./src/bin/idol_py.py --output src/lib/idol --mod "idol"
-	cat build.json | ./src/bin/idol_js.js --output src/es6/idol
+	cat build.json | ./src/bin/idol_js.js --output src/es6/idol --ignore-idol-js
 
 test: target/debug/idol target/debug/idol_rs models
 	cargo test

@@ -735,8 +735,6 @@ var _idol__ = require("./__idol__");
 
 var _schema = require("./schema");
 
-var _os = _interopRequireDefault(require("os"));
-
 var _path = _interopRequireDefault(require("path"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
@@ -770,10 +768,11 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 var BuildEnv =
 /*#__PURE__*/
 function () {
-  function BuildEnv() {
+  function BuildEnv(ignoreIdolJs) {
     _classCallCheck(this, BuildEnv);
 
     this.buildDir = _fs["default"].mkdtempSync('tmp');
+    this.ignoreIdolJs = ignoreIdolJs;
   }
 
   _createClass(BuildEnv, [{
@@ -792,9 +791,13 @@ function () {
     value: function finalizeIdolFile(outputDir) {
       _fs["default"].mkdirSync(outputDir, {
         recursive: true
-      }); // const content = fs.readFileSync(path.join(__dirname, '__idol__.js'));
-      // fs.writeFileSync(path.join(outputDir, '__idol__.js'), content);
+      });
 
+      if (!this.ignoreIdolJs) {
+        var content = _fs["default"].readFileSync(require.resolve('./__idol__'));
+
+        _fs["default"].writeFileSync(_path["default"].join(outputDir, '__idol__.js'), content);
+      }
     }
   }]);
 
@@ -1551,7 +1554,7 @@ function main() {
 
   var modules = _idol__.Map.of(_schema.Module)(json);
 
-  var buildEnv = new BuildEnv();
+  var buildEnv = new BuildEnv(args.ignoreIdolJs);
 
   for (var moduleName in modules) {
     var module = modules[moduleName];
@@ -1563,13 +1566,14 @@ function main() {
 
 function processArgs() {
   var result = {};
-  var flag;
+  var argName;
 
   for (var i = 2; i < _process["default"].argv.length; ++i) {
     var arg = _process["default"].argv[i];
 
-    if (flag) {
-      result[flag] = arg;
+    if (argName) {
+      result[argName] = arg;
+      argName = null;
       continue;
     }
 
@@ -1580,7 +1584,11 @@ function processArgs() {
         break;
 
       case "--output":
-        flag = "output";
+        argName = "output";
+        break;
+
+      case "--ignore-idol-js":
+        result.ignoreIdolJs = true;
         break;
 
       default:

@@ -2,12 +2,12 @@ import process from 'process';
 import fs from 'fs';
 import {Map} from "./__idol__";
 import {Module, PrimitiveType, StructKind} from "./schema";
-import os from 'os';
 import path from 'path';
 
 class BuildEnv {
-    constructor() {
+    constructor(ignoreIdolJs) {
         this.buildDir = fs.mkdtempSync('tmp');
+        this.ignoreIdolJs = ignoreIdolJs;
     }
 
     buildModule(module) {
@@ -21,8 +21,11 @@ class BuildEnv {
 
     finalizeIdolFile(outputDir) {
         fs.mkdirSync(outputDir, {recursive: true});
-        // const content = fs.readFileSync(path.join(__dirname, '__idol__.js'));
-        // fs.writeFileSync(path.join(outputDir, '__idol__.js'), content);
+
+        if (!this.ignoreIdolJs) {
+            const content = fs.readFileSync(require.resolve('./__idol__'));
+            fs.writeFileSync(path.join(outputDir, '__idol__.js'), content);
+        }
     }
 }
 
@@ -96,7 +99,7 @@ class ModuleBuildEnv {
             } else {
                 yield* this.genStruct(module, type);
             }
-            
+
             yield `${type.named.typeName}.metadata = ${JSON.stringify(sortObj(type))};`
         }
 
@@ -319,7 +322,7 @@ function main() {
     const json = JSON.parse(data);
     const modules = Map.of(Module)(json);
 
-    const buildEnv = new BuildEnv();
+    const buildEnv = new BuildEnv(args.ignoreIdolJs);
     for (let moduleName in modules) {
         const module = modules[moduleName];
         buildEnv.buildModule(module);
@@ -330,13 +333,14 @@ function main() {
 
 function processArgs() {
     const result = {};
-    let flag;
+    let argName;
 
     for (let i = 2; i < process.argv.length; ++i) {
         let arg = process.argv[i];
 
-        if (flag) {
-            result[flag] = arg;
+        if (argName) {
+            result[argName] = arg;
+            argName = null;
             continue;
         }
 
@@ -346,7 +350,10 @@ function processArgs() {
                 showHelp();
                 break;
             case "--output":
-                flag = "output";
+                argName = "output";
+                break;
+            case "--ignore-idol-js":
+                result.ignoreIdolJs = true;
                 break;
             default:
                 if (i === process.argv.length - 1) result.input_json = arg;
