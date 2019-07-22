@@ -68,53 +68,8 @@ TypeDec.metadata = {
     }
   }],
   "fields": {
-    "tags": {
-      "field_name": "tags",
-      "tags": [],
-      "type_struct": {
-        "literal": null,
-        "parameters": [],
-        "primitive_type": "string",
-        "reference": {
-          "module_name": "",
-          "qualified_name": "",
-          "type_name": ""
-        },
-        "struct_kind": "Repeated"
-      }
-    },
     "enum": {
       "field_name": "enum",
-      "tags": [],
-      "type_struct": {
-        "literal": null,
-        "parameters": [],
-        "primitive_type": "string",
-        "reference": {
-          "module_name": "",
-          "qualified_name": "",
-          "type_name": ""
-        },
-        "struct_kind": "Repeated"
-      }
-    },
-    "is_a": {
-      "field_name": "is_a",
-      "tags": [],
-      "type_struct": {
-        "literal": null,
-        "parameters": [],
-        "primitive_type": "string",
-        "reference": {
-          "module_name": "",
-          "qualified_name": "",
-          "type_name": ""
-        },
-        "struct_kind": "Scalar"
-      }
-    },
-    "type_vars": {
-      "field_name": "type_vars",
       "tags": [],
       "type_struct": {
         "literal": null,
@@ -141,6 +96,51 @@ TypeDec.metadata = {
           "type_name": "FieldDec"
         },
         "struct_kind": "Map"
+      }
+    },
+    "is_a": {
+      "field_name": "is_a",
+      "tags": [],
+      "type_struct": {
+        "literal": null,
+        "parameters": [],
+        "primitive_type": "string",
+        "reference": {
+          "module_name": "",
+          "qualified_name": "",
+          "type_name": ""
+        },
+        "struct_kind": "Scalar"
+      }
+    },
+    "tags": {
+      "field_name": "tags",
+      "tags": [],
+      "type_struct": {
+        "literal": null,
+        "parameters": [],
+        "primitive_type": "string",
+        "reference": {
+          "module_name": "",
+          "qualified_name": "",
+          "type_name": ""
+        },
+        "struct_kind": "Repeated"
+      }
+    },
+    "type_vars": {
+      "field_name": "type_vars",
+      "tags": [],
+      "type_struct": {
+        "literal": null,
+        "parameters": [],
+        "primitive_type": "string",
+        "reference": {
+          "module_name": "",
+          "qualified_name": "",
+          "type_name": ""
+        },
+        "struct_kind": "Repeated"
       }
     }
   },
