@@ -7,7 +7,7 @@ import path from 'path';
 
 class BuildEnv {
     constructor() {
-        this.buildDir = fs.mkdtempSync('idol_js.js');
+        this.buildDir = fs.mkdtempSync('tmp');
     }
 
     buildModule(module) {
@@ -22,8 +22,8 @@ class BuildEnv {
 
     finalizeIdolFile(outputDir) {
         fs.mkdirSync(outputDir, {recursive: true});
-        const content = fs.readFileSync(path.join(__dirname, '__idol__.js'));
-        fs.writeFileSync(path.join(outputDir, '__idol__.js'), content);
+        // const content = fs.readFileSync(path.join(__dirname, '__idol__.js'));
+        // fs.writeFileSync(path.join(outputDir, '__idol__.js'), content);
     }
 }
 
