@@ -26,7 +26,7 @@ export function Primitive(constructor, primitiveKind) {
 
 Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
     if (constructor == null) {
-        constructor = eval(`function ${primitiveKind}(val) { return val; }`);
+        constructor = function Primitive(val) { return val; }
     }
 
     constructor.validate = function validate(val, path) {
