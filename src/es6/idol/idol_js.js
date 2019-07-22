@@ -53,6 +53,7 @@ class ModuleBuildEnv {
         yield* this.withIndention(function* () {
             yield* (['Enum', 'Struct', 'List', 'Map', 'Literal', 'Primitive'].map(s => `${s} as ${s}_,`));
         });
+        console.log("yowsa");
         yield `} from ${this.importPathOf("__idol__")}`;
 
         const seenModules = {};
