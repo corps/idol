@@ -878,6 +878,7 @@ function () {
                 seenModules[dep.to.module_name] = true;
                 return dep.to.module_name !== module.moduleName;
               }).map(function (dep) {
+                console.log(dep);
                 return "import * as ".concat(_this.importedModuleNameOf(dep.to.module_name), " from ").concat(_this.importPathOf(dep.to.module_name));
               }), "t1", 8);
 
