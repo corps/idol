@@ -41,11 +41,11 @@ function Literal(val) {
 }
 
 (0, _idol__.Struct)(Literal, {
-  bool: ['bool', _idol__.Primitive],
-  "double": ['double', _idol__.Primitive],
-  int53: ['int53', _idol__.Primitive],
-  int64: ['int64', _idol__.Primitive],
-  string: ['string', _idol__.Primitive]
+  bool: ['bool', _idol__.Primitive.of('bool')],
+  "double": ['double', _idol__.Primitive.of('double')],
+  int53: ['int53', _idol__.Primitive.of('int53')],
+  int64: ['int64', _idol__.Primitive.of('int64')],
+  string: ['string', _idol__.Primitive.of('string')]
 });
 
 function Reference(val) {
@@ -53,11 +53,10 @@ function Reference(val) {
 }
 
 (0, _idol__.Struct)(Reference, {
-  moduleName: ['module_name', _idol__.Primitive],
-  qualifiedName: ['qualified_name', _idol__.Primitive],
-  typeName: ['type_name', _idol__.Primitive]
+  moduleName: ['module_name', _idol__.Primitive.of('string')],
+  qualifiedName: ['qualified_name', _idol__.Primitive.of('string')],
+  typeName: ['type_name', _idol__.Primitive.of('string')]
 });
-(0, _idol__.Struct)(Reference);
 
 function TypeStruct(val) {
   return TypeStruct.wrap.apply(this, arguments);
@@ -76,8 +75,8 @@ function Field(val) {
 }
 
 (0, _idol__.Struct)(Field, {
-  fieldName: ['field_name', _idol__.Primitive],
-  tags: ['tags', _idol__.List.of(_idol__.Primitive)],
+  fieldName: ['field_name', _idol__.Primitive.of('string')],
+  tags: ['tags', _idol__.List.of(_idol__.Primitive.of('string'))],
   typeStruct: ['type_struct', TypeStruct]
 });
 
@@ -88,8 +87,8 @@ function Dependency(val) {
 (0, _idol__.Struct)(Dependency, {
   from: ['from', Reference],
   to: ['to', Reference],
-  isAbstraction: ['is_abstraction', _idol__.Primitive],
-  isLocal: ['is_local', _idol__.Primitive]
+  isAbstraction: ['is_abstraction', _idol__.Primitive.of('bool')],
+  isLocal: ['is_local', _idol__.Primitive.of('bool')]
 });
 
 function Type(val) {
@@ -101,9 +100,9 @@ function Type(val) {
   fields: ['fields', _idol__.Map.of(Field)],
   isA: ['is_a', TypeStruct],
   named: ['named', Reference],
-  options: ['options', _idol__.List.of(_idol__.Primitive)],
-  tags: ['tags', _idol__.List.of(_idol__.Primitive)],
-  typeVars: ['type_vars', _idol__.List.of(_idol__.Primitive)]
+  options: ['options', _idol__.List.of(_idol__.Primitive.of('string'))],
+  tags: ['tags', _idol__.List.of(_idol__.Primitive.of('string'))],
+  typeVars: ['type_vars', _idol__.List.of(_idol__.Primitive.of('string'))]
 });
 
 function Module(val) {
@@ -113,7 +112,7 @@ function Module(val) {
 (0, _idol__.Struct)(Module, {
   abstractTypesByName: ['abstract_types_by_name', _idol__.Map.of(Type)],
   dependencies: ['dependencies', _idol__.List.of(Dependency)],
-  moduleName: ['module_name', _idol__.Primitive],
+  moduleName: ['module_name', _idol__.Primitive.of('string')],
   typesByName: ['types_by_name', _idol__.Map.of(Type)],
-  typesDependencyOrdering: ['types_dependency_ordering', _idol__.List.of(_idol__.Primitive)]
+  typesDependencyOrdering: ['types_dependency_ordering', _idol__.List.of(_idol__.Primitive.of('string'))]
 });

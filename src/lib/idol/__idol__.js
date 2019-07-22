@@ -1,5 +1,7 @@
 "use strict";
 
+function _typeof2(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof2 = function _typeof2(obj) { return typeof obj; }; } else { _typeof2 = function _typeof2(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof2(obj); }
+
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -12,15 +14,57 @@ exports.Struct = Struct;
 exports.List = List;
 exports.Map = Map;
 
-function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
+function _slicedToArray(arr, i) {
+  return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest();
+}
 
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
+function _nonIterableRest() {
+  throw new TypeError("Invalid attempt to destructure non-iterable instance");
+}
 
-function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+function _iterableToArrayLimit(arr, i) {
+  var _arr = [];
+  var _n = true;
+  var _d = false;
+  var _e = undefined;
 
-function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+  try {
+    for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+      _arr.push(_s.value);
 
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+      if (i && _arr.length === i) break;
+    }
+  } catch (err) {
+    _d = true;
+    _e = err;
+  } finally {
+    try {
+      if (!_n && _i["return"] != null) _i["return"]();
+    } finally {
+      if (_d) throw _e;
+    }
+  }
+
+  return _arr;
+}
+
+function _arrayWithHoles(arr) {
+  if (Array.isArray(arr)) return arr;
+}
+
+function _typeof(obj) {
+  if (typeof Symbol === "function" && _typeof2(Symbol.iterator) === "symbol") {
+    _typeof = function _typeof(obj) {
+      return _typeof2(obj);
+    };
+  } else {
+    _typeof = function _typeof(obj) {
+      return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : _typeof2(obj);
+    };
+  }
+
+  return _typeof(obj);
+}
 
 function isObj(v) {
   return !Array.isArray(v) && v instanceof Object;
@@ -51,7 +95,9 @@ function Primitive(constructor, primitiveKind) {
 
 Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
   if (constructor == null) {
-    constructor = eval("function ".concat(primitiveKind, "(val) { return val; }"));
+    constructor = function Primitive(val) {
+      return val;
+    };
   }
 
   constructor.validate = function validate(val, path) {
@@ -77,7 +123,7 @@ Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
         return;
 
       case "boolean":
-        if (primitiveKind !== "Boolean") {
+        if (primitiveKind !== "bool") {
           throw new Error("".concat(path.join('.'), " Found boolean, expected ").concat(primitiveKind));
         }
 
@@ -106,7 +152,7 @@ Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
         case "double":
           return 0;
 
-        case "boolean":
+        case "bool":
           return false;
       }
     }
@@ -182,7 +228,7 @@ Struct.of = function StructOf(fieldTypes, constructor) {
     };
   }
 
-  constructor.fieldTypes = fieldTypes;
+  constructor.fieldTypes = constructor.fieldTypes === undefined ? fieldTypes : constructor.fieldTypes;
 
   constructor.validate = function validate(json, path) {
     if (!isObj(json)) throw new Error("".concat(path.join('.'), " Expected an object, found ").concat(json));
@@ -243,7 +289,7 @@ Struct.of = function StructOf(fieldTypes, constructor) {
     }
   };
 
-  constructor.wrap = function (val) {
+  constructor.wrap = function wrap(val) {
     if (val == null) {
       return val;
     }
@@ -260,7 +306,6 @@ Struct.of = function StructOf(fieldTypes, constructor) {
           fieldType = _innerConstructor$fie[1];
 
       var fieldVal = val[fieldName];
-      console.log(innerConstructor.name, fieldName, fieldType);
       this[fieldName] = fieldType(fieldVal);
     }
   };

@@ -49,8 +49,6 @@ Struct_(Reference, {
     typeName: ['type_name', Prim_.of('string')],
 });
 
-Struct_(Reference);
-
 export function TypeStruct(val) {
     return TypeStruct.wrap.apply(this, arguments);
 }
