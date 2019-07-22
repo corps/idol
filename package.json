@@ -5,9 +5,13 @@
   "devDependencies": {
     "@babel/cli": "^7.5.5",
     "@babel/core": "^7.5.5",
-    "@babel/preset-env": "^7.5.5"
+    "@babel/preset-env": "^7.5.5",
+    "regenerator-runtime": "^0.13.3"
   },
   "scripts": {
-    "compile": "babel --source-type module src/es6 -d src/lib"
+    "clean": "rm -f ./idol_js.js",
+    "es6-compile": "babel --source-type module src/es6 -d src/lib",
+    "add-runtime": "cp src/lib/idol/idol_js.js . && cat node_modules/regenerator-runtime/runtime.js ./idol_js.js > /src/lib/idol/idol_js.js",
+    "compile": "npm run clean && npm run es6-compile && npm run add-runtime"
   }
 }

@@ -64,7 +64,7 @@ function TypeStruct(val) {
 }
 
 (0, _idol__.Struct)(TypeStruct, {
-  literal: ['literal', _idol__.Optional.of(Literal)],
+  literal: ['literal', Literal],
   parameters: ['parameters', _idol__.List.of(Reference)],
   primitiveType: ['primitive_type', PrimitiveType],
   reference: ['reference', Reference],
@@ -99,7 +99,7 @@ function Type(val) {
 (0, _idol__.Struct)(Type, {
   dependencies: ['dependencies', _idol__.List.of(Dependency)],
   fields: ['fields', _idol__.Map.of(Field)],
-  isA: ['is_a', _idol__.Optional.of(TypeStruct)],
+  isA: ['is_a', TypeStruct],
   named: ['named', Reference],
   options: ['options', _idol__.List.of(_idol__.Prim)],
   tags: ['tags', _idol__.List.of(_idol__.Prim)],
