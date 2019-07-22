@@ -1,0 +1,9 @@
+{
+  "name": "idol",
+  "version": "1.0.0",
+  "description": "**idol is a minimalistic, language-agnostic, transport agnostic, IDL**",
+  "devDependencies": {
+    "@babel/cli": "^7.5.5",
+    "@babel/core": "^7.5.5"
+  }
+}

@@ -1,3 +1,5 @@
+#! /usr/bin/env node
+
 import process from 'process';
 import fs from 'fs';
 import {Map} from "./__idol__";

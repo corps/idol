@@ -1,0 +1,1 @@
+../lib/idol/idol_js.js

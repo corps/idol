@@ -5,3 +5,5 @@ result
 __pycache__
 /test/target
 build.json
+node_modules
+package-lock.json
