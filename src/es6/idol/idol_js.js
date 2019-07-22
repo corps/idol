@@ -96,6 +96,8 @@ class ModuleBuildEnv {
             } else {
                 yield* this.genStruct(module, type);
             }
+            
+            yield `${type.named.typeName}.metadata = ${JSON.stringify(sortObj(type))};`
         }
 
         yield ""
@@ -130,7 +132,6 @@ class ModuleBuildEnv {
         }
 
         yield `Literal_(${type.named.typeName});`;
-        yield `${type.named.typeName}.metadata = ${JSON.stringify(type)};`
     }
 
     * genPrimitive(module, type) {
@@ -161,7 +162,6 @@ class ModuleBuildEnv {
         }
 
         yield `Primitive_(${type.named.typeName});`;
-        yield `${type.named.typeName}.metadata = ${JSON.stringify(type)};`
     }
 
     * genRepeated(module, type) {
@@ -175,7 +175,6 @@ class ModuleBuildEnv {
 
         yield "";
         yield `List_(${type.named.typeName}, ${this.typeStructScalarFunc(type.isA)});`
-        yield `${type.named.typeName}.metadata = ${JSON.stringify(type)};`
     }
 
     * genMapped(module, type) {
@@ -189,7 +188,6 @@ class ModuleBuildEnv {
 
         yield "";
         yield `Map_(${type.named.typeName}, ${this.typeStructScalarFunc(type.isA)});`
-        yield `${type.named.typeName}.metadata = ${JSON.stringify(type)};`
     }
 
     * genEnum(module, type) {
@@ -210,7 +208,6 @@ class ModuleBuildEnv {
 
         yield `${type.named.typeName}.default = ${type.named.typeName}.${type.options[0].toUpperCase()};`;
         yield `Enum_(${type.named.typeName});`;
-        yield `${type.named.typeName}.metadata = ${JSON.stringify(type)};`;
     }
 
     * genStruct(module, type) {
@@ -243,8 +240,6 @@ class ModuleBuildEnv {
         yield* type.options.map(option => {
             return `${type.named.typeName}.options.${option.toUpperCase()} = ${JSON.stringify(option)};`;
         });
-
-        yield `${type.named.typeName}.metadata = ${JSON.stringify(type)};`
     }
 
     * withIndention(f) {
@@ -369,6 +364,20 @@ function showHelp() {
     console.error("");
     process.exit(1);
 }
+
+// Required to create deterministic serialization of metadata
+function sortObj(obj) {
+    return obj === null || typeof obj !== 'object'
+        ? obj
+        : Array.isArray(obj)
+            ? obj.map(sortObj)
+            : Object.assign({},
+                ...Object.entries(obj)
+                    .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+                    .map(([k, v]) => ({[k]: sortObj(v)}),
+                    ));
+}
+
 
 function recursiveCopy(src, dest) {
     if (fs.lstatSync(src).isDirectory()) {

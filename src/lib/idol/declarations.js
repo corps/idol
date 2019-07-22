@@ -68,23 +68,8 @@ TypeDec.metadata = {
     }
   }],
   "fields": {
-    "enum": {
-      "field_name": "enum",
-      "tags": [],
-      "type_struct": {
-        "literal": null,
-        "parameters": [],
-        "primitive_type": "string",
-        "reference": {
-          "module_name": "",
-          "qualified_name": "",
-          "type_name": ""
-        },
-        "struct_kind": "Repeated"
-      }
-    },
-    "type_vars": {
-      "field_name": "type_vars",
+    "tags": {
+      "field_name": "tags",
       "tags": [],
       "type_struct": {
         "literal": null,
@@ -128,8 +113,23 @@ TypeDec.metadata = {
         "struct_kind": "Scalar"
       }
     },
-    "tags": {
-      "field_name": "tags",
+    "enum": {
+      "field_name": "enum",
+      "tags": [],
+      "type_struct": {
+        "literal": null,
+        "parameters": [],
+        "primitive_type": "string",
+        "reference": {
+          "module_name": "",
+          "qualified_name": "",
+          "type_name": ""
+        },
+        "struct_kind": "Repeated"
+      }
+    },
+    "type_vars": {
+      "field_name": "type_vars",
       "tags": [],
       "type_struct": {
         "literal": null,
