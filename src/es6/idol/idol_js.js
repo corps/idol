@@ -391,13 +391,13 @@ function camelCase(s) {
     });
 }
 
-function mkdirP(path) {
-  if (fs.existsSync(path)) return;
-  const parent = path.dirname(path);
+function mkdirP(p) {
+  if (fs.existsSync(p)) return;
+  const parent = path.dirname(p);
   if (!fs.existsSync(parent)) {
     mkdirP(parent);
   }
-  fs.mkdirSync(path);
+  fs.mkdirSync(p);
 }
 
 main();
