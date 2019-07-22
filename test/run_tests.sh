@@ -6,12 +6,14 @@ expand_rs=./target/debug/expand
 validate_rs=./target/debug/validate
 expand_py=./src/lib/expand.py
 validate_py=./src/lib/validate.py
+expand_js=./src/lib/expand.js
+validate_js=./src/lib/validate.js
 failed=
 
 function test_expand() {
   local case=$1
 
-  for expand in $expand_rs $expand_py; do
+  for expand in $expand_rs $expand_py $expand_js; do
     if failed="${failed}$(
       set -e
       local result=$(cat $case | $expand | jq -S .)
@@ -35,7 +37,7 @@ function test_expand() {
 function test_validate() {
   local case=$1
 
-  for validate in $validate_rs $validate_py; do
+  for validate in $validate_rs $validate_py $validate_js; do
     if failed="${failed}$(
       set -e
       if cat $case | $validate; then

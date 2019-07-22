@@ -279,7 +279,7 @@ class ModuleBuildEnv {
     }
 
     importedModuleNameOf(moduleName) {
-        return camelCase(moduleName.replace(".", "_"));
+        return camelCase(moduleName.replace(/\./g, "_"));
     }
 
     importPathOf(moduleName) {

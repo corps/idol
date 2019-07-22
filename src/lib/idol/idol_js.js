@@ -1507,7 +1507,7 @@ function () {
   }, {
     key: "importedModuleNameOf",
     value: function importedModuleNameOf(moduleName) {
-      return camelCase(moduleName.replace(".", "_"));
+      return camelCase(moduleName.replace(/\./g, "_"));
     }
   }, {
     key: "importPathOf",
