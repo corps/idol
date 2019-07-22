@@ -35,7 +35,7 @@ class ModuleBuildEnv {
     }
 
     writeModule(module) {
-        const moduleFilePath = os.path.join(this.buildEnv.buildDir, ModuleBuildEnv.modulePathOf(module));
+        const moduleFilePath = path.join(this.buildEnv.buildDir, ModuleBuildEnv.modulePathOf(module));
         fs.mkdirSync(path.dirname(moduleFilePath), {recursive: true});
 
         const lines = [];
