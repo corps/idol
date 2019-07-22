@@ -4,6 +4,10 @@
   "description": "**idol is a minimalistic, language-agnostic, transport agnostic, IDL**",
   "devDependencies": {
     "@babel/cli": "^7.5.5",
-    "@babel/core": "^7.5.5"
+    "@babel/core": "^7.5.5",
+    "@babel/preset-env": "^7.5.5"
+  },
+  "scripts": {
+    "compile": "babel --source-type module src/es6 -d src/lib"
   }
 }

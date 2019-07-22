@@ -1,23 +1,31 @@
-import {
-    Enum as Enum_,
-    Struct as Struct_,
-    Prim as Prim_,
-    Optional as Optional_,
-    List as List_,
-    Map as Map_,
-} from './__idol__';
+"use strict";
 
-export function StructKind(val) {
-    return val;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.StructKind = StructKind;
+exports.PrimitiveType = PrimitiveType;
+exports.Literal = Literal;
+exports.Reference = Reference;
+exports.TypeStruct = TypeStruct;
+exports.Field = Field;
+exports.Dependency = Dependency;
+exports.Type = Type;
+exports.Module = Module;
+
+var _idol__ = require("./__idol__");
+
+function StructKind(val) {
+  return val;
 }
 
 StructKind.MAP = 'map';
 StructKind.REPEATED = 'repeated';
 StructKind.SCALAR = 'scalar';
-Enum_(StructKind, StructKind.SCALAR);
+(0, _idol__.Enum)(StructKind, StructKind.SCALAR);
 
-export function PrimitiveType(val) {
-    return val;
+function PrimitiveType(val) {
+  return val;
 }
 
 PrimitiveType.ANY = 'any';
@@ -26,87 +34,86 @@ PrimitiveType.DOUBLE = 'double';
 PrimitiveType.INT53 = 'int53';
 PrimitiveType.INT64 = 'int64';
 PrimitiveType.STRING = 'string';
-Enum_(PrimitiveType, PrimitiveType.ANY);
+(0, _idol__.Enum)(PrimitiveType, PrimitiveType.ANY);
 
-export function Literal(val) {
-    return Literal.wrap.apply(this, arguments);
+function Literal(val) {
+  return Literal.wrap.apply(this, arguments);
 }
 
-Struct_(Literal, {
-    bool: ['bool', Prim_],
-    double: ['double', Prim_],
-    int53: ['int53', Prim_],
-    int64: ['int64', Prim_],
-    string: ['string', Prim_],
+(0, _idol__.Struct)(Literal, {
+  bool: ['bool', _idol__.Prim],
+  "double": ['double', _idol__.Prim],
+  int53: ['int53', _idol__.Prim],
+  int64: ['int64', _idol__.Prim],
+  string: ['string', _idol__.Prim]
 });
 
-export function Reference(val) {
-    return Reference.wrap.apply(this, arguments);
+function Reference(val) {
+  return Reference.wrap.apply(this, arguments);
 }
 
-Struct_(Reference, {
-    moduleName: ['module_name', Prim_],
-    qualifiedName: ['qualified_name', Prim_],
-    typeName: ['type_name', Prim_],
+(0, _idol__.Struct)(Reference, {
+  moduleName: ['module_name', _idol__.Prim],
+  qualifiedName: ['qualified_name', _idol__.Prim],
+  typeName: ['type_name', _idol__.Prim]
+});
+(0, _idol__.Struct)(Reference);
+
+function TypeStruct(val) {
+  return TypeStruct.wrap.apply(this, arguments);
+}
+
+(0, _idol__.Struct)(TypeStruct, {
+  literal: ['literal', _idol__.Optional.of(Literal)],
+  parameters: ['parameters', _idol__.List.of(Reference)],
+  primitiveType: ['primitive_type', PrimitiveType],
+  reference: ['reference', Reference],
+  structKind: ['struct_kind', StructKind]
 });
 
-Struct_(Reference);
-
-export function TypeStruct(val) {
-    return TypeStruct.wrap.apply(this, arguments);
+function Field(val) {
+  return Field.wrap.apply(this, arguments);
 }
 
-Struct_(TypeStruct, {
-    literal: ['literal', Optional_.of(Literal)],
-    parameters: ['parameters', List_.of(Reference)],
-    primitiveType: ['primitive_type', PrimitiveType],
-    reference: ['reference', Reference],
-    structKind: ['struct_kind', StructKind],
+(0, _idol__.Struct)(Field, {
+  fieldName: ['field_name', _idol__.Prim],
+  tags: ['tags', _idol__.List.of(_idol__.Prim)],
+  typeStruct: ['type_struct', TypeStruct]
 });
 
-export function Field(val) {
-    return Field.wrap.apply(this, arguments);
+function Dependency(val) {
+  return Dependency.wrap.apply(this, arguments);
 }
 
-Struct_(Field, {
-    fieldName: ['field_name', Prim_],
-    tags: ['tags', List_.of(Prim_)],
-    typeStruct: ['type_struct', TypeStruct],
+(0, _idol__.Struct)(Dependency, {
+  from: ['from', Reference],
+  to: ['to', Reference],
+  isAbstraction: ['is_abstraction', _idol__.Prim],
+  isLocal: ['is_local', _idol__.Prim]
 });
 
-export function Dependency(val) {
-    return Dependency.wrap.apply(this, arguments);
+function Type(val) {
+  return Type.wrap.apply(this, arguments);
 }
 
-Struct_(Dependency, {
-    from: ['from', Reference],
-    to: ['to', Reference],
-    isAbstraction: ['is_abstraction', Prim_],
-    isLocal: ['is_local', Prim_],
+(0, _idol__.Struct)(Type, {
+  dependencies: ['dependencies', _idol__.List.of(Dependency)],
+  fields: ['fields', _idol__.Map.of(Field)],
+  isA: ['is_a', _idol__.Optional.of(TypeStruct)],
+  named: ['named', Reference],
+  options: ['options', _idol__.List.of(_idol__.Prim)],
+  tags: ['tags', _idol__.List.of(_idol__.Prim)],
+  typeVars: ['type_vars', _idol__.List.of(_idol__.Prim)]
 });
 
-export function Type(val) {
-    return Type.wrap.apply(this, arguments);
+function Module(val) {
+  return Module.wrap.apply(this, arguments);
 }
 
-Struct_(Type, {
-    dependencies: ['dependencies', List_.of(Dependency)],
-    fields: ['fields', Map_.of(Field)],
-    isA: ['is_a', Optional_.of(TypeStruct)],
-    named: ['named', Reference],
-    options: ['options', List_.of(Prim_)],
-    tags: ['tags', List_.of(Prim_)],
-    typeVars: ['type_vars', List_.of(Prim_)],
-});
-
-export function Module(val) {
-    return Module.wrap.apply(this, arguments);
-}
-
-Struct_(Module, {
-    abstractTypesByName: ['abstract_types_by_name', Map_.of(Type)],
-    dependencies: ['dependencies', List_.of(Dependency)],
-    moduleName: ['module_name', Prim_],
-    typesByName: ['types_by_name', Map_.of(Type)],
-    typesDependencyOrdering: ['types_dependency_ordering', List_.of(Prim_)],
+(0, _idol__.Struct)(Module, {
+  abstractTypesByName: ['abstract_types_by_name', _idol__.Map.of(Type)],
+  dependencies: ['dependencies', _idol__.List.of(Dependency)],
+  moduleName: ['module_name', _idol__.Prim],
+  typesByName: ['types_by_name', _idol__.Map.of(Type)],
+  typesDependencyOrdering: ['types_dependency_ordering', _idol__.List.of(_idol__.Prim)]
 });
