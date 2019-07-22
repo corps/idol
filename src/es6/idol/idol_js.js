@@ -21,7 +21,7 @@ class BuildEnv {
     }
 
     finalizeIdolFile(outputDir) {
-        fs.existsSync(outputDir) || fs.mkdirSync(outputDir, {recursive: true});
+        fs.existsSync(outputDir) || mkdirP(outputDir);
 
         if (!this.ignoreIdolJs) {
             const content = fs.readFileSync(require.resolve('./__idol__'));
@@ -41,7 +41,7 @@ class ModuleBuildEnv {
     writeModule(module) {
         const moduleFilePath = path.join(this.buildEnv.buildDir, ModuleBuildEnv.modulePathOf(module));
         const moduleDir = path.dirname(moduleFilePath);
-        fs.existsSync(moduleDir) || fs.mkdirSync(moduleDir, {recursive: true});
+        fs.existsSync(moduleDir) || mkdirP(moduleDir);
 
         const lines = [];
         for (let line of this.genModule(module)) {
@@ -373,7 +373,7 @@ function sortObj(obj) {
 function recursiveCopy(src, dest) {
     if (fs.lstatSync(src).isDirectory()) {
         if (!fs.lstatSync(dest).isDirectory()) {
-            fs.mkdirSync(dest, {recursive: true});
+            mkdirP(dest);
         }
 
         fs.readdirSync(src).forEach((file) => {
@@ -389,6 +389,15 @@ function camelCase(s) {
         return v.toUpperCase()
             .replace('_', '');
     });
+}
+
+function mkdirP(path) {
+  if (fs.existsSync(path)) return;
+  const parent = path.dirname(path);
+  if (!fs.existsSync(parent)) {
+    mkdirP(parent);
+  }
+  fs.mkdirSync(path);
 }
 
 main();

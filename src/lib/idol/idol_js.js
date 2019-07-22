@@ -791,9 +791,7 @@ function () {
   }, {
     key: "finalizeIdolFile",
     value: function finalizeIdolFile(outputDir) {
-      _fs["default"].existsSync(outputDir) || _fs["default"].mkdirSync(outputDir, {
-        recursive: true
-      });
+      _fs["default"].existsSync(outputDir) || mkdirP(outputDir);
 
       if (!this.ignoreIdolJs) {
         var content = _fs["default"].readFileSync(require.resolve('./__idol__'));
@@ -825,9 +823,7 @@ function () {
 
       var moduleDir = _path["default"].dirname(moduleFilePath);
 
-      _fs["default"].existsSync(moduleDir) || _fs["default"].mkdirSync(moduleDir, {
-        recursive: true
-      });
+      _fs["default"].existsSync(moduleDir) || mkdirP(moduleDir);
       var lines = [];
       var _iteratorNormalCompletion = true;
       var _didIteratorError = false;
@@ -1595,9 +1591,7 @@ function sortObj(obj) {
 function recursiveCopy(src, dest) {
   if (_fs["default"].lstatSync(src).isDirectory()) {
     if (!_fs["default"].lstatSync(dest).isDirectory()) {
-      _fs["default"].mkdirSync(dest, {
-        recursive: true
-      });
+      mkdirP(dest);
     }
 
     _fs["default"].readdirSync(src).forEach(function (file) {
@@ -1612,6 +1606,17 @@ function camelCase(s) {
   return s.replace(/([-_][a-z])/ig, function (v) {
     return v.toUpperCase().replace('_', '');
   });
+}
+
+function mkdirP(path) {
+  if (_fs["default"].existsSync(path)) return;
+  var parent = path.dirname(path);
+
+  if (!_fs["default"].existsSync(parent)) {
+    mkdirP(parent);
+  }
+
+  _fs["default"].mkdirSync(path);
 }
 
 main();
