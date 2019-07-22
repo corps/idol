@@ -1525,7 +1525,7 @@ function () {
         parts.push(moduleNameParts[i]);
       }
 
-      return JSON.stringify(parts.join("/"));
+      return JSON.stringify("./" + parts.join("/"));
     }
   }], [{
     key: "modulePathOf",
