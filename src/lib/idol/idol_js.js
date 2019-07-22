@@ -1441,13 +1441,9 @@ function () {
 
             case 18:
               _context15.next = 20;
-              return "Struct_(".concat(type.named.typeName, ");");
-
-            case 20:
-              _context15.next = 22;
               return "".concat(type.named.typeName, ".metadata = ").concat(JSON.stringify(type), ";");
 
-            case 22:
+            case 20:
             case "end":
               return _context15.stop();
           }

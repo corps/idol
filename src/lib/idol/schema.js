@@ -78,7 +78,6 @@ function Literal(val) {
   int64: ["int64", _idol__.Primitive.of("int64")],
   string: ["string", _idol__.Primitive.of("string")]
 });
-(0, _idol__.Struct)(Literal);
 Literal.metadata = {
   "dependencies": [],
   "fields": {
@@ -178,7 +177,6 @@ function Reference(val) {
   qualifiedName: ["qualified_name", _idol__.Primitive.of("string")],
   typeName: ["type_name", _idol__.Primitive.of("string")]
 });
-(0, _idol__.Struct)(Reference);
 Reference.metadata = {
   "dependencies": [],
   "fields": {
@@ -250,7 +248,6 @@ function TypeStruct(val) {
   reference: ["reference", Reference],
   structKind: ["struct_kind", StructKind]
 });
-(0, _idol__.Struct)(TypeStruct);
 TypeStruct.metadata = {
   "dependencies": [{
     "from": {
@@ -415,7 +412,6 @@ function Field(val) {
   tags: ["tags", _idol__.Primitive.of("string")],
   typeStruct: ["type_struct", TypeStruct]
 });
-(0, _idol__.Struct)(Field);
 Field.metadata = {
   "dependencies": [{
     "from": {
@@ -499,7 +495,6 @@ function Dependency(val) {
   isLocal: ["is_local", _idol__.Primitive.of("bool")],
   to: ["to", Reference]
 });
-(0, _idol__.Struct)(Dependency);
 Dependency.metadata = {
   "dependencies": [{
     "from": {
@@ -614,7 +609,6 @@ function Type(val) {
   tags: ["tags", _idol__.Primitive.of("string")],
   typeVars: ["type_vars", _idol__.Primitive.of("string")]
 });
-(0, _idol__.Struct)(Type);
 Type.metadata = {
   "dependencies": [{
     "from": {
@@ -798,7 +792,6 @@ function Module(val) {
   typesByName: ["types_by_name", Type],
   typesDependencyOrdering: ["types_dependency_ordering", _idol__.Primitive.of("string")]
 });
-(0, _idol__.Struct)(Module);
 Module.metadata = {
   "dependencies": [{
     "from": {
