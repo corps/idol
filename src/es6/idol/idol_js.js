@@ -297,7 +297,7 @@ class ModuleBuildEnv {
             parts.push(moduleNameParts[i]);
         }
 
-        return JSON.stringify(parts.join("/"));
+        return JSON.stringify("./" + parts.join("/"));
     }
 
     static modulePathOf(module) {

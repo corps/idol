@@ -1530,7 +1530,7 @@ function () {
   }], [{
     key: "modulePathOf",
     value: function modulePathOf(module) {
-      return module.split(".").join("/") + ".js";
+      return module.moduleName.split(".").join("/") + ".js";
     }
   }]);
 
