@@ -20,6 +20,7 @@ addons:
     - jq
     - python3.6
   homebrew:
+    update: true
     packages:
       - python36
       - jq
