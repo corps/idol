@@ -7,4 +7,4 @@ __pycache__
 build.json
 node_modules
 package-lock.json
-./idol_js.js
+/idol_js.js

@@ -11,7 +11,8 @@
   "scripts": {
     "clean": "rm -f ./idol_js.js",
     "es6-compile": "babel --source-type module src/es6 -d src/lib",
-    "add-runtime": "cp src/lib/idol/idol_js.js . && cat node_modules/regenerator-runtime/runtime.js ./idol_js.js > /src/lib/idol/idol_js.js",
-    "compile": "npm run clean && npm run es6-compile && npm run add-runtime"
+    "add-runtime": "cp ./src/lib/idol/idol_js.js . && cat ./src/es6/idol/header ./node_modules/regenerator-runtime/runtime.js ./idol_js.js > ./src/lib/idol/idol_js.js",
+    "chmod" : "chmod +x ./src/lib/idol/idol_js.js",
+    "compile": "npm run clean && npm run es6-compile && npm run add-runtime && npm run chmod"
   }
 }

@@ -1,5 +1,3 @@
-#! /usr/bin/env node
-
 import process from 'process';
 import fs from 'fs';
 import {Map} from "./__idol__";
@@ -314,7 +312,7 @@ function main() {
     const args = processArgs();
 
     let data;
-    if (process.stdout.isTTY) {
+    if (process.stdin.isTTY) {
         if (!args.input_json) {
             showHelp();
         }
@@ -340,7 +338,7 @@ function processArgs() {
     const result = {};
     let flag;
 
-    for (let i = 1; i < process.argv.length; ++i) {
+    for (let i = 2; i < process.argv.length; ++i) {
         let arg = process.argv[i];
 
         if (flag) {
@@ -357,14 +355,14 @@ function processArgs() {
                 flag = "output";
                 break;
             default:
-                result.input_json = arg;
+                if (i === process.argv.length - 1) result.input_json = arg;
         }
     }
     return result;
 }
 
 function showHelp() {
-    console.error("Usage:", process.argv0, "--output <output> <input_json>");
+    console.error("Usage:", process.argv[1], "--output <output> <input_json>");
     console.error("");
     console.error("Options:");
     console.error(" -h --help:  Show this help");
@@ -393,3 +391,5 @@ function camelCase(s) {
             .replace('_', '');
     });
 }
+
+main();
