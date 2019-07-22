@@ -29,6 +29,7 @@ models: $(MODELS)
 	cat build.json | ./src/bin/idol_js.js --output src/es6/idol --ignore-idol-js
 
 test: target/debug/idol target/debug/idol_rs models
+	cat build.json | jq
 	cargo test
 	make -C test
 
