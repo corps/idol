@@ -287,6 +287,7 @@ class ModuleBuildEnv {
     }
 
     importPathOf(moduleName) {
+        console.log(moduleName);
         const moduleNameParts = moduleName.split(".");
         const parts = [];
 
