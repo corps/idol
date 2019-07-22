@@ -245,7 +245,6 @@ class ModuleBuildEnv {
             return `${type.named.typeName}.options.${option.toUpperCase()} = ${JSON.stringify(option)};`;
         });
 
-        yield `Struct_(${type.named.typeName});`
         yield `${type.named.typeName}.metadata = ${JSON.stringify(type)};`
     }
 
