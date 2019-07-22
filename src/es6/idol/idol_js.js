@@ -21,7 +21,7 @@ class BuildEnv {
     }
 
     finalizeIdolFile(outputDir) {
-        fs.mkdirSync(outputDir, {recursive: true});
+        fs.existsSync(outputDir) || fs.mkdirSync(outputDir, {recursive: true});
 
         if (!this.ignoreIdolJs) {
             const content = fs.readFileSync(require.resolve('./__idol__'));
@@ -40,7 +40,8 @@ class ModuleBuildEnv {
 
     writeModule(module) {
         const moduleFilePath = path.join(this.buildEnv.buildDir, ModuleBuildEnv.modulePathOf(module));
-        fs.mkdirSync(path.dirname(moduleFilePath), {recursive: true});
+        const moduleDir = path.dirname(moduleFilePath);
+        fs.existsSync(moduleDir) || fs.mkdirSync(moduleDir, {recursive: true});
 
         const lines = [];
         for (let line of this.genModule(module)) {

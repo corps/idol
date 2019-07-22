@@ -791,7 +791,7 @@ function () {
   }, {
     key: "finalizeIdolFile",
     value: function finalizeIdolFile(outputDir) {
-      _fs["default"].mkdirSync(outputDir, {
+      _fs["default"].existsSync(outputDir) || _fs["default"].mkdirSync(outputDir, {
         recursive: true
       });
 
@@ -823,10 +823,11 @@ function () {
     value: function writeModule(module) {
       var moduleFilePath = _path["default"].join(this.buildEnv.buildDir, ModuleBuildEnv.modulePathOf(module));
 
-      _fs["default"].mkdirSync(_path["default"].dirname(moduleFilePath), {
+      var moduleDir = _path["default"].dirname(moduleFilePath);
+
+      _fs["default"].existsSync(moduleDir) || _fs["default"].mkdirSync(moduleDir, {
         recursive: true
       });
-
       var lines = [];
       var _iteratorNormalCompletion = true;
       var _didIteratorError = false;
