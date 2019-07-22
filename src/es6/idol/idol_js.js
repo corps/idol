@@ -264,7 +264,7 @@ class ModuleBuildEnv {
             return `${this.importedModuleNameOf(reference.moduleName)}.${reference.typeName}`;
         }
 
-        return 'Prim_';
+        return `Primitive_.of(${JSON.stringify(typeStruct.primitiveType)})`;
     }
 
     typeStructFunc(typeStruct) {

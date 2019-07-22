@@ -260,14 +260,17 @@ Struct.of = function StructOf(fieldTypes, constructor) {
           fieldType = _innerConstructor$fie[1];
 
       var fieldVal = val[fieldName];
+      console.log(innerConstructor.name, fieldName, fieldType);
       this[fieldName] = fieldType(fieldVal);
     }
   };
 
   var _loop = function _loop(propName) {
     var _constructor$fieldTyp = _slicedToArray(constructor.fieldTypes[propName], 1),
-        fieldName = _constructor$fieldTyp[0];
+        fieldName = _constructor$fieldTyp[0]; // No need to make a recursive mapping.
 
+
+    if (fieldName === propName) return "continue";
     Object.defineProperty(constructor.prototype, propName, {
       get: function get() {
         return this[fieldName];
@@ -279,7 +282,9 @@ Struct.of = function StructOf(fieldTypes, constructor) {
   };
 
   for (var propName in constructor.fieldTypes) {
-    _loop(propName);
+    var _ret = _loop(propName);
+
+    if (_ret === "continue") continue;
   }
 
   constructor.isValid = mkIsValid(constructor);
@@ -293,7 +298,7 @@ function List(constructor, innerKind) {
 List.of = function ListOf(innerKind, constructor) {
   if (constructor == null) {
     constructor = function List(val) {
-      return constructor.wrap.apply(this, arguments);
+      return List.wrap.apply(List, arguments);
     };
   }
 
@@ -358,7 +363,7 @@ function Map(constructor, innerKind) {
 Map.of = function MapOf(innerKind, constructor) {
   if (constructor == null) {
     constructor = function Map(val) {
-      return constructor.wrap.apply(this, arguments);
+      return Map.wrap.apply(Map, arguments);
     };
   }
 

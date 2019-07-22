@@ -1548,10 +1548,8 @@ function main() {
       showHelp();
     }
 
-    console.error("Reading from", args.input_json);
     data = _fs["default"].readFileSync(args.input_json, 'utf-8');
   } else {
-    console.error("Reading from stdin...");
     data = _fs["default"].readFileSync(0, 'utf-8');
   }
 

@@ -48,7 +48,7 @@ Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
                 }
                 return;
             case "boolean":
-                if (primitiveKind !== "Boolean") {
+                if (primitiveKind !== "bool") {
                     throw new Error(`${path.join('.')} Found boolean, expected ${primitiveKind}`);
                 }
                 return;
@@ -71,7 +71,7 @@ Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
                 case "int64":
                 case "double":
                     return 0;
-                case "boolean":
+                case "bool":
                     return false;
             }
         }
@@ -230,6 +230,9 @@ Struct.of = function StructOf(fieldTypes, constructor) {
     for (let propName in constructor.fieldTypes) {
         let [fieldName] = constructor.fieldTypes[propName];
 
+        // No need to make a recursive mapping.
+        if (fieldName === propName) continue;
+
         Object.defineProperty(constructor.prototype, propName, {
             get: function () {
                 return this[fieldName];
@@ -252,7 +255,7 @@ export function List(constructor, innerKind) {
 List.of = function ListOf(innerKind, constructor) {
     if (constructor == null) {
         constructor = function List(val) {
-            return constructor.wrap.apply(this, arguments);
+            return List.wrap.apply(List, arguments);
         }
     }
 
@@ -315,7 +318,7 @@ export function Map(constructor, innerKind) {
 Map.of = function MapOf(innerKind, constructor) {
     if (constructor == null) {
         constructor = function Map(val) {
-            return constructor.wrap.apply(this, arguments);
+            return Map.wrap.apply(Map, arguments);
         }
     }
 

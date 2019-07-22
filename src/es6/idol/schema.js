@@ -1,7 +1,7 @@
 import {
     Enum as Enum_,
     Struct as Struct_,
-    Prim as Prim_,
+    Primitive as Prim_,
     List as List_,
     Map as Map_,
 } from './__idol__';
@@ -32,11 +32,11 @@ export function Literal(val) {
 }
 
 Struct_(Literal, {
-    bool: ['bool', Prim_],
-    double: ['double', Prim_],
-    int53: ['int53', Prim_],
-    int64: ['int64', Prim_],
-    string: ['string', Prim_],
+    bool: ['bool', Prim_.of('bool')],
+    double: ['double', Prim_.of('double')],
+    int53: ['int53', Prim_.of('int53')],
+    int64: ['int64', Prim_.of('int64')],
+    string: ['string', Prim_.of('string')],
 });
 
 export function Reference(val) {
@@ -44,9 +44,9 @@ export function Reference(val) {
 }
 
 Struct_(Reference, {
-    moduleName: ['module_name', Prim_],
-    qualifiedName: ['qualified_name', Prim_],
-    typeName: ['type_name', Prim_],
+    moduleName: ['module_name', Prim_.of('string')],
+    qualifiedName: ['qualified_name', Prim_.of('string')],
+    typeName: ['type_name', Prim_.of('string')],
 });
 
 Struct_(Reference);
@@ -68,8 +68,8 @@ export function Field(val) {
 }
 
 Struct_(Field, {
-    fieldName: ['field_name', Prim_],
-    tags: ['tags', List_.of(Prim_)],
+    fieldName: ['field_name', Prim_.of('string')],
+    tags: ['tags', List_.of(Prim_.of('string'))],
     typeStruct: ['type_struct', TypeStruct],
 });
 
@@ -80,8 +80,8 @@ export function Dependency(val) {
 Struct_(Dependency, {
     from: ['from', Reference],
     to: ['to', Reference],
-    isAbstraction: ['is_abstraction', Prim_],
-    isLocal: ['is_local', Prim_],
+    isAbstraction: ['is_abstraction', Prim_.of('bool')],
+    isLocal: ['is_local', Prim_.of('bool')],
 });
 
 export function Type(val) {
@@ -93,9 +93,9 @@ Struct_(Type, {
     fields: ['fields', Map_.of(Field)],
     isA: ['is_a', TypeStruct],
     named: ['named', Reference],
-    options: ['options', List_.of(Prim_)],
-    tags: ['tags', List_.of(Prim_)],
-    typeVars: ['type_vars', List_.of(Prim_)],
+    options: ['options', List_.of(Prim_.of('string'))],
+    tags: ['tags', List_.of(Prim_.of('string'))],
+    typeVars: ['type_vars', List_.of(Prim_.of('string'))],
 });
 
 export function Module(val) {
@@ -105,7 +105,7 @@ export function Module(val) {
 Struct_(Module, {
     abstractTypesByName: ['abstract_types_by_name', Map_.of(Type)],
     dependencies: ['dependencies', List_.of(Dependency)],
-    moduleName: ['module_name', Prim_],
+    moduleName: ['module_name', Prim_.of('string')],
     typesByName: ['types_by_name', Map_.of(Type)],
-    typesDependencyOrdering: ['types_dependency_ordering', List_.of(Prim_)],
+    typesDependencyOrdering: ['types_dependency_ordering', List_.of(Prim_.of('string'))],
 });
