@@ -301,7 +301,7 @@ class ModuleBuildEnv {
     }
 
     static modulePathOf(module) {
-        return module.split(".").join("/") + ".js";
+        return module.moduleName.split(".").join("/") + ".js";
     }
 }
 

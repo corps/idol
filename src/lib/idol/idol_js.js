@@ -798,7 +798,7 @@ function () {
   _createClass(ModuleBuildEnv, [{
     key: "writeModule",
     value: function writeModule(module) {
-      var moduleFilePath = _os["default"].path.join(this.buildEnv.buildDir, ModuleBuildEnv.modulePathOf(module));
+      var moduleFilePath = _path["default"].join(this.buildEnv.buildDir, ModuleBuildEnv.modulePathOf(module));
 
       _fs["default"].mkdirSync(_path["default"].dirname(moduleFilePath), {
         recursive: true
