@@ -1,156 +1,112 @@
-import {Enum as Enum_, Struct as Struct_, isObj, wrapMap} from './__idol__';
+import {
+    Enum as Enum_,
+    Struct as Struct_,
+    Prim as Prim_,
+    Optional as Optional_,
+    List as List_,
+    Map as Map_,
+} from './__idol__';
 
 export function StructKind(val) {
     return val;
 }
 
-StructKind.options = {};
-StructKind.options.MAP = 'map';
-StructKind.options.REPEATED = 'repeated';
-StructKind.options.SCALAR = 'scalar';
-Object.assign(StructKind, StructKind.options);
-StructKind.default = StructKind.MAP;
-Enum_(StructKind);
+StructKind.MAP = 'map';
+StructKind.REPEATED = 'repeated';
+StructKind.SCALAR = 'scalar';
+Enum_(StructKind, StructKind.SCALAR);
 
 export function PrimitiveType(val) {
     return val;
 }
 
-PrimitiveType.options = {};
-PrimitiveType.options.ANY = 'any';
-PrimitiveType.options.BOOL = 'bool';
-PrimitiveType.options.DOUBLE = 'double';
-PrimitiveType.options.INT53 = 'int53';
-PrimitiveType.options.INT64 = 'int64';
-PrimitiveType.options.STRING = 'string';
-Object.assign(PrimitiveType, PrimitiveType.options);
-PrimitiveType.default = PrimitiveType.ANY;
-Enum_(PrimitiveType);
-
+PrimitiveType.ANY = 'any';
+PrimitiveType.BOOL = 'bool';
+PrimitiveType.DOUBLE = 'double';
+PrimitiveType.INT53 = 'int53';
+PrimitiveType.INT64 = 'int64';
+PrimitiveType.STRING = 'string';
+Enum_(PrimitiveType, PrimitiveType.ANY);
 
 export function Literal(val) {
-    let result = this;
-    if (!(this instanceof Literal)) {
-        result = {};
-    }
-
-    result.bool = val.bool;
-    result.double = val.double;
-    result.int53 = val.int53;
-    result.int64 = val.int64;
-    result.string = val.string;
-
-    return result;
-
+    return Literal.wrap.apply(this, arguments);
 }
 
-Struct_(Literal);
-
+Struct_(Literal, {
+    bool: ['bool', Prim_],
+    double: ['double', Prim_],
+    int53: ['int53', Prim_],
+    int64: ['int64', Prim_],
+    string: ['string', Prim_],
+});
 
 export function Reference(val) {
-    let result = this;
-    if (!(this instanceof Literal)) {
-        result = {};
-    }
-
-    result.moduleName = val.module_name;
-    result.qualifiedName = val.qualified_name;
-    result.typeName = val.type_name;
-
-    return result;
-
+    return Reference.wrap.apply(this, arguments);
 }
+
+Struct_(Reference, {
+    moduleName: ['module_name', Prim_],
+    qualifiedName: ['qualified_name', Prim_],
+    typeName: ['type_name', Prim_],
+});
 
 Struct_(Reference);
 
 export function TypeStruct(val) {
-    let result = this;
-    if (!(this instanceof Literal)) {
-        result = {};
-    }
-
-    result.literal = val.literal;
-    if (result.literal != null) result.literal = Literal(result.literal);
-    result.parameters = val.parameters.map(Reference);
-    result.primitiveType = val.primitive_type;
-    result.reference = Reference(val.reference);
-    result.structKind = StructKind(val.struct_kind);
-
-    return result;
-
+    return TypeStruct.wrap.apply(this, arguments);
 }
 
-Struct_(TypeStruct);
+Struct_(TypeStruct, {
+    literal: ['literal', Optional_.of(Literal)],
+    parameters: ['parameters', List_.of(Reference)],
+    primitiveType: ['primitive_type', PrimitiveType],
+    reference: ['reference', Reference],
+    structKind: ['struct_kind', StructKind],
+});
 
 export function Field(val) {
-    let result = this;
-    if (!(this instanceof Literal)) {
-        result = {};
-    }
-
-    result.fieldName = val.field_name;
-    result.tags = val.tags.slice();
-    result.typeStruct = TypeStruct(val.type_struct);
-
-    return result;
-
+    return Field.wrap.apply(this, arguments);
 }
 
-Struct_(Field);
+Struct_(Field, {
+    fieldName: ['field_name', Prim_],
+    tags: ['tags', List_.of(Prim_)],
+    typeStruct: ['type_struct', TypeStruct],
+});
 
 export function Dependency(val) {
-    let result = this;
-    if (!(this instanceof Literal)) {
-        result = {};
-    }
-
-    result.from = Reference(val.from);
-    result.to = Reference(val.to);
-    result.isAbstraction = val.is_abstraction;
-    result.isLocal = val.is_local;
-
-    return result;
-
+    return Dependency.wrap.apply(this, arguments);
 }
 
-Struct_(Dependency);
-
+Struct_(Dependency, {
+    from: ['from', Reference],
+    to: ['to', Reference],
+    isAbstraction: ['is_abstraction', Prim_],
+    isLocal: ['is_local', Prim_],
+});
 
 export function Type(val) {
-    let result = this;
-    if (!(this instanceof Literal)) {
-        result = {};
-    }
-
-    result.dependencies = val.dependencies.map(v => Dependency(v));
-    result.fields = wrapMap(val.fields, Field);
-    result.isA = val.is_a;
-    if (result.isA != null) result.isA = TypeStruct(result.isA);
-    result.named = Reference(val.named);
-    result.options = val.options.slice();
-    result.tags = val.tags.slice();
-    result.typeVars = val.typeVars.slice();
-
-    return result;
-
+    return Type.wrap.apply(this, arguments);
 }
 
-Struct_(Type);
+Struct_(Type, {
+    dependencies: ['dependencies', List_.of(Dependency)],
+    fields: ['fields', Map_.of(Field)],
+    isA: ['is_a', Optional_.of(TypeStruct)],
+    named: ['named', Reference],
+    options: ['options', List_.of(Prim_)],
+    tags: ['tags', List_.of(Prim_)],
+    typeVars: ['type_vars', List_.of(Prim_)],
+});
 
 export function Module(val) {
-    let result = this;
-    if (!(this instanceof Literal)) {
-        result = {};
-    }
-
-    result.abstractTypesByName = wrapMap(val.abstract_types_by_name, Type);
-    result.dependencies = val.dependencies.map(Dependency);
-    result.moduleName = val.module_name;
-    result.typesByName = wrapMap(val.types_by_name, Type);
-    result.typesDependencyOrdering = val.types_dependency_ordering.slice();
-
-    return result;
-
+    return Module.wrap.apply(this, arguments);
 }
 
-Struct_(Module);
+Struct_(Module, {
+    abstractTypesByName: ['abstract_types_by_name', Map_.of(Type)],
+    dependencies: ['dependencies', List_.of(Dependency)],
+    moduleName: ['module_name', Prim_],
+    typesByName: ['types_by_name', Map_.of(Type)],
+    typesDependencyOrdering: ['types_dependency_ordering', List_.of(Prim_)],
+});

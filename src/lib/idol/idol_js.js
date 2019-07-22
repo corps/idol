@@ -1,6 +1,6 @@
 import process from 'process';
 import fs from 'fs';
-import {wrapMap} from "./__idol__";
+import {Map} from "./__idol__";
 import {Module, PrimitiveType, StructKind} from "./schema";
 import os from 'os';
 import path from 'path';
@@ -47,7 +47,13 @@ class ModuleBuildEnv {
     }
 
     * genModule(module) {
-        yield `import {Enum as Enum_, Struct as Struct_, Literal as Literal_, List as List_, Prim as Prim_, Primitive as Primitive_, isObj, wrapMap} from ${this.importPathOf("__idol__")};`;
+        const self = this;
+
+        yield "import {";
+        yield* this.withIndention(function* () {
+            yield* (['Enum', 'Struct', 'List', 'Map', 'Literal', 'Primitive'].map(s => `${s} as ${s}_`));
+        });
+        yield `} from ${this.importPathOf("__idol__")}`;
 
         const seenModules = {};
         yield* (module.dependencies.filter(dep => {
@@ -154,50 +160,91 @@ class ModuleBuildEnv {
                 break;
         }
 
-        yield `Primitive_(${type.named.typeName});`
+        yield `Primitive_(${type.named.typeName});`;
         yield `${type.named.typeName}.metadata = ${JSON.stringify(type)};`
     }
 
     * genRepeated(module, type) {
         yield `export function ${type.named.typeName}(val) {`;
 
-        const self = this;
         yield* this.withIndention(function* () {
-            yield `return val.map(${self.typeStructFunc(type.isA)});`;
+            yield `return ${type.named.typeName}.wrap.apply(this, arguments);`;
         });
 
         yield "}";
 
         yield "";
-        yield `List_(${type.named.typeName}, ${this.importedReference(type.isA)});`
+        yield `List_(${type.named.typeName}, ${this.typeStructScalarFunc(type.isA)});`
         yield `${type.named.typeName}.metadata = ${JSON.stringify(type)};`
     }
 
     * genMapped(module, type) {
         yield `export function ${type.named.typeName}(val) {`;
 
-        const self = this;
         yield* this.withIndention(function* () {
-            yield "let result = this;";
-            yield `if (!(this instanceof ${type.named.typeName})) {`;
-            yield* self.withIndention(function* () {
-                yield "result = {};";
-            });
-
-            yield "for (let k in val) {";
-            yield* self.withIndention(function* () {
-                yield `result[k] = ${self.typeStructFunc(type.isA)}(val[k]);`;
-            });
-            yield "}";
-
-            yield "";
-            yield "return result;";
+            yield `return ${type.named.typeName}.wrap.apply(this, arguments);`;
         });
 
         yield "}";
 
         yield "";
-        yield `Map_(${type.named.typeName}, ${this.importedReference(type.isA)});`
+        yield `Map_(${type.named.typeName}, ${this.typeStructScalarFunc(type.isA)});`
+        yield `${type.named.typeName}.metadata = ${JSON.stringify(type)};`
+    }
+
+    * genEnum(module, type) {
+        yield `export function ${type.named.typeName}(val) {`;
+
+        yield* this.withIndention(function* () {
+            yield "return val;"
+        });
+
+        yield "}";
+        yield "";
+
+        const options = type.options.slice();
+        options.sort();
+        yield* options.map(option => {
+            return `${type.named.typeName}.${option.toUpperCase()} = ${JSON.stringify(option)};`;
+        });
+
+        yield `${type.named.typeName}.default = ${type.named.typeName}.${type.options[0].toUpperCase()});`;
+        yield `Enum_(${type.named.typeName});`;
+        yield `${type.named.typeName}.metadata = ${JSON.stringify(type)};`;
+    }
+
+    * genStruct(module, type) {
+        const fieldNames = Object.keys(type.fields);
+        fieldNames.sort();
+        const self = this;
+
+        yield `export function ${type.named.typeName}(val) {`;
+
+        yield* this.withIndention(function* () {
+            yield `return ${type.named.typeName}.wrap.apply(this, arguments)`;
+        });
+
+        yield "}";
+        yield "";
+
+        yield `Struct_(${type.named.typeName}, {`;
+        yield* this.withIndention(function* () {
+            for (let i = 0; i < fieldNames.length; ++i) {
+                const fieldName = fieldNames[i];
+                const cameled = camelCase(fieldName);
+                const field = type.fields[fieldName];
+                const func = self.typeStructFunc(field.typeStruct);
+                yield `${cameled}: [${JSON.stringify(fieldName)}, ${func}],`;
+            }
+        });
+        yield `})`;
+        yield "";
+
+        yield* type.options.map(option => {
+            return `${type.named.typeName}.options.${option.toUpperCase()} = ${JSON.stringify(option)};`;
+        });
+
+        yield `Struct_(${type.named.typeName});`
         yield `${type.named.typeName}.metadata = ${JSON.stringify(type)};`
     }
 
@@ -207,20 +254,30 @@ class ModuleBuildEnv {
         this.indentionLevel -= 1;
     }
 
-    typeStructFunc(typeStruct) {
+    typeStructScalarFunc(typeStruct) {
         if (typeStruct.reference.moduleName) {
-            return this.importedReference(typeStruct.reference);
+            const reference = typeStruct.reference;
+
+            if (reference.moduleName === this.moduleName) {
+                return reference.typeName;
+            }
+            return `${this.importedModuleNameOf(reference.moduleName)}.${reference.typeName}`;
         }
 
-        return "Prim_";
+        return 'Prim_';
     }
 
-    importedReference(reference) {
-        if (reference.isLocal) {
-            return reference.typeName;
+    typeStructFunc(typeStruct) {
+        const scalar = this.typeStructScalarFunc(typeStruct);
+
+        switch (typeStruct.structKind) {
+            case StructKind.MAP:
+                return `Map_.of(${scalar})`;
+            case StructKind.REPEATED:
+                return `List_.of(${scalar})`;
         }
 
-        return `${this.importedModuleNameOf(reference.moduleName)}.${reference.typeName}`;
+        return scalar;
     }
 
     importedModuleNameOf(moduleName) {
@@ -266,7 +323,15 @@ function main() {
     }
 
     const json = JSON.parse(data);
-    const modules = wrapMap(json, Module);
+    const modules = Map.of(Module)(json);
+
+    const buildEnv = new BuildEnv();
+    for (let moduleName in modules) {
+        const module = modules[moduleName];
+        buildEnv.buildModule(module);
+    }
+
+    buildEnv.finalize(args.output);
 }
 
 function processArgs() {
@@ -326,16 +391,3 @@ function camelCase(s) {
             .replace('_', '');
     });
 }
-
-// def recursive_copy(src, dest):
-// if os.path.isdir(src):
-// if not os.path.isdir(dest):
-// os.makedirs(dest, exist_ok=True)
-// files = os.listdir(src)
-// for f in files:
-// recursive_copy(os.path.join(src, f),
-//     os.path.join(dest, f))
-// else:
-// shutil.copyfile(src, dest)
-//
-
