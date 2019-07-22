@@ -1515,6 +1515,7 @@ function () {
   }, {
     key: "importPathOf",
     value: function importPathOf(moduleName) {
+      console.log(moduleName);
       var moduleNameParts = moduleName.split(".");
       var parts = [];
       var i = this.moduleNameParts.length - 1;

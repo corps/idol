@@ -11,6 +11,7 @@ class BuildEnv {
     }
 
     buildModule(module) {
+        console.log(module);
         return new ModuleBuildEnv(this, module.moduleName).writeModule(module);
     }
 
@@ -53,7 +54,6 @@ class ModuleBuildEnv {
         yield* this.withIndention(function* () {
             yield* (['Enum', 'Struct', 'List', 'Map', 'Literal', 'Primitive'].map(s => `${s} as ${s}_,`));
         });
-        console.log("yowsa");
         yield `} from ${this.importPathOf("__idol__")}`;
 
         const seenModules = {};
@@ -62,7 +62,6 @@ class ModuleBuildEnv {
             seenModules[dep.to.module_name] = true;
             return dep.to.module_name !== module.moduleName;
         }).map(dep => {
-            console.log("dep is", dep);
             return `import * as ${this.importedModuleNameOf(dep.to.module_name)} from ${this.importPathOf(dep.to.module_name)}`;
         }));
 
@@ -287,7 +286,6 @@ class ModuleBuildEnv {
     }
 
     importPathOf(moduleName) {
-        console.log(moduleName);
         const moduleNameParts = moduleName.split(".");
         const parts = [];
 
