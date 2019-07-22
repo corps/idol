@@ -61,7 +61,7 @@ class ModuleBuildEnv {
             seenModules[dep.to.module_name] = true;
             return dep.to.module_name !== module.moduleName;
         }).map(dep => {
-            console.log(dep);
+            console.log("dep is", dep);
             return `import * as ${this.importedModuleNameOf(dep.to.module_name)} from ${this.importPathOf(dep.to.module_name)}`;
         }));
 
