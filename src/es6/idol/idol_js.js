@@ -3,10 +3,11 @@ import fs from 'fs';
 import {Map} from "./__idol__";
 import {Module, PrimitiveType, StructKind} from "./schema";
 import path from 'path';
+import os from 'os';
 
 class BuildEnv {
     constructor(ignoreIdolJs) {
-        this.buildDir = fs.mkdtempSync('tmp');
+        this.buildDir = fs.mkdtempSync(os.tmpdir() + path.sep + "idol_js.js");
         this.ignoreIdolJs = ignoreIdolJs;
     }
 

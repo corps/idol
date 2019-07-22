@@ -737,6 +737,8 @@ var _schema = require("./schema");
 
 var _path = _interopRequireDefault(require("path"));
 
+var _os = _interopRequireDefault(require("os"));
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
@@ -771,7 +773,7 @@ function () {
   function BuildEnv(ignoreIdolJs) {
     _classCallCheck(this, BuildEnv);
 
-    this.buildDir = _fs["default"].mkdtempSync('tmp');
+    this.buildDir = _fs["default"].mkdtempSync(_os["default"].tmpdir() + _path["default"].sep + "idol_js.js");
     this.ignoreIdolJs = ignoreIdolJs;
   }
 
