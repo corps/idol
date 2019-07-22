@@ -24,12 +24,19 @@ export function Primitive(constructor, primitiveKind) {
     return Primitive.of(primitiveKind, constructor);
 }
 
+const primCache = {};
 Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
     if (constructor == null) {
+        const cached = primCache[primitiveKind];
+        if (cached) return cached;
+
         constructor = function Primitive(val) { return val; }
+        primCache[primitiveKind] = constructor;
     }
 
+
     constructor.validate = function validate(val, path) {
+        path = path || [];
         switch (typeof val) {
             case "string":
                 if (primitiveKind !== "string") {
@@ -38,7 +45,7 @@ Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
                 return;
             case "number":
                 if ((val | 0) === val) {
-                    if (primitiveKind !== "int53" || primitiveKind !== "int64" || primitiveKind !== "double") {
+                    if (primitiveKind !== "int53" && primitiveKind !== "int64" && primitiveKind !== "double") {
                         throw new Error(`${path.join('.')} Found int, expected ${primitiveKind}`);
                     }
                 } else {
@@ -75,6 +82,8 @@ Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
                     return false;
             }
         }
+
+        return val;
     };
 
     constructor.isValid = mkIsValid(constructor);
@@ -96,6 +105,7 @@ Enum.of = function EnumOf(options, constructor) {
     constructor.default = constructor.default === undefined ? options[0] : constructor.default;
 
     constructor.validate = function validate(val, path) {
+        path = path || [];
         if (options.indexOf(val) === -1) {
             throw new Error(`${path.join('.')} Expected one of ${options.join(', ')}, found ${val}`);
         }
@@ -126,13 +136,14 @@ Literal.of = function LiteralOf(literal, constructor) {
     constructor.literal = constructor.literal === undefined ? literal : constructor.literal;
 
     constructor.validate = function validate(val, path) {
-        if (val !== literal) {
-            throw new Error(`${path.join('.')} Expected ${literal} but found ${val}`)
+        path = path || [];
+        if (val !== this.literal) {
+            throw new Error(`${path.join('.')} Expected ${this.literal} but found ${val}`)
         }
     };
 
     constructor.expand = function expand(val) {
-        return constructor.literal;
+        return this.literal;
     };
 
     constructor.isValid = mkIsValid(constructor);
@@ -154,14 +165,15 @@ Struct.of = function StructOf(fieldTypes, constructor) {
     constructor.fieldTypes = fieldTypes;
 
     constructor.validate = function validate(json, path) {
+        path = path || [];
         if (!isObj(json)) throw new Error(`${path.join('.')} Expected an object, found ${json}`);
-        const metadata = this.metadata || {fields: {}};
+        const metadata = this.metadata;
 
-        for (let fieldName in this.fieldTypes) {
+        for (let propName in this.fieldTypes) {
+            const [fieldName, typeFunc] = this.fieldTypes[propName];
             let val = json[fieldName];
-            let typeFunc = this.fieldTypes[fieldName];
-            let field = metadata.fields[fieldName];
-            const optional = (field.tags || []).indexOf('optional') !== -1;
+            const field = metadata.fields[fieldName];
+            const optional = field.tags.indexOf('optional') !== -1;
 
             if (optional) {
                 if (val == null) continue;
@@ -173,7 +185,7 @@ Struct.of = function StructOf(fieldTypes, constructor) {
         }
     };
 
-    constructor.expand = function expand(json, path) {
+    constructor.expand = function expand(json) {
         json = getListScalar(json);
 
         if (json == null) {
@@ -184,13 +196,13 @@ Struct.of = function StructOf(fieldTypes, constructor) {
             return json;
         }
 
-        const metadata = this.metadata || {fields: {}};
+        const metadata = this.metadata;
 
-        for (let fieldName in this.fieldTypes) {
+        for (let propName in this.fieldTypes) {
+            const [fieldName, typeFunc] = this.fieldTypes[propName];
             let val = json[fieldName];
-            let typeFunc = this.fieldTypes[fieldName];
-            let field = metadata.fields[fieldName];
-            const optional = (field.tags || []).indexOf('optional') !== -1;
+            const field = metadata.fields[fieldName];
+            const optional = field.tags.indexOf('optional') !== -1;
 
             if (optional) {
                 if (field.type_struct.struct_kind !== 'repeated') {
@@ -199,6 +211,8 @@ Struct.of = function StructOf(fieldTypes, constructor) {
 
                 if (val != null) {
                     val = typeFunc.expand(val);
+                } else {
+                    val = null;
                 }
 
                 json[fieldName] = val;
@@ -206,6 +220,8 @@ Struct.of = function StructOf(fieldTypes, constructor) {
                 json[fieldName] = typeFunc.expand(val);
             }
         }
+
+        return json
     };
 
     constructor.wrap = function (val) {
@@ -262,19 +278,20 @@ List.of = function ListOf(innerKind, constructor) {
     constructor.innerKind = constructor.innerKind === undefined ? innerKind : constructor.innerKind;
 
     constructor.validate = function validate(val, path) {
+        path = path || [];
         if (!(Array.isArray(val))) {
             throw new Error(`${path.join('.')} Expected array but found ${val}`)
         }
 
-        const metadata = constructor.metadata;
-        if (metadata.tags.indexOf('atleast_one') !== -1) {
+        const metadata = this.metadata;
+        if (metadata && metadata.tags.indexOf('atleast_one') !== -1) {
             if (val.length < 1) {
                 throw new Error(`${path.join('.')} Expected atleast one element but found empty list`);
             }
         }
 
         val.forEach(
-            v => {
+            (v, i) => {
                 this.innerKind.validate(v, path.concat(`[${i}]`));
             });
     };
@@ -285,11 +302,11 @@ List.of = function ListOf(innerKind, constructor) {
         }
 
         if (!(Array.isArray(val))) {
-            return val;
+            val = [val];
         }
 
-        const metadata = constructor.metadata;
-        if (metadata.tags.indexOf('atleast_one') !== -1) {
+        const metadata = this.metadata;
+        if (metadata && metadata.tags.indexOf('atleast_one') !== -1) {
             if (val.length < 1) {
                 val.push(null);
             }
@@ -325,6 +342,7 @@ Map.of = function MapOf(innerKind, constructor) {
     constructor.innerKind = constructor.innerKind === undefined ? innerKind : constructor.innerKind;
 
     constructor.validate = function validate(val, path) {
+        path = path || [];
         if (!(isObj(val))) {
             throw new Error(`${path.join('.')} Expected object but found ${val}`)
         }
@@ -336,6 +354,8 @@ Map.of = function MapOf(innerKind, constructor) {
     };
 
     constructor.expand = function expand(val) {
+        val = getListScalar(val);
+
         if (val == null) {
             val = {};
         }

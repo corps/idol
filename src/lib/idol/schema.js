@@ -26,7 +26,7 @@ StructKind.MAP = "Map";
 StructKind.REPEATED = "Repeated";
 StructKind.SCALAR = "Scalar";
 StructKind["default"] = StructKind.SCALAR;
-(0, _idol__.Enum)(StructKind);
+(0, _idol__.Enum)(StructKind, ["Scalar", "Repeated", "Map"]);
 StructKind.metadata = {
   "dependencies": [],
   "fields": {},
@@ -52,7 +52,7 @@ PrimitiveType.INT53 = "int53";
 PrimitiveType.INT64 = "int64";
 PrimitiveType.STRING = "string";
 PrimitiveType["default"] = PrimitiveType.INT53;
-(0, _idol__.Enum)(PrimitiveType);
+(0, _idol__.Enum)(PrimitiveType, ["int53", "int64", "double", "string", "bool", "any"]);
 PrimitiveType.metadata = {
   "dependencies": [],
   "fields": {},

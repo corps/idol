@@ -49,14 +49,23 @@ function Primitive(constructor, primitiveKind) {
   return Primitive.of(primitiveKind, constructor);
 }
 
+var primCache = {};
+
 Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
   if (constructor == null) {
+    var cached = primCache[primitiveKind];
+    if (cached) return cached;
+
     constructor = function Primitive(val) {
       return val;
     };
+
+    primCache[primitiveKind] = constructor;
   }
 
   constructor.validate = function validate(val, path) {
+    path = path || [];
+
     switch (_typeof(val)) {
       case "string":
         if (primitiveKind !== "string") {
@@ -67,7 +76,7 @@ Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
 
       case "number":
         if ((val | 0) === val) {
-          if (primitiveKind !== "int53" || primitiveKind !== "int64" || primitiveKind !== "double") {
+          if (primitiveKind !== "int53" && primitiveKind !== "int64" && primitiveKind !== "double") {
             throw new Error("".concat(path.join('.'), " Found int, expected ").concat(primitiveKind));
           }
         } else {
@@ -112,6 +121,8 @@ Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
           return false;
       }
     }
+
+    return val;
   };
 
   constructor.isValid = mkIsValid(constructor);
@@ -132,6 +143,8 @@ Enum.of = function EnumOf(options, constructor) {
   constructor["default"] = constructor["default"] === undefined ? options[0] : constructor["default"];
 
   constructor.validate = function validate(val, path) {
+    path = path || [];
+
     if (options.indexOf(val) === -1) {
       throw new Error("".concat(path.join('.'), " Expected one of ").concat(options.join(', '), ", found ").concat(val));
     }
@@ -160,13 +173,15 @@ Literal.of = function LiteralOf(literal, constructor) {
   constructor.literal = constructor.literal === undefined ? literal : constructor.literal;
 
   constructor.validate = function validate(val, path) {
-    if (val !== literal) {
-      throw new Error("".concat(path.join('.'), " Expected ").concat(literal, " but found ").concat(val));
+    path = path || [];
+
+    if (val !== this.literal) {
+      throw new Error("".concat(path.join('.'), " Expected ").concat(this.literal, " but found ").concat(val));
     }
   };
 
   constructor.expand = function expand(val) {
-    return constructor.literal;
+    return this.literal;
   };
 
   constructor.isValid = mkIsValid(constructor);
@@ -187,16 +202,18 @@ Struct.of = function StructOf(fieldTypes, constructor) {
   constructor.fieldTypes = fieldTypes;
 
   constructor.validate = function validate(json, path) {
+    path = path || [];
     if (!isObj(json)) throw new Error("".concat(path.join('.'), " Expected an object, found ").concat(json));
-    var metadata = this.metadata || {
-      fields: {}
-    };
+    var metadata = this.metadata;
 
-    for (var fieldName in this.fieldTypes) {
+    for (var propName in this.fieldTypes) {
+      var _this$fieldTypes$prop = _slicedToArray(this.fieldTypes[propName], 2),
+          fieldName = _this$fieldTypes$prop[0],
+          typeFunc = _this$fieldTypes$prop[1];
+
       var val = json[fieldName];
-      var typeFunc = this.fieldTypes[fieldName];
       var field = metadata.fields[fieldName];
-      var optional = (field.tags || []).indexOf('optional') !== -1;
+      var optional = field.tags.indexOf('optional') !== -1;
 
       if (optional) {
         if (val == null) continue;
@@ -208,7 +225,7 @@ Struct.of = function StructOf(fieldTypes, constructor) {
     }
   };
 
-  constructor.expand = function expand(json, path) {
+  constructor.expand = function expand(json) {
     json = getListScalar(json);
 
     if (json == null) {
@@ -219,15 +236,16 @@ Struct.of = function StructOf(fieldTypes, constructor) {
       return json;
     }
 
-    var metadata = this.metadata || {
-      fields: {}
-    };
+    var metadata = this.metadata;
 
-    for (var fieldName in this.fieldTypes) {
+    for (var propName in this.fieldTypes) {
+      var _this$fieldTypes$prop2 = _slicedToArray(this.fieldTypes[propName], 2),
+          fieldName = _this$fieldTypes$prop2[0],
+          typeFunc = _this$fieldTypes$prop2[1];
+
       var val = json[fieldName];
-      var typeFunc = this.fieldTypes[fieldName];
       var field = metadata.fields[fieldName];
-      var optional = (field.tags || []).indexOf('optional') !== -1;
+      var optional = field.tags.indexOf('optional') !== -1;
 
       if (optional) {
         if (field.type_struct.struct_kind !== 'repeated') {
@@ -236,6 +254,8 @@ Struct.of = function StructOf(fieldTypes, constructor) {
 
         if (val != null) {
           val = typeFunc.expand(val);
+        } else {
+          val = null;
         }
 
         json[fieldName] = val;
@@ -243,6 +263,8 @@ Struct.of = function StructOf(fieldTypes, constructor) {
         json[fieldName] = typeFunc.expand(val);
       }
     }
+
+    return json;
   };
 
   constructor.wrap = function (val) {
@@ -308,19 +330,21 @@ List.of = function ListOf(innerKind, constructor) {
   constructor.validate = function validate(val, path) {
     var _this = this;
 
+    path = path || [];
+
     if (!Array.isArray(val)) {
       throw new Error("".concat(path.join('.'), " Expected array but found ").concat(val));
     }
 
-    var metadata = constructor.metadata;
+    var metadata = this.metadata;
 
-    if (metadata.tags.indexOf('atleast_one') !== -1) {
+    if (metadata && metadata.tags.indexOf('atleast_one') !== -1) {
       if (val.length < 1) {
         throw new Error("".concat(path.join('.'), " Expected atleast one element but found empty list"));
       }
     }
 
-    val.forEach(function (v) {
+    val.forEach(function (v, i) {
       _this.innerKind.validate(v, path.concat("[".concat(i, "]")));
     });
   };
@@ -331,19 +355,19 @@ List.of = function ListOf(innerKind, constructor) {
     }
 
     if (!Array.isArray(val)) {
-      return val;
+      val = [val];
     }
 
-    var metadata = constructor.metadata;
+    var metadata = this.metadata;
 
-    if (metadata.tags.indexOf('atleast_one') !== -1) {
+    if (metadata && metadata.tags.indexOf('atleast_one') !== -1) {
       if (val.length < 1) {
         val.push(null);
       }
     }
 
-    for (var _i2 = 0; _i2 < val.length; ++_i2) {
-      val[_i2] = this.innerKind.expand(val[_i2]);
+    for (var i = 0; i < val.length; ++i) {
+      val[i] = this.innerKind.expand(val[i]);
     }
 
     return val;
@@ -371,6 +395,8 @@ Map.of = function MapOf(innerKind, constructor) {
   constructor.innerKind = constructor.innerKind === undefined ? innerKind : constructor.innerKind;
 
   constructor.validate = function validate(val, path) {
+    path = path || [];
+
     if (!isObj(val)) {
       throw new Error("".concat(path.join('.'), " Expected object but found ").concat(val));
     }
@@ -382,6 +408,8 @@ Map.of = function MapOf(innerKind, constructor) {
   };
 
   constructor.expand = function expand(val) {
+    val = getListScalar(val);
+
     if (val == null) {
       val = {};
     }

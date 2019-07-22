@@ -1136,50 +1136,10 @@ function () {
               return "}";
 
             case 5:
-              _context6.t1 = type.isA.primitiveType;
-              _context6.next = _context6.t1 === _schema.PrimitiveType.BOOL ? 8 : _context6.t1 === _schema.PrimitiveType.DOUBLE ? 11 : _context6.t1 === _schema.PrimitiveType.INT53 ? 14 : _context6.t1 === _schema.PrimitiveType.INT64 ? 17 : _context6.t1 === _schema.PrimitiveType.STRING ? 20 : 23;
-              break;
+              _context6.next = 7;
+              return "Primitive_(".concat(type.named.typeName, ", ").concat(JSON.stringify(type.isA.primitiveType), ");");
 
-            case 8:
-              _context6.next = 10;
-              return "".concat(type.named.typeName, ".default = false;");
-
-            case 10:
-              return _context6.abrupt("break", 23);
-
-            case 11:
-              _context6.next = 13;
-              return "".concat(type.named.typeName, ".default = 0.0;");
-
-            case 13:
-              return _context6.abrupt("break", 23);
-
-            case 14:
-              _context6.next = 16;
-              return "".concat(type.named.typeName, ".default = 0;");
-
-            case 16:
-              return _context6.abrupt("break", 23);
-
-            case 17:
-              _context6.next = 19;
-              return "".concat(type.named.typeName, ".default = 0;");
-
-            case 19:
-              return _context6.abrupt("break", 23);
-
-            case 20:
-              _context6.next = 22;
-              return "".concat(type.named.typeName, ".default = \"\";");
-
-            case 22:
-              return _context6.abrupt("break", 23);
-
-            case 23:
-              _context6.next = 25;
-              return "Primitive_(".concat(type.named.typeName, ");");
-
-            case 25:
+            case 7:
             case "end":
               return _context6.stop();
           }
@@ -1339,7 +1299,7 @@ function () {
 
             case 12:
               _context12.next = 14;
-              return "Enum_(".concat(type.named.typeName, ");");
+              return "Enum_(".concat(type.named.typeName, ", ").concat(JSON.stringify(type.options), ");");
 
             case 14:
             case "end":

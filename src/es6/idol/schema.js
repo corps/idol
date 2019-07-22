@@ -18,7 +18,7 @@ StructKind.MAP = "Map";
 StructKind.REPEATED = "Repeated";
 StructKind.SCALAR = "Scalar";
 StructKind.default = StructKind.SCALAR;
-Enum_(StructKind);
+Enum_(StructKind, ["Scalar","Repeated","Map"]);
 StructKind.metadata = {"dependencies":[],"fields":{},"is_a":null,"named":{"module_name":"schema","qualified_name":"schema.StructKind","type_name":"StructKind"},"options":["Scalar","Repeated","Map"],"tags":[],"type_vars":[]};
 
 export function PrimitiveType(val) {
@@ -32,7 +32,7 @@ PrimitiveType.INT53 = "int53";
 PrimitiveType.INT64 = "int64";
 PrimitiveType.STRING = "string";
 PrimitiveType.default = PrimitiveType.INT53;
-Enum_(PrimitiveType);
+Enum_(PrimitiveType, ["int53","int64","double","string","bool","any"]);
 PrimitiveType.metadata = {"dependencies":[],"fields":{},"is_a":null,"named":{"module_name":"schema","qualified_name":"schema.PrimitiveType","type_name":"PrimitiveType"},"options":["int53","int64","double","string","bool","any"],"tags":[],"type_vars":[]};
 
 export function Literal(val) {

@@ -1,12 +1,14 @@
-#! /usr/bin/env node
+#! ../node_modules/.bin/babel-node
 
-var optional = require('./idol/all/optional.js');
+import { Assembled } from './idol/all/optional';
+import fs from 'fs';
+
 var data = fs.readFileSync(0, 'utf-8');
 data = JSON.parse(data);
 
-optional.Assembled.validate(data);
+// Assembled.validate(data);
 
-if (!optional.Assembled.isValid(data)) {
+if (!Assembled.isValid(data)) {
     process.exit(1);
 }
 

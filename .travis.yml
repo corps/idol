@@ -2,6 +2,8 @@ if: tag IS blank
 sudo: false
 language: rust
 rust: stable
+node_js:
+- 10
 os:
 - linux
 - osx
@@ -27,6 +29,7 @@ script:
 - |
   set -e
   export PATH="$PWD/test:$PATH"
+  npm install
   make test
   make release
 

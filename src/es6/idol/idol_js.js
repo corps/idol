@@ -147,25 +147,7 @@ class ModuleBuildEnv {
 
         yield "}";
 
-        switch (type.isA.primitiveType) {
-            case PrimitiveType.BOOL:
-                yield `${type.named.typeName}.default = false;`;
-                break;
-            case PrimitiveType.DOUBLE:
-                yield `${type.named.typeName}.default = 0.0;`;
-                break;
-            case PrimitiveType.INT53:
-                yield `${type.named.typeName}.default = 0;`;
-                break;
-            case PrimitiveType.INT64:
-                yield `${type.named.typeName}.default = 0;`;
-                break;
-            case PrimitiveType.STRING:
-                yield `${type.named.typeName}.default = "";`;
-                break;
-        }
-
-        yield `Primitive_(${type.named.typeName});`;
+        yield `Primitive_(${type.named.typeName}, ${JSON.stringify(type.isA.primitiveType)});`;
     }
 
     * genRepeated(module, type) {
@@ -211,7 +193,7 @@ class ModuleBuildEnv {
         });
 
         yield `${type.named.typeName}.default = ${type.named.typeName}.${type.options[0].toUpperCase()};`;
-        yield `Enum_(${type.named.typeName});`;
+        yield `Enum_(${type.named.typeName}, ${JSON.stringify(type.options)});`;
     }
 
     * genStruct(module, type) {

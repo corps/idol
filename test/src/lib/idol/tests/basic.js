@@ -18,7 +18,7 @@ TestEnum.A = "a";
 TestEnum.B = "b";
 TestEnum.C = "c";
 TestEnum.default = TestEnum.A;
-Enum_(TestEnum);
+Enum_(TestEnum, ["a","b","c"]);
 TestEnum.metadata = {"dependencies":[],"fields":{},"is_a":null,"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestEnum","type_name":"TestEnum"},"options":["a","b","c"],"tags":[],"type_vars":[]};
 
 export function TestLiteralTop(val) {
@@ -76,8 +76,7 @@ TestStruct.metadata = {"dependencies":[{"from":{"module_name":"tests.basic","qua
 export function TestKind(val) {
     return val;
 }
-TestKind.default = "";
-Primitive_(TestKind);
+Primitive_(TestKind, "string");
 TestKind.metadata = {"dependencies":[],"fields":{},"is_a":{"literal":null,"parameters":[],"primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestKind","type_name":"TestKind"},"options":[],"tags":[],"type_vars":[]};
 
 export function TestAtleastOne(val) {

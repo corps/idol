@@ -1,7 +1,9 @@
-#! /usr/bin/env node
+#! ../node_modules/.bin/babel-node
 
-var required = require('./idol/all/required.js');
+import { Assembled } from './idol/all/required';
+import fs from 'fs';
 var data = fs.readFileSync(0, 'utf-8');
 data = JSON.parse(data);
 
-console.log(JSON.stringify(required.Assembled.expand(data)));
+const expanded = Assembled.expand(data)
+console.log(JSON.stringify(expanded));
