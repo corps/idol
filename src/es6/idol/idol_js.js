@@ -59,7 +59,7 @@ class ModuleBuildEnv {
         yield* (module.dependencies.filter(dep => {
             if (seenModules[dep.to.module_name]) return false;
             seenModules[dep.to.module_name] = true;
-            return true;
+            return dep.to.module_name !== module.moduleName;
         }).map(dep => {
             return `import * as ${this.importedModuleNameOf(dep.to.module_name)} from ${this.importPathOf(dep.to.module_name)}`;
         }));

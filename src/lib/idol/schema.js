@@ -13,7 +13,7 @@ exports.Dependency = Dependency;
 exports.Type = Type;
 exports.Module = Module;
 
-var _idol__ = require("__idol__");
+var _idol__ = require("./__idol__");
 
 var schema = _interopRequireWildcard(require("schema"));
 
