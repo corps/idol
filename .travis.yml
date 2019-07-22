@@ -2,8 +2,6 @@ if: tag IS blank
 sudo: false
 language: rust
 rust: stable
-node_js:
-- 10
 os:
 - linux
 - osx
@@ -25,6 +23,7 @@ addons:
     packages:
       - python36
       - jq
+      - node@8
 script:
 - |
   set -e
