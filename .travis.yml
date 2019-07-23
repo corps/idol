@@ -29,6 +29,7 @@ script:
   set -e
   export PATH="$PWD/test:$PATH"
   export PATH="/usr/local/opt/node@8/bin:$PATH"
+  export PATH="$PWD/node_modules/.bin:$PATH"
   npm install
   make test
   make release
