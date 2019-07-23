@@ -22,7 +22,6 @@ addons:
   homebrew:
     update: true
     packages:
-      - python@3
       - jq
       - node@8
 script:
