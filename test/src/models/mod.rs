@@ -7,7 +7,6 @@ pub mod idol {
   use std::fmt;
 
   #[derive(PartialEq, Debug, Serialize, Deserialize, Default, Eq, Clone)]
-  pub struct i53(pub i64);
   pub struct ValidationError(pub String);
   pub type ValidationResult = Result<(), ValidationError>;
 
@@ -204,61 +203,6 @@ pub mod idol {
       match value {
         serde_json::Value::Null => serde_json::to_value(0.0).ok(),
         _ => None,
-      }
-    }
-  }
-
-  impl ExpandsJson for i53 {
-    fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
-      match get_list_scalar(value) {
-        Some(mut v) => {
-          return match i53::expand_json(&mut v) {
-            Some(v_) => Some(v_),
-            None => Some(v),
-          };
-        }
-        None => (),
-      };
-
-      match value {
-        serde_json::Value::Null => serde_json::to_value(0).ok(),
-        _ => None,
-      }
-    }
-  }
-
-  impl ValidatesJson for i53 {
-    fn validate_json(value: &serde_json::Value) -> ValidationResult {
-      let mut number: Option<Result<i64, ValidationError>> = None;
-
-      if let serde_json::Value::String(s) = value {
-        number = Some(
-          s.parse::<i64>()
-            .map_err(|_| ValidationError("value was not a properly formatted i64.".to_string())),
-        );
-      }
-
-      if let serde_json::Value::Number(n) = value {
-        if n.is_i64() {
-          number = Some(serde_json::from_value(value.to_owned()).map_err(|_| unreachable!()));
-        };
-      }
-
-      match number {
-        Some(Ok(i)) => {
-          if i > 9007199254740991 {
-            Err(ValidationError("value is too large for i53".to_string()))
-          } else if i < -9007199254740991 {
-            Err(ValidationError("value is too small for i53".to_string()))
-          } else {
-            Ok(())
-          }
-        }
-        Some(Err(e)) => Err(e),
-        None => Err(ValidationError(format!(
-          "value was expected to be a ii53, but found {}",
-          value
-        ))),
       }
     }
   }

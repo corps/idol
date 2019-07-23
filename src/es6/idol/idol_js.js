@@ -125,11 +125,8 @@ class ModuleBuildEnv {
             case PrimitiveType.DOUBLE:
                 yield `${type.named.typeName}.literal = ${JSON.stringify(type.isA.literal.double)};`;
                 break;
-            case PrimitiveType.INT53:
-                yield `${type.named.typeName}.literal = ${JSON.stringify(type.isA.literal.int53)};`;
-                break;
-            case PrimitiveType.INT64:
-                yield `${type.named.typeName}.literal = ${JSON.stringify(type.isA.literal.int64)};`;
+            case PrimitiveType.INT:
+                yield `${type.named.typeName}.literal = ${JSON.stringify(type.isA.literal.int)};`;
                 break;
             case PrimitiveType.STRING:
                 yield `${type.named.typeName}.literal = ${JSON.stringify(type.isA.literal.string)};`;

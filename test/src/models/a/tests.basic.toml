@@ -1,9 +1,9 @@
 [TestTagsStruct]
 tags = ["tag-a", "tag-b"]
-fields.a = "int53"
+fields.a = "int"
 
 [Literal1]
-is_a = "literal:int53:1"
+is_a = "literal:int:1"
 
 [LiteralHello]
 is_a = "literal:string:hello"
@@ -15,7 +15,7 @@ is_a = "literal:double:3.0"
 is_a = "literal:bool:true"
 
 [LiteralFive]
-is_a = "literal:int64:5"
+is_a = "literal:int:5"
 
 [TestLiteralStruct.fields]
 one = "Literal1"
@@ -45,13 +45,13 @@ optional = ["string", "optional"]
 
 [TestStruct.fields]
 a = "string"
-b = ["int53", "tag"]
+b = ["int", "tag"]
 c = "TestStructInner"
 
 [TestStructInner.fields]
 d = "bool"
 e = "double"
-f = "int64"
+f = "int"
 
 [TestEnum]
 enum = ["a", "b", "c"]

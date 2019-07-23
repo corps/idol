@@ -48,11 +48,10 @@ function PrimitiveType(val) {
 PrimitiveType.ANY = "any";
 PrimitiveType.BOOL = "bool";
 PrimitiveType.DOUBLE = "double";
-PrimitiveType.INT53 = "int53";
-PrimitiveType.INT64 = "int64";
+PrimitiveType.INT = "int";
 PrimitiveType.STRING = "string";
-PrimitiveType["default"] = PrimitiveType.INT53;
-(0, _idol__.Enum)(PrimitiveType, ["int53", "int64", "double", "string", "bool", "any"]);
+PrimitiveType["default"] = PrimitiveType.INT;
+(0, _idol__.Enum)(PrimitiveType, ["int", "double", "string", "bool", "any"]);
 PrimitiveType.metadata = {
   "dependencies": [],
   "fields": {},
@@ -62,7 +61,7 @@ PrimitiveType.metadata = {
     "qualified_name": "schema.PrimitiveType",
     "type_name": "PrimitiveType"
   },
-  "options": ["int53", "int64", "double", "string", "bool", "any"],
+  "options": ["int", "double", "string", "bool", "any"],
   "tags": [],
   "type_vars": []
 };
@@ -71,7 +70,7 @@ function Literal(val) {
   return Literal.wrap.apply(this, arguments);
 }
 
-(0, _idol__.Struct)(Literal, [["bool", "bool", _idol__.Primitive.of("bool")], ["double", "double", _idol__.Primitive.of("double")], ["int53", "int53", _idol__.Primitive.of("int53")], ["int64", "int64", _idol__.Primitive.of("int64")], ["string", "string", _idol__.Primitive.of("string")]]);
+(0, _idol__.Struct)(Literal, [["bool", "bool", _idol__.Primitive.of("bool")], ["double", "double", _idol__.Primitive.of("double")], ["int", "int", _idol__.Primitive.of("int")], ["string", "string", _idol__.Primitive.of("string")]]);
 Literal.metadata = {
   "dependencies": [],
   "fields": {
@@ -105,28 +104,13 @@ Literal.metadata = {
         "struct_kind": "Scalar"
       }
     },
-    "int53": {
-      "field_name": "int53",
+    "int": {
+      "field_name": "int",
       "tags": [],
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
-        "reference": {
-          "module_name": "",
-          "qualified_name": "",
-          "type_name": ""
-        },
-        "struct_kind": "Scalar"
-      }
-    },
-    "int64": {
-      "field_name": "int64",
-      "tags": [],
-      "type_struct": {
-        "literal": null,
-        "parameters": [],
-        "primitive_type": "int64",
+        "primitive_type": "int",
         "reference": {
           "module_name": "",
           "qualified_name": "",
@@ -306,7 +290,7 @@ TypeStruct.metadata = {
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "int",
         "reference": {
           "module_name": "schema",
           "qualified_name": "schema.Literal",
@@ -321,7 +305,7 @@ TypeStruct.metadata = {
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "int",
         "reference": {
           "module_name": "schema",
           "qualified_name": "schema.Reference",
@@ -336,7 +320,7 @@ TypeStruct.metadata = {
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "int",
         "reference": {
           "module_name": "schema",
           "qualified_name": "schema.PrimitiveType",
@@ -351,7 +335,7 @@ TypeStruct.metadata = {
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "int",
         "reference": {
           "module_name": "schema",
           "qualified_name": "schema.Reference",
@@ -366,7 +350,7 @@ TypeStruct.metadata = {
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "int",
         "reference": {
           "module_name": "schema",
           "qualified_name": "schema.StructKind",
@@ -444,7 +428,7 @@ Field.metadata = {
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "int",
         "reference": {
           "module_name": "schema",
           "qualified_name": "schema.TypeStruct",
@@ -505,7 +489,7 @@ Dependency.metadata = {
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "int",
         "reference": {
           "module_name": "schema",
           "qualified_name": "schema.Reference",
@@ -550,7 +534,7 @@ Dependency.metadata = {
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "int",
         "reference": {
           "module_name": "schema",
           "qualified_name": "schema.Reference",
@@ -637,7 +621,7 @@ Type.metadata = {
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "int",
         "reference": {
           "module_name": "schema",
           "qualified_name": "schema.Dependency",
@@ -652,7 +636,7 @@ Type.metadata = {
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "int",
         "reference": {
           "module_name": "schema",
           "qualified_name": "schema.Field",
@@ -667,7 +651,7 @@ Type.metadata = {
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "int",
         "reference": {
           "module_name": "schema",
           "qualified_name": "schema.TypeStruct",
@@ -682,7 +666,7 @@ Type.metadata = {
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "int",
         "reference": {
           "module_name": "schema",
           "qualified_name": "schema.Reference",
@@ -801,7 +785,7 @@ Module.metadata = {
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "int",
         "reference": {
           "module_name": "schema",
           "qualified_name": "schema.Type",
@@ -816,7 +800,7 @@ Module.metadata = {
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "int",
         "reference": {
           "module_name": "schema",
           "qualified_name": "schema.Dependency",
@@ -846,7 +830,7 @@ Module.metadata = {
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "int",
         "reference": {
           "module_name": "schema",
           "qualified_name": "schema.Type",

@@ -73,8 +73,7 @@ impl idol::ValidatesJson for StructKind {
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
 pub enum PrimitiveType {
-  int53,
-  int64,
+  int,
   double,
   string,
   bool,
@@ -83,25 +82,23 @@ pub enum PrimitiveType {
 
 impl Default for PrimitiveType {
   fn default() -> PrimitiveType {
-    PrimitiveType::int53
+    PrimitiveType::int
   }
 }
 
 impl From<usize> for PrimitiveType {
   fn from(i: usize) -> PrimitiveType {
-    if i >= 6 {
-      PrimitiveType::int53
+    if i >= 5 {
+      PrimitiveType::int
     } else if i == 0 {
-      PrimitiveType::int53
+      PrimitiveType::int
     } else if i == 1 {
-      PrimitiveType::int64
-    } else if i == 2 {
       PrimitiveType::double
-    } else if i == 3 {
+    } else if i == 2 {
       PrimitiveType::string
-    } else if i == 4 {
+    } else if i == 3 {
       PrimitiveType::bool
-    } else if i == 5 {
+    } else if i == 4 {
       PrimitiveType::any
     } else {
       unreachable!()
@@ -112,12 +109,11 @@ impl From<usize> for PrimitiveType {
 impl Into<usize> for PrimitiveType {
   fn into(self) -> usize {
     match self {
-      PrimitiveType::int53 => 0,
-      PrimitiveType::int64 => 1,
-      PrimitiveType::double => 2,
-      PrimitiveType::string => 3,
-      PrimitiveType::bool => 4,
-      PrimitiveType::any => 5,
+      PrimitiveType::int => 0,
+      PrimitiveType::double => 1,
+      PrimitiveType::string => 2,
+      PrimitiveType::bool => 3,
+      PrimitiveType::any => 4,
     }
   }
 }
@@ -155,8 +151,7 @@ impl idol::ValidatesJson for PrimitiveType {
 pub struct Literal {
   pub r#bool: bool,
   pub r#double: f64,
-  pub r#int53: idol::i53,
-  pub r#int64: i64,
+  pub r#int: i64,
   pub r#string: String,
 }
 
@@ -194,13 +189,8 @@ impl idol::ExpandsJson for Literal {
       None => (),
     }
 
-    match idol::i53::expand_json(&mut value["int53"]) {
-      Some(v) => value["int53"] = v,
-      None => (),
-    }
-
-    match i64::expand_json(&mut value["int64"]) {
-      Some(v) => value["int64"] = v,
+    match i64::expand_json(&mut value["int"]) {
+      Some(v) => value["int"] = v,
       None => (),
     }
 
@@ -221,8 +211,7 @@ impl idol::ValidatesJson for Literal {
 
     bool::validate_json(&value["bool"]).map_err(|e| idol::ValidationError(format!("field bool: {}", e)))?;
     f64::validate_json(&value["double"]).map_err(|e| idol::ValidationError(format!("field double: {}", e)))?;
-    idol::i53::validate_json(&value["int53"]).map_err(|e| idol::ValidationError(format!("field int53: {}", e)))?;
-    i64::validate_json(&value["int64"]).map_err(|e| idol::ValidationError(format!("field int64: {}", e)))?;
+    i64::validate_json(&value["int"]).map_err(|e| idol::ValidationError(format!("field int: {}", e)))?;
     String::validate_json(&value["string"]).map_err(|e| idol::ValidationError(format!("field string: {}", e)))?;
 
     Ok(())

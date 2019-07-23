@@ -391,9 +391,6 @@ impl<'a> ModuleBuildEnv<'a> {
     self.start_block(format!("fn default() -> {}", t.named.type_name))?;
 
     let mut literal_wrapper = format!("{}", type_struct.literal_value());
-    if type_struct.primitive_type == PrimitiveType::int53 {
-      literal_wrapper = format!("idol::i53({})", literal_wrapper);
-    }
 
     self.write(format!("{}(({}).to_owned())", t.named.type_name, literal_wrapper))?;
     self.end_block()?;
@@ -410,8 +407,7 @@ impl<'a> ModuleBuildEnv<'a> {
         self.start_block(format!("if value.is_null() || value.is_boolean()"))?
       }
       PrimitiveType::double => self.start_block(format!("if value.is_null() || value.is_f64()"))?,
-      PrimitiveType::int53 => self.start_block(format!("if value.is_null() || value.is_i64()"))?,
-      PrimitiveType::int64 => self.start_block(format!("if value.is_null() || value.is_i64()"))?,
+      PrimitiveType::int => self.start_block(format!("if value.is_null() || value.is_i64()"))?,
       PrimitiveType::string => {
         self.start_block(format!("if value.is_null() || value.is_string()"))?
       }
@@ -714,8 +710,7 @@ impl TypeStructExt for TypeStruct {
     if self.is_primitive() {
       match self.primitive_type {
         PrimitiveType::string => "String".to_string(),
-        PrimitiveType::int64 => "i64".to_string(),
-        PrimitiveType::int53 => "idol::i53".to_string(),
+        PrimitiveType::int => "i64".to_string(),
         PrimitiveType::double => "f64".to_string(),
         PrimitiveType::bool => "bool".to_string(),
         PrimitiveType::any => "serde_json::Value".to_string(),
@@ -828,7 +823,6 @@ pub mod idol {
   use std::fmt;
 
   #[derive(PartialEq, Debug, Serialize, Deserialize, Default, Eq, Clone)]
-  pub struct i53(pub i64);
   pub struct ValidationError(pub String);
   pub type ValidationResult = Result<(), ValidationError>;
 
@@ -1025,61 +1019,6 @@ pub mod idol {
       match value {
         serde_json::Value::Null => serde_json::to_value(0.0).ok(),
         _ => None,
-      }
-    }
-  }
-
-  impl ExpandsJson for i53 {
-    fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
-      match get_list_scalar(value) {
-        Some(mut v) => {
-          return match i53::expand_json(&mut v) {
-            Some(v_) => Some(v_),
-            None => Some(v),
-          };
-        }
-        None => (),
-      };
-
-      match value {
-        serde_json::Value::Null => serde_json::to_value(0).ok(),
-        _ => None,
-      }
-    }
-  }
-
-  impl ValidatesJson for i53 {
-    fn validate_json(value: &serde_json::Value) -> ValidationResult {
-      let mut number: Option<Result<i64, ValidationError>> = None;
-
-      if let serde_json::Value::String(s) = value {
-        number = Some(
-          s.parse::<i64>()
-            .map_err(|_| ValidationError(\"value was not a properly formatted i64.\".to_string())),
-        );
-      }
-
-      if let serde_json::Value::Number(n) = value {
-        if n.is_i64() {
-          number = Some(serde_json::from_value(value.to_owned()).map_err(|_| unreachable!()));
-        };
-      }
-
-      match number {
-        Some(Ok(i)) => {
-          if i > 9007199254740991 {
-            Err(ValidationError(\"value is too large for i53\".to_string()))
-          } else if i < -9007199254740991 {
-            Err(ValidationError(\"value is too small for i53\".to_string()))
-          } else {
-            Ok(())
-          }
-        }
-        Some(Err(e)) => Err(e),
-        None => Err(ValidationError(format!(
-          \"value was expected to be a ii53, but found {}\",
-          value
-        ))),
       }
     }
   }

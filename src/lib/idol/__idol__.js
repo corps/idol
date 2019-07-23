@@ -68,7 +68,7 @@ Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
 
       case "number":
         if ((val | 0) === val) {
-          if (primitiveKind !== "int53" && primitiveKind !== "int64" && primitiveKind !== "double") {
+          if (primitiveKind !== "int" && primitiveKind !== "double") {
             throw new Error("".concat(path.join('.'), " Found int, expected ").concat(primitiveKind));
           }
         } else {
@@ -104,8 +104,7 @@ Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
         case "string":
           return "";
 
-        case "int53":
-        case "int64":
+        case "int":
         case "double":
           return 0;
 

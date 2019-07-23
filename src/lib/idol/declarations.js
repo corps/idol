@@ -83,7 +83,7 @@ TypeDec.metadata = {
       "type_struct": {
         "literal": null,
         "parameters": [],
-        "primitive_type": "int53",
+        "primitive_type": "int",
         "reference": {
           "module_name": "declarations",
           "qualified_name": "declarations.FieldDec",
@@ -173,7 +173,7 @@ ModuleDec.metadata = {
   "is_a": {
     "literal": null,
     "parameters": [],
-    "primitive_type": "int53",
+    "primitive_type": "int",
     "reference": {
       "module_name": "declarations",
       "qualified_name": "declarations.TypeDec",

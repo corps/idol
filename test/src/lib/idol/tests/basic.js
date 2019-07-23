@@ -27,7 +27,7 @@ export function TestLiteralTop(val) {
 
 TestLiteralTop.literal = "mooo";
 Literal_(TestLiteralTop);
-TestLiteralTop.metadata = {"dependencies":[],"fields":{},"is_a":{"literal":{"bool":false,"double":0,"int53":0,"int64":0,"string":"mooo"},"parameters":[],"primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestLiteralTop","type_name":"TestLiteralTop"},"options":[],"tags":[],"type_vars":[]};
+TestLiteralTop.metadata = {"dependencies":[],"fields":{},"is_a":{"literal":{"bool":false,"double":0,"int":0,"string":"mooo"},"parameters":[],"primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestLiteralTop","type_name":"TestLiteralTop"},"options":[],"tags":[],"type_vars":[]};
 
 export function TestOptionalField(val) {
     return TestOptionalField.wrap.apply(this, arguments)
@@ -44,10 +44,10 @@ export function TestTagsStruct(val) {
 }
 
 Struct_(TestTagsStruct, [
-    ["a", "a", Primitive_.of("int53")],
+    ["a", "a", Primitive_.of("int")],
 ]);
 
-TestTagsStruct.metadata = {"dependencies":[],"fields":{"a":{"field_name":"a","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int53","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}}},"is_a":null,"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestTagsStruct","type_name":"TestTagsStruct"},"options":[],"tags":["tag-a","tag-b"],"type_vars":[]};
+TestTagsStruct.metadata = {"dependencies":[],"fields":{"a":{"field_name":"a","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}}},"is_a":null,"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestTagsStruct","type_name":"TestTagsStruct"},"options":[],"tags":["tag-a","tag-b"],"type_vars":[]};
 
 export function TestStructInner(val) {
     return TestStructInner.wrap.apply(this, arguments)
@@ -56,10 +56,10 @@ export function TestStructInner(val) {
 Struct_(TestStructInner, [
     ["d", "d", Primitive_.of("bool")],
     ["e", "e", Primitive_.of("double")],
-    ["f", "f", Primitive_.of("int64")],
+    ["f", "f", Primitive_.of("int")],
 ]);
 
-TestStructInner.metadata = {"dependencies":[],"fields":{"d":{"field_name":"d","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"bool","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}},"e":{"field_name":"e","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"double","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}},"f":{"field_name":"f","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int64","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}}},"is_a":null,"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestStructInner","type_name":"TestStructInner"},"options":[],"tags":[],"type_vars":[]};
+TestStructInner.metadata = {"dependencies":[],"fields":{"d":{"field_name":"d","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"bool","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}},"e":{"field_name":"e","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"double","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}},"f":{"field_name":"f","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}}},"is_a":null,"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestStructInner","type_name":"TestStructInner"},"options":[],"tags":[],"type_vars":[]};
 
 export function TestStruct(val) {
     return TestStruct.wrap.apply(this, arguments)
@@ -67,11 +67,11 @@ export function TestStruct(val) {
 
 Struct_(TestStruct, [
     ["a", "a", Primitive_.of("string")],
-    ["b", "b", Primitive_.of("int53")],
+    ["b", "b", Primitive_.of("int")],
     ["c", "c", TestStructInner],
 ]);
 
-TestStruct.metadata = {"dependencies":[{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestStruct","type_name":"TestStruct"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.TestStructInner","type_name":"TestStructInner"}}],"fields":{"a":{"field_name":"a","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}},"b":{"field_name":"b","tags":["tag"],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int53","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}},"c":{"field_name":"c","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int53","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.TestStructInner","type_name":"TestStructInner"},"struct_kind":"Scalar"}}},"is_a":null,"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestStruct","type_name":"TestStruct"},"options":[],"tags":[],"type_vars":[]};
+TestStruct.metadata = {"dependencies":[{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestStruct","type_name":"TestStruct"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.TestStructInner","type_name":"TestStructInner"}}],"fields":{"a":{"field_name":"a","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}},"b":{"field_name":"b","tags":["tag"],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}},"c":{"field_name":"c","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.TestStructInner","type_name":"TestStructInner"},"struct_kind":"Scalar"}}},"is_a":null,"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestStruct","type_name":"TestStruct"},"options":[],"tags":[],"type_vars":[]};
 
 export function TestKind(val) {
     return val;
@@ -84,14 +84,14 @@ export function TestAtleastOne(val) {
 }
 
 List_(TestAtleastOne, TestKind);
-TestAtleastOne.metadata = {"dependencies":[{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestAtleastOne","type_name":"TestAtleastOne"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.TestKind","type_name":"TestKind"}}],"fields":{},"is_a":{"literal":null,"parameters":[],"primitive_type":"int53","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.TestKind","type_name":"TestKind"},"struct_kind":"Repeated"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestAtleastOne","type_name":"TestAtleastOne"},"options":[],"tags":["atleast_one"],"type_vars":[]};
+TestAtleastOne.metadata = {"dependencies":[{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestAtleastOne","type_name":"TestAtleastOne"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.TestKind","type_name":"TestKind"}}],"fields":{},"is_a":{"literal":null,"parameters":[],"primitive_type":"int","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.TestKind","type_name":"TestKind"},"struct_kind":"Repeated"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestAtleastOne","type_name":"TestAtleastOne"},"options":[],"tags":["atleast_one"],"type_vars":[]};
 
 export function TestMap(val) {
     return TestMap.wrap.apply(this, arguments);
 }
 
 Map_(TestMap, TestAtleastOne);
-TestMap.metadata = {"dependencies":[{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestMap","type_name":"TestMap"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.TestAtleastOne","type_name":"TestAtleastOne"}}],"fields":{},"is_a":{"literal":null,"parameters":[],"primitive_type":"int53","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.TestAtleastOne","type_name":"TestAtleastOne"},"struct_kind":"Map"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestMap","type_name":"TestMap"},"options":[],"tags":[],"type_vars":[]};
+TestMap.metadata = {"dependencies":[{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestMap","type_name":"TestMap"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.TestAtleastOne","type_name":"TestAtleastOne"}}],"fields":{},"is_a":{"literal":null,"parameters":[],"primitive_type":"int","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.TestAtleastOne","type_name":"TestAtleastOne"},"struct_kind":"Map"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestMap","type_name":"TestMap"},"options":[],"tags":[],"type_vars":[]};
 
 export function LiteralHello(val) {
     LiteralHello.literal
@@ -99,7 +99,7 @@ export function LiteralHello(val) {
 
 LiteralHello.literal = "hello";
 Literal_(LiteralHello);
-LiteralHello.metadata = {"dependencies":[],"fields":{},"is_a":{"literal":{"bool":false,"double":0,"int53":0,"int64":0,"string":"hello"},"parameters":[],"primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralHello","type_name":"LiteralHello"},"options":[],"tags":[],"type_vars":[]};
+LiteralHello.metadata = {"dependencies":[],"fields":{},"is_a":{"literal":{"bool":false,"double":0,"int":0,"string":"hello"},"parameters":[],"primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralHello","type_name":"LiteralHello"},"options":[],"tags":[],"type_vars":[]};
 
 export function LiteralThreeO(val) {
     LiteralThreeO.literal
@@ -107,7 +107,7 @@ export function LiteralThreeO(val) {
 
 LiteralThreeO.literal = 3;
 Literal_(LiteralThreeO);
-LiteralThreeO.metadata = {"dependencies":[],"fields":{},"is_a":{"literal":{"bool":false,"double":3,"int53":0,"int64":0,"string":""},"parameters":[],"primitive_type":"double","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralThreeO","type_name":"LiteralThreeO"},"options":[],"tags":[],"type_vars":[]};
+LiteralThreeO.metadata = {"dependencies":[],"fields":{},"is_a":{"literal":{"bool":false,"double":3,"int":0,"string":""},"parameters":[],"primitive_type":"double","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralThreeO","type_name":"LiteralThreeO"},"options":[],"tags":[],"type_vars":[]};
 
 export function Literal1(val) {
     Literal1.literal
@@ -115,7 +115,7 @@ export function Literal1(val) {
 
 Literal1.literal = 1;
 Literal_(Literal1);
-Literal1.metadata = {"dependencies":[],"fields":{},"is_a":{"literal":{"bool":false,"double":0,"int53":1,"int64":0,"string":""},"parameters":[],"primitive_type":"int53","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.Literal1","type_name":"Literal1"},"options":[],"tags":[],"type_vars":[]};
+Literal1.metadata = {"dependencies":[],"fields":{},"is_a":{"literal":{"bool":false,"double":0,"int":1,"string":""},"parameters":[],"primitive_type":"int","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.Literal1","type_name":"Literal1"},"options":[],"tags":[],"type_vars":[]};
 
 export function LiteralTrue(val) {
     LiteralTrue.literal
@@ -123,7 +123,7 @@ export function LiteralTrue(val) {
 
 LiteralTrue.literal = true;
 Literal_(LiteralTrue);
-LiteralTrue.metadata = {"dependencies":[],"fields":{},"is_a":{"literal":{"bool":true,"double":0,"int53":0,"int64":0,"string":""},"parameters":[],"primitive_type":"bool","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralTrue","type_name":"LiteralTrue"},"options":[],"tags":[],"type_vars":[]};
+LiteralTrue.metadata = {"dependencies":[],"fields":{},"is_a":{"literal":{"bool":true,"double":0,"int":0,"string":""},"parameters":[],"primitive_type":"bool","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralTrue","type_name":"LiteralTrue"},"options":[],"tags":[],"type_vars":[]};
 
 export function LiteralFive(val) {
     LiteralFive.literal
@@ -131,7 +131,7 @@ export function LiteralFive(val) {
 
 LiteralFive.literal = 5;
 Literal_(LiteralFive);
-LiteralFive.metadata = {"dependencies":[],"fields":{},"is_a":{"literal":{"bool":false,"double":0,"int53":0,"int64":5,"string":""},"parameters":[],"primitive_type":"int64","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralFive","type_name":"LiteralFive"},"options":[],"tags":[],"type_vars":[]};
+LiteralFive.metadata = {"dependencies":[],"fields":{},"is_a":{"literal":{"bool":false,"double":0,"int":5,"string":""},"parameters":[],"primitive_type":"int","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"},"named":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralFive","type_name":"LiteralFive"},"options":[],"tags":[],"type_vars":[]};
 
 export function TestLiteralStruct(val) {
     return TestLiteralStruct.wrap.apply(this, arguments)
@@ -145,7 +145,7 @@ Struct_(TestLiteralStruct, [
     ["two", "two", LiteralHello],
 ]);
 
-TestLiteralStruct.metadata = {"dependencies":[{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestLiteralStruct","type_name":"TestLiteralStruct"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralFive","type_name":"LiteralFive"}},{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestLiteralStruct","type_name":"TestLiteralStruct"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralTrue","type_name":"LiteralTrue"}},{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestLiteralStruct","type_name":"TestLiteralStruct"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.Literal1","type_name":"Literal1"}},{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestLiteralStruct","type_name":"TestLiteralStruct"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralThreeO","type_name":"LiteralThreeO"}},{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestLiteralStruct","type_name":"TestLiteralStruct"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralHello","type_name":"LiteralHello"}}],"fields":{"five":{"field_name":"five","tags":["optional"],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int53","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralFive","type_name":"LiteralFive"},"struct_kind":"Scalar"}},"four":{"field_name":"four","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int53","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralTrue","type_name":"LiteralTrue"},"struct_kind":"Scalar"}},"one":{"field_name":"one","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int53","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.Literal1","type_name":"Literal1"},"struct_kind":"Scalar"}},"three":{"field_name":"three","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int53","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralThreeO","type_name":"LiteralThreeO"},"struct_kind":"Scalar"}},"two":{"field_name":"two","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int53","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralHello","type_name":"LiteralHello"},"struct_kind":"Scalar"}}},"is_a":null,"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestLiteralStruct","type_name":"TestLiteralStruct"},"options":[],"tags":[],"type_vars":[]};
+TestLiteralStruct.metadata = {"dependencies":[{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestLiteralStruct","type_name":"TestLiteralStruct"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralFive","type_name":"LiteralFive"}},{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestLiteralStruct","type_name":"TestLiteralStruct"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralTrue","type_name":"LiteralTrue"}},{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestLiteralStruct","type_name":"TestLiteralStruct"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.Literal1","type_name":"Literal1"}},{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestLiteralStruct","type_name":"TestLiteralStruct"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralThreeO","type_name":"LiteralThreeO"}},{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestLiteralStruct","type_name":"TestLiteralStruct"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralHello","type_name":"LiteralHello"}}],"fields":{"five":{"field_name":"five","tags":["optional"],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralFive","type_name":"LiteralFive"},"struct_kind":"Scalar"}},"four":{"field_name":"four","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralTrue","type_name":"LiteralTrue"},"struct_kind":"Scalar"}},"one":{"field_name":"one","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.Literal1","type_name":"Literal1"},"struct_kind":"Scalar"}},"three":{"field_name":"three","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralThreeO","type_name":"LiteralThreeO"},"struct_kind":"Scalar"}},"two":{"field_name":"two","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.LiteralHello","type_name":"LiteralHello"},"struct_kind":"Scalar"}}},"is_a":null,"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestLiteralStruct","type_name":"TestLiteralStruct"},"options":[],"tags":[],"type_vars":[]};
 
 export function TestListOfListStruct(val) {
     return TestListOfListStruct.wrap.apply(this, arguments)
@@ -155,4 +155,4 @@ Struct_(TestListOfListStruct, [
     ["listOfList", "list_of_list", List_.of(TestAtleastOne)],
 ]);
 
-TestListOfListStruct.metadata = {"dependencies":[{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestListOfListStruct","type_name":"TestListOfListStruct"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.TestAtleastOne","type_name":"TestAtleastOne"}}],"fields":{"list_of_list":{"field_name":"list_of_list","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int53","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.TestAtleastOne","type_name":"TestAtleastOne"},"struct_kind":"Repeated"}}},"is_a":null,"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestListOfListStruct","type_name":"TestListOfListStruct"},"options":[],"tags":[],"type_vars":[]};
+TestListOfListStruct.metadata = {"dependencies":[{"from":{"module_name":"tests.basic","qualified_name":"tests.basic.TestListOfListStruct","type_name":"TestListOfListStruct"},"is_abstraction":false,"is_local":true,"to":{"module_name":"tests.basic","qualified_name":"tests.basic.TestAtleastOne","type_name":"TestAtleastOne"}}],"fields":{"list_of_list":{"field_name":"list_of_list","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int","reference":{"module_name":"tests.basic","qualified_name":"tests.basic.TestAtleastOne","type_name":"TestAtleastOne"},"struct_kind":"Repeated"}}},"is_a":null,"named":{"module_name":"tests.basic","qualified_name":"tests.basic.TestListOfListStruct","type_name":"TestListOfListStruct"},"options":[],"tags":[],"type_vars":[]};

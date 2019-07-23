@@ -15,7 +15,7 @@ export function SideImport2(val) {
 }
 
 Struct_(SideImport2, [
-    ["sideImport2", "side_import2", Primitive_.of("int53")],
+    ["sideImport2", "side_import2", Primitive_.of("int")],
 ]);
 
-SideImport2.metadata = {"dependencies":[],"fields":{"side_import2":{"field_name":"side_import2","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int53","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}}},"is_a":null,"named":{"module_name":"tests.abs.three","qualified_name":"tests.abs.three.SideImport2","type_name":"SideImport2"},"options":[],"tags":[],"type_vars":[]};
+SideImport2.metadata = {"dependencies":[],"fields":{"side_import2":{"field_name":"side_import2","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}}},"is_a":null,"named":{"module_name":"tests.abs.three","qualified_name":"tests.abs.three.SideImport2","type_name":"SideImport2"},"options":[],"tags":[],"type_vars":[]};

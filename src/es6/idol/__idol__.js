@@ -45,7 +45,7 @@ Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
                 return;
             case "number":
                 if ((val | 0) === val) {
-                    if (primitiveKind !== "int53" && primitiveKind !== "int64" && primitiveKind !== "double") {
+                    if (primitiveKind !== "int" && primitiveKind !== "double") {
                         throw new Error(`${path.join('.')} Found int, expected ${primitiveKind}`);
                     }
                 } else {
@@ -74,8 +74,7 @@ Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
             switch (primitiveKind) {
                 case "string":
                     return "";
-                case "int53":
-                case "int64":
+                case "int":
                 case "double":
                     return 0;
                 case "bool":

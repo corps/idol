@@ -7,12 +7,7 @@
 enum = ["Scalar", "Repeated", "Map"]
 
 [PrimitiveType]
-# int53 and int64 are both signed.
-# int53 is intended to fit into Javascript's Number natively without losing precision.
-# int64 is intended to possibly contain values greater than Javascript's native Number precision.
-#   codegen support int64 will need to consider carefully how to serialize these values for their
-#   target environment.  Usually this means serializing them as a string.
-enum = ["int53", "int64", "double", "string", "bool", "any"]
+enum = ["int", "double", "string", "bool", "any"]
 
 [Dependency.fields]
 # The external type name required by the from type
@@ -51,8 +46,8 @@ options = "string[]"
 tags = "string[]"
 # For high order kinds (generics) that target other types as arguments, each of these strings
 # is a local alias for the parameter at that position.
-# ie: if MyMap.type_vars = ["A", "B"] then MyMap<int53, string> will replace all "A" and "B" references
-# inside of MyMap with int53 and string.
+# ie: if MyMap.type_vars = ["A", "B"] then MyMap<int, string> will replace all "A" and "B" references
+# inside of MyMap with int and string.
 type_vars = "string[]"
 # The name and module information of this type's definition.
 named = "Reference"
@@ -75,8 +70,7 @@ literal = ["Literal", "optional"]
 parameters = "Reference[]"
 
 [Literal.fields]
-int64 = "int64"
-int53 = "int53"
+int = "int"
 double = "double"
 string = "string"
 bool = "bool"

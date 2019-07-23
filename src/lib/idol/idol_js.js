@@ -1048,7 +1048,7 @@ function () {
 
             case 7:
               _context4.t1 = type.isA.primitiveType;
-              _context4.next = _context4.t1 === _schema.PrimitiveType.BOOL ? 10 : _context4.t1 === _schema.PrimitiveType.DOUBLE ? 13 : _context4.t1 === _schema.PrimitiveType.INT53 ? 16 : _context4.t1 === _schema.PrimitiveType.INT64 ? 19 : _context4.t1 === _schema.PrimitiveType.STRING ? 22 : 25;
+              _context4.next = _context4.t1 === _schema.PrimitiveType.BOOL ? 10 : _context4.t1 === _schema.PrimitiveType.DOUBLE ? 13 : _context4.t1 === _schema.PrimitiveType.INT ? 16 : _context4.t1 === _schema.PrimitiveType.STRING ? 19 : 22;
               break;
 
             case 10:
@@ -1056,41 +1056,34 @@ function () {
               return "".concat(type.named.typeName, ".literal = ").concat(JSON.stringify(type.isA.literal.bool), ";");
 
             case 12:
-              return _context4.abrupt("break", 25);
+              return _context4.abrupt("break", 22);
 
             case 13:
               _context4.next = 15;
               return "".concat(type.named.typeName, ".literal = ").concat(JSON.stringify(type.isA.literal["double"]), ";");
 
             case 15:
-              return _context4.abrupt("break", 25);
+              return _context4.abrupt("break", 22);
 
             case 16:
               _context4.next = 18;
-              return "".concat(type.named.typeName, ".literal = ").concat(JSON.stringify(type.isA.literal.int53), ";");
+              return "".concat(type.named.typeName, ".literal = ").concat(JSON.stringify(type.isA.literal["int"]), ";");
 
             case 18:
-              return _context4.abrupt("break", 25);
+              return _context4.abrupt("break", 22);
 
             case 19:
               _context4.next = 21;
-              return "".concat(type.named.typeName, ".literal = ").concat(JSON.stringify(type.isA.literal.int64), ";");
+              return "".concat(type.named.typeName, ".literal = ").concat(JSON.stringify(type.isA.literal.string), ";");
 
             case 21:
-              return _context4.abrupt("break", 25);
+              return _context4.abrupt("break", 22);
 
             case 22:
               _context4.next = 24;
-              return "".concat(type.named.typeName, ".literal = ").concat(JSON.stringify(type.isA.literal.string), ";");
-
-            case 24:
-              return _context4.abrupt("break", 25);
-
-            case 25:
-              _context4.next = 27;
               return "Literal_(".concat(type.named.typeName, ");");
 
-            case 27:
+            case 24:
             case "end":
               return _context4.stop();
           }
