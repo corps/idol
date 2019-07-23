@@ -1,4 +1,4 @@
-#! ../node_modules/.bin/babel-node
+#! /usr/bin/env babel-node
 
 import { Assembled } from './idol/all/optional';
 import fs from 'fs';
