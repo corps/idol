@@ -20,8 +20,13 @@ target/release/idol_rs: src/*.rs $(SOURCE_FILES) src/bin/idol_rs.rs
 models: $(MODELS)
 	./target/debug/idol $? > build.json
 	python3 --version
+	node --version
+
+	npm run compile
+
 	cat build.json | ./target/debug/idol_rs --output src/models/ --mod "crate::models"
 	cat build.json | ./src/bin/idol_py.py --output src/lib/idol --mod "idol"
+	cat build.json | ./src/bin/idol_js.js --output src/es6/idol --ignore-idol-js
 
 test: target/debug/idol target/debug/idol_rs models
 	cargo test

@@ -43,7 +43,7 @@ idol src/models/declarations.toml > build.json
 Get a json output describing the schema of all modules, dependencies, and types
 
 ```json
-{"declarations":{"dependencies":[{"from":{"module_name":"declarations","qualified_name":"declarations.ModuleDec","type_name":"ModuleDec"},"is_local":true,"to":{"module_name":"declarations","qualified_name":"declarations.TypeDec","type_name":"TypeDec"}},{"from":{"module_name":"declarations","qualified_name":"declarations.TypeDec","type_name":"TypeDec"},"is_local":true,"to":{"module_name":"declarations","qualified_name":"declarations.FieldDec","type_name":"FieldDec"}}],"module_name":"declarations","types_by_name":{"ModuleDec":{"fields":{},"is_a":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int53":0,"literal_int64":0,"literal_string":"","primitive_type":"int53","reference":{"module_name":"declarations","qualified_name":"declarations.TypeDec","type_name":"TypeDec"},"struct_kind":"Map"},"options":[],"tags":[],"type_name":"ModuleDec"},"TypeDec":{"fields":{"is_a":{"field_name":"is_a","tags":[],"type_struct":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int53":0,"literal_int64":0,"literal_string":"","primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}},"enum":{"field_name":"enum","tags":[],"type_struct":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int53":0,"literal_int64":0,"literal_string":"","primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Repeated"}},"tags":{"field_name":"tags","tags":[],"type_struct":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int53":0,"literal_int64":0,"literal_string":"","primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Repeated"}},"fields":{"field_name":"fields","tags":[],"type_struct":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int53":0,"literal_int64":0,"literal_string":"","primitive_type":"int53","reference":{"module_name":"declarations","qualified_name":"declarations.FieldDec","type_name":"FieldDec"},"struct_kind":"Map"}}},"is_a":null,"options":[],"tags":[],"type_name":"TypeDec"},"FieldDec":{"fields":{},"is_a":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int53":0,"literal_int64":0,"literal_string":"","primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Repeated"},"options":[],"tags":[],"type_name":"FieldDec"}},"types_dependency_ordering":["FieldDec","TypeDec","ModuleDec"]}}
+{"declarations":{"dependencies":[{"from":{"module_name":"declarations","qualified_name":"declarations.ModuleDec","type_name":"ModuleDec"},"is_local":true,"to":{"module_name":"declarations","qualified_name":"declarations.TypeDec","type_name":"TypeDec"}},{"from":{"module_name":"declarations","qualified_name":"declarations.TypeDec","type_name":"TypeDec"},"is_local":true,"to":{"module_name":"declarations","qualified_name":"declarations.FieldDec","type_name":"FieldDec"}}],"module_name":"declarations","types_by_name":{"ModuleDec":{"fields":{},"is_a":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int":0,"literal_int64":0,"literal_string":"","primitive_type":"int","reference":{"module_name":"declarations","qualified_name":"declarations.TypeDec","type_name":"TypeDec"},"struct_kind":"Map"},"options":[],"tags":[],"type_name":"ModuleDec"},"TypeDec":{"fields":{"is_a":{"field_name":"is_a","tags":[],"type_struct":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int":0,"literal_int64":0,"literal_string":"","primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}},"enum":{"field_name":"enum","tags":[],"type_struct":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int":0,"literal_int64":0,"literal_string":"","primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Repeated"}},"tags":{"field_name":"tags","tags":[],"type_struct":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int":0,"literal_int64":0,"literal_string":"","primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Repeated"}},"fields":{"field_name":"fields","tags":[],"type_struct":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int":0,"literal_int64":0,"literal_string":"","primitive_type":"int","reference":{"module_name":"declarations","qualified_name":"declarations.FieldDec","type_name":"FieldDec"},"struct_kind":"Map"}}},"is_a":null,"options":[],"tags":[],"type_name":"TypeDec"},"FieldDec":{"fields":{},"is_a":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int":0,"literal_int64":0,"literal_string":"","primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Repeated"},"options":[],"tags":[],"type_name":"FieldDec"}},"types_dependency_ordering":["FieldDec","TypeDec","ModuleDec"]}}
 ```
 
 Run that output through a codegen tool for each target language.
@@ -68,8 +68,7 @@ class TypeStruct(_Struct):
     is_literal: bool
     literal_bool: bool
     literal_double: float
-    literal_int53: int
-    literal_int64: int
+    literal_int: int
     literal_string: str
     parameters: _List[Reference]
     primitive_type: PrimitiveType
@@ -94,15 +93,14 @@ Definition idol models is very simple.  In fact, the entire grammar of idol is c
 
 Type values that can be given to `TypeDec` include:
 
-1. `int53` a signed int type that should fit into 53 bits, and thus guaranteed to render correctly from a `JSON.parse` call in javascript.  Defaults to 0 from `expand`
-2.  `int64` a signed int type that can grow to fit 64 bits, and thus is not guaranteed to lose precision from a `JSON.parse` call in javascript.  In this case, frontends will need special logic to parsing the json payloads.  `idol` itself does not provide this special logic, which is implementation dependent, but the type information can inform clients.  Defaults to 0 from `expand`
+1. `int` a signed int type.  Defaults to 0 from `expand`
 3.  `string` a string type.  Defaults to "" from `expand`
-4.  `double` a 64 bit precision float type, mapping directly to Javascript's Numeric type.  Defaults to 0.0 from `expand`.
+4.  `double` a 64 bit precision float type.  Defaults to 0.0 from `expand`.
 5.  `bool` a boolean type of true or false.  Defaults to false from `expand`
 
 Types can also be decorated with container types:
 
-1.  `int53[]` is a list of int53s.
+1.  `int[]` is a list of ints.
 2.  `bool{}` is a map of string -> bool entries.
 
 Finally, tags can be used to provide additional typing / code gen information.  idol supports 2 by default.
@@ -113,5 +111,5 @@ Finally, tags can be used to provide additional typing / code gen information.  
 
 ## Project Status
 
-Current support languages: python and rust.
-Target future languages: nodejs, graphql, ruby, flowjs, typescript.
+Current support languages: python, rust, nodejs
+Target future languages: graphql, ruby, flowjs, typescript.

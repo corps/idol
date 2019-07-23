@@ -21,7 +21,7 @@ base.overrideAttrs (old: {
   '';
 
   buildInputs = old.buildInputs ++ (with pkgs; [
-    remarshal python36
+    remarshal python36 nodejs
   ]);
 })
 

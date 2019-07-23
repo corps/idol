@@ -171,7 +171,7 @@ impl idol::ValidatesJson for TestOptionalField {
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
 pub struct TestTagsStruct {
-  pub r#a: idol::i53,
+  pub r#a: i64,
 }
 
 impl idol::ExpandsJson for TestTagsStruct {
@@ -198,7 +198,7 @@ impl idol::ExpandsJson for TestTagsStruct {
       return None;
     }
 
-    match idol::i53::expand_json(&mut value["a"]) {
+    match i64::expand_json(&mut value["a"]) {
       Some(v) => value["a"] = v,
       None => (),
     }
@@ -213,7 +213,7 @@ impl idol::ValidatesJson for TestTagsStruct {
       return Err(idol::ValidationError(format!("expected an object but found {}", value)));
     }
 
-    idol::i53::validate_json(&value["a"]).map_err(|e| idol::ValidationError(format!("field a: {}", e)))?;
+    i64::validate_json(&value["a"]).map_err(|e| idol::ValidationError(format!("field a: {}", e)))?;
 
     Ok(())
   }
@@ -286,7 +286,7 @@ impl idol::ValidatesJson for TestStructInner {
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
 pub struct TestStruct {
   pub r#a: String,
-  pub r#b: idol::i53,
+  pub r#b: i64,
   pub r#c: TestStructInner,
 }
 
@@ -319,7 +319,7 @@ impl idol::ExpandsJson for TestStruct {
       None => (),
     }
 
-    match idol::i53::expand_json(&mut value["b"]) {
+    match i64::expand_json(&mut value["b"]) {
       Some(v) => value["b"] = v,
       None => (),
     }
@@ -340,7 +340,7 @@ impl idol::ValidatesJson for TestStruct {
     }
 
     String::validate_json(&value["a"]).map_err(|e| idol::ValidationError(format!("field a: {}", e)))?;
-    idol::i53::validate_json(&value["b"]).map_err(|e| idol::ValidationError(format!("field b: {}", e)))?;
+    i64::validate_json(&value["b"]).map_err(|e| idol::ValidationError(format!("field b: {}", e)))?;
     TestStructInner::validate_json(&value["c"]).map_err(|e| idol::ValidationError(format!("field c: {}", e)))?;
 
     Ok(())
@@ -516,17 +516,17 @@ impl idol::ValidatesJson for LiteralThreeO {
 }
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
-pub struct Literal1(idol::i53);
+pub struct Literal1(i64);
 
 impl Literal1 {
-  pub fn val(&self) -> idol::i53 {
+  pub fn val(&self) -> i64 {
     self.0.to_owned()
   }
 }
 
 impl Default for Literal1 {
   fn default() -> Literal1 {
-    Literal1((idol::i53(1)).to_owned())
+    Literal1((1).to_owned())
   }
 }
 

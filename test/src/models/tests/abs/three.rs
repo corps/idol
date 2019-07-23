@@ -5,7 +5,7 @@ use std::convert::TryFrom;
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
 pub struct SideImport2 {
-  pub r#side_import2: idol::i53,
+  pub r#side_import2: i64,
 }
 
 impl idol::ExpandsJson for SideImport2 {
@@ -32,7 +32,7 @@ impl idol::ExpandsJson for SideImport2 {
       return None;
     }
 
-    match idol::i53::expand_json(&mut value["side_import2"]) {
+    match i64::expand_json(&mut value["side_import2"]) {
       Some(v) => value["side_import2"] = v,
       None => (),
     }
@@ -47,7 +47,7 @@ impl idol::ValidatesJson for SideImport2 {
       return Err(idol::ValidationError(format!("expected an object but found {}", value)));
     }
 
-    idol::i53::validate_json(&value["side_import2"]).map_err(|e| idol::ValidationError(format!("field side_import2: {}", e)))?;
+    i64::validate_json(&value["side_import2"]).map_err(|e| idol::ValidationError(format!("field side_import2: {}", e)))?;
 
     Ok(())
   }

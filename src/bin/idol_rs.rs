@@ -230,7 +230,7 @@ impl<'a> ModuleBuildEnv<'a> {
         if let Some(type_struct) = &t.is_a {
           match type_struct.struct_kind {
             StructKind::Scalar => {
-              if type_struct.is_literal {
+              if type_struct.literal.is_some() {
                 self.gen_literal_impls(t, type_struct)?;
               } else {
                 self.gen_scalar_impls(t, type_struct)?;
@@ -260,17 +260,17 @@ impl<'a> ModuleBuildEnv<'a> {
 
   fn gen_struct_impls(&mut self, t: &Type) -> BResult {
     self.write_nl()?;
-    self.start_block(format!("impl idol::ExpandsJson for {}", t.type_name))?;
+    self.start_block(format!("impl idol::ExpandsJson for {}", t.named.type_name))?;
     self
       .start_block("fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value>")?;
 
-    self.gen_get_scalar(&t.type_name)?;
+    self.gen_get_scalar(&t.named.type_name)?;
 
     self.write_nl()?;
     self.start_block(format!("if value.is_null()"))?;
     self.write(format!(
       "return Some(serde_json::value::to_value({}::default()).unwrap());",
-      t.type_name
+      t.named.type_name
     ))?;
     self.end_block()?;
 
@@ -303,7 +303,7 @@ impl<'a> ModuleBuildEnv<'a> {
     self.end_block()?;
 
     self.write_nl()?;
-    self.start_block(format!("impl idol::ValidatesJson for {}", t.type_name))?;
+    self.start_block(format!("impl idol::ValidatesJson for {}", t.named.type_name))?;
     self.start_block("fn validate_json(value: &serde_json::Value) -> idol::ValidationResult")?;
 
     self.start_block(format!("if !value.is_object()"))?;
@@ -342,7 +342,7 @@ impl<'a> ModuleBuildEnv<'a> {
       type_struct.display_scalar_type(&self.build_env.root_rust_module, &self.idol_module_name);
 
     self.write_nl()?;
-    self.start_block(format!("impl idol::ExpandsJson for {}", t.type_name))?;
+    self.start_block(format!("impl idol::ExpandsJson for {}", t.named.type_name))?;
     self
       .start_block("fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value>")?;
     self.write(format!("{}::expand_json(value)", scalar_type))?;
@@ -350,7 +350,7 @@ impl<'a> ModuleBuildEnv<'a> {
     self.end_block()?;
 
     self.write_nl()?;
-    self.start_block(format!("impl idol::ValidatesJson for {}", t.type_name))?;
+    self.start_block(format!("impl idol::ValidatesJson for {}", t.named.type_name))?;
     self.start_block("fn validate_json(value: &serde_json::Value) -> idol::ValidationResult")?;
     self.write(format!("{}::validate_json(value)", scalar_type))?;
     self.end_block()?;
@@ -380,38 +380,34 @@ impl<'a> ModuleBuildEnv<'a> {
       type_struct.display_scalar_type(&self.build_env.root_rust_module, &self.idol_module_name);
 
     self.write_nl()?;
-    self.start_block(format!("impl {}", t.type_name))?;
+    self.start_block(format!("impl {}", t.named.type_name))?;
     self.start_block(format!("pub fn val(&self) -> {}", scalar_type))?;
     self.write("self.0.to_owned()")?;
     self.end_block()?;
     self.end_block()?;
 
     self.write_nl()?;
-    self.start_block(format!("impl Default for {}", t.type_name))?;
-    self.start_block(format!("fn default() -> {}", t.type_name))?;
+    self.start_block(format!("impl Default for {}", t.named.type_name))?;
+    self.start_block(format!("fn default() -> {}", t.named.type_name))?;
 
     let mut literal_wrapper = format!("{}", type_struct.literal_value());
-    if type_struct.primitive_type == PrimitiveType::int53 {
-      literal_wrapper = format!("idol::i53({})", literal_wrapper);
-    }
 
-    self.write(format!("{}(({}).to_owned())", t.type_name, literal_wrapper))?;
+    self.write(format!("{}(({}).to_owned())", t.named.type_name, literal_wrapper))?;
     self.end_block()?;
     self.end_block()?;
 
     self.write_nl()?;
-    self.start_block(format!("impl idol::ExpandsJson for {}", t.type_name))?;
+    self.start_block(format!("impl idol::ExpandsJson for {}", t.named.type_name))?;
     self
       .start_block("fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value>")?;
-    self.gen_get_scalar(&t.type_name)?;
+    self.gen_get_scalar(&t.named.type_name)?;
 
     match type_struct.primitive_type {
       PrimitiveType::bool => {
         self.start_block(format!("if value.is_null() || value.is_boolean()"))?
       }
       PrimitiveType::double => self.start_block(format!("if value.is_null() || value.is_f64()"))?,
-      PrimitiveType::int53 => self.start_block(format!("if value.is_null() || value.is_i64()"))?,
-      PrimitiveType::int64 => self.start_block(format!("if value.is_null() || value.is_i64()"))?,
+      PrimitiveType::int => self.start_block(format!("if value.is_null() || value.is_i64()"))?,
       PrimitiveType::string => {
         self.start_block(format!("if value.is_null() || value.is_string()"))?
       }
@@ -430,7 +426,7 @@ impl<'a> ModuleBuildEnv<'a> {
     self.end_block()?;
 
     self.write_nl()?;
-    self.start_block(format!("impl idol::ValidatesJson for {}", t.type_name))?;
+    self.start_block(format!("impl idol::ValidatesJson for {}", t.named.type_name))?;
     self.start_block("fn validate_json(value: &serde_json::Value) -> idol::ValidationResult")?;
 
     self.start_block(format!(
@@ -454,7 +450,7 @@ impl<'a> ModuleBuildEnv<'a> {
       type_struct.display_scalar_type(&self.build_env.root_rust_module, &self.idol_module_name);
 
     self.write_nl()?;
-    self.start_block(format!("impl idol::ExpandsJson for {}", t.type_name))?;
+    self.start_block(format!("impl idol::ExpandsJson for {}", t.named.type_name))?;
     self
       .start_block("fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value>")?;
     self.write(format!(
@@ -465,7 +461,7 @@ impl<'a> ModuleBuildEnv<'a> {
     self.end_block()?;
 
     self.write_nl()?;
-    self.start_block(format!("impl idol::ValidatesJson for {}", t.type_name))?;
+    self.start_block(format!("impl idol::ValidatesJson for {}", t.named.type_name))?;
     self.start_block("fn validate_json(value: &serde_json::Value) -> idol::ValidationResult")?;
     self.write(format!(
       "HashMap::<String, {}>::validate_json(value)",
@@ -482,7 +478,7 @@ impl<'a> ModuleBuildEnv<'a> {
       type_struct.display_scalar_type(&self.build_env.root_rust_module, &self.idol_module_name);
 
     self.write_nl()?;
-    self.start_block(format!("impl idol::ExpandsJson for {}", t.type_name))?;
+    self.start_block(format!("impl idol::ExpandsJson for {}", t.named.type_name))?;
     self
       .start_block("fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value>")?;
     self.write(format!("Vec::<{}>::expand_json(value)", scalar_type))?;
@@ -490,7 +486,7 @@ impl<'a> ModuleBuildEnv<'a> {
     self.end_block()?;
 
     self.write_nl()?;
-    self.start_block(format!("impl idol::ValidatesJson for {}", t.type_name))?;
+    self.start_block(format!("impl idol::ValidatesJson for {}", t.named.type_name))?;
     self.start_block("fn validate_json(value: &serde_json::Value) -> idol::ValidationResult")?;
     self.write(format!("Vec::<{}>::validate_json(value)", scalar_type))?;
     self.end_block()?;
@@ -504,14 +500,14 @@ impl<'a> ModuleBuildEnv<'a> {
       type_struct.display_scalar_type(&self.build_env.root_rust_module, &self.idol_module_name);
 
     self.write_nl()?;
-    self.start_block(format!("impl Default for {}", t.type_name))?;
-    self.start_block(format!("fn default() -> {}", t.type_name))?;
-    self.write(format!("{}(vec![{}::default()])", t.type_name, scalar_type))?;
+    self.start_block(format!("impl Default for {}", t.named.type_name))?;
+    self.start_block(format!("fn default() -> {}", t.named.type_name))?;
+    self.write(format!("{}(vec![{}::default()])", t.named.type_name, scalar_type))?;
     self.end_block()?;
     self.end_block()?;
 
     self.write_nl()?;
-    self.start_block(format!("impl idol::ExpandsJson for {}", t.type_name))?;
+    self.start_block(format!("impl idol::ExpandsJson for {}", t.named.type_name))?;
     self
       .start_block("fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value>")?;
     self.start_block("if value.is_null()")?;
@@ -537,7 +533,7 @@ impl<'a> ModuleBuildEnv<'a> {
     self.end_block()?;
 
     self.write_nl()?;
-    self.start_block(format!("impl idol::ValidatesJson for {}", t.type_name))?;
+    self.start_block(format!("impl idol::ValidatesJson for {}", t.named.type_name))?;
     self.start_block("fn validate_json(value: &serde_json::Value) -> idol::ValidationResult")?;
     self.start_block("if let serde_json::Value::Array(contents) = value")?;
     self.start_block("if contents.is_empty()")?;
@@ -556,20 +552,20 @@ impl<'a> ModuleBuildEnv<'a> {
 
   fn gen_enum_impls(&mut self, t: &Type) -> BResult {
     self.write_nl()?;
-    self.start_block(format!("impl Default for {}", t.type_name))?;
-    self.start_block(format!("fn default() -> {}", t.type_name))?;
-    self.write(format!("{}::{}", t.type_name, t.options.get(0).unwrap()))?;
+    self.start_block(format!("impl Default for {}", t.named.type_name))?;
+    self.start_block(format!("fn default() -> {}", t.named.type_name))?;
+    self.write(format!("{}::{}", t.named.type_name, t.options.get(0).unwrap()))?;
     self.end_block()?;
     self.end_block()?;
 
     self.write_nl()?;
-    self.start_block(format!("impl From<usize> for {}", t.type_name))?;
-    self.start_block(format!("fn from(i: usize) -> {}", t.type_name))?;
+    self.start_block(format!("impl From<usize> for {}", t.named.type_name))?;
+    self.start_block(format!("fn from(i: usize) -> {}", t.named.type_name))?;
     self.start_block(format!("if i >= {}", t.options.len()))?;
-    self.write(format!("{}::{}", t.type_name, t.options.get(0).unwrap()))?;
+    self.write(format!("{}::{}", t.named.type_name, t.options.get(0).unwrap()))?;
     for (i, opt) in t.options.iter().enumerate() {
       self.branch_block(format!("else if i == {}", i))?;
-      self.write(format!("{}::{}", t.type_name, opt))?;
+      self.write(format!("{}::{}", t.named.type_name, opt))?;
     }
     self.branch_block("else")?;
     self.write("unreachable!()")?;
@@ -578,25 +574,25 @@ impl<'a> ModuleBuildEnv<'a> {
     self.end_block()?;
 
     self.write_nl()?;
-    self.start_block(format!("impl Into<usize> for {}", t.type_name))?;
+    self.start_block(format!("impl Into<usize> for {}", t.named.type_name))?;
     self.start_block("fn into(self) -> usize")?;
     self.start_block("match self")?;
     for (i, opt) in t.options.iter().enumerate() {
-      self.write(format!("{}::{} => {},", t.type_name, opt, i))?;
+      self.write(format!("{}::{} => {},", t.named.type_name, opt, i))?;
     }
     self.end_block()?;
     self.end_block()?;
     self.end_block()?;
 
     self.write_nl()?;
-    self.start_block(format!("impl idol::ExpandsJson for {}", t.type_name))?;
+    self.start_block(format!("impl idol::ExpandsJson for {}", t.named.type_name))?;
     self
       .start_block("fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value>")?;
-    self.gen_get_scalar(&t.type_name)?;
+    self.gen_get_scalar(&t.named.type_name)?;
     self.start_block("if value.is_null()")?;
     self.write(format!(
       "return serde_json::to_value({}::default()).ok();",
-      t.type_name
+      t.named.type_name
     ))?;
     self.end_block()?;
 
@@ -606,14 +602,14 @@ impl<'a> ModuleBuildEnv<'a> {
     self.end_block()?;
 
     self.write_nl()?;
-    self.start_block(format!("impl idol::ValidatesJson for {}", t.type_name))?;
+    self.start_block(format!("impl idol::ValidatesJson for {}", t.named.type_name))?;
     self.start_block("fn validate_json(value: &serde_json::Value) -> idol::ValidationResult")?;
     self.write(format!(
       "return serde_json::from_value::<{}>(value.to_owned()).map_err(|_| {}).map(|_| ());",
-      t.type_name,
+      t.named.type_name,
       format!(
         "idol::ValidationError(format!(\"expected a valid enum value for {}, but found {{}}\", value))",
-        t.type_name
+        t.named.type_name
       )))?;
     self.end_block()?;
     self.end_block()?;
@@ -626,17 +622,17 @@ impl<'a> ModuleBuildEnv<'a> {
       let display_type =
         alias.display_type(&self.build_env.root_rust_module, &self.idol_module_name);
 
-      if alias.is_literal {
-        self.write(format!("pub struct {}({});", t.type_name, display_type))?;
+      if alias.literal.is_some() {
+        self.write(format!("pub struct {}({});", t.named.type_name, display_type))?;
       } else {
-        self.write(format!("pub struct {}(pub {});", t.type_name, display_type))?;
+        self.write(format!("pub struct {}(pub {});", t.named.type_name, display_type))?;
       }
 
       return Ok(());
     };
 
     if t.is_enum() {
-      self.start_block(format!("pub enum {}", t.type_name))?;
+      self.start_block(format!("pub enum {}", t.named.type_name))?;
 
       for option in t.options.iter() {
         self.write(format!("{},", option))?;
@@ -646,7 +642,7 @@ impl<'a> ModuleBuildEnv<'a> {
       return Ok(());
     }
 
-    self.start_block(format!("pub struct {}", t.type_name))?;
+    self.start_block(format!("pub struct {}", t.named.type_name))?;
 
     let mut field_names = t.fields.keys().cloned().collect::<Vec<String>>();
     field_names.sort();
@@ -687,7 +683,7 @@ impl TypeExt for Type {
 
   fn is_literal(&self) -> bool {
     if let Some(type_struct) = &self.is_a {
-      return type_struct.is_literal;
+      return type_struct.literal.is_some();
     }
 
     false
@@ -714,8 +710,7 @@ impl TypeStructExt for TypeStruct {
     if self.is_primitive() {
       match self.primitive_type {
         PrimitiveType::string => "String".to_string(),
-        PrimitiveType::int64 => "i64".to_string(),
-        PrimitiveType::int53 => "idol::i53".to_string(),
+        PrimitiveType::int => "i64".to_string(),
         PrimitiveType::double => "f64".to_string(),
         PrimitiveType::bool => "bool".to_string(),
         PrimitiveType::any => "serde_json::Value".to_string(),
@@ -828,7 +823,6 @@ pub mod idol {
   use std::fmt;
 
   #[derive(PartialEq, Debug, Serialize, Deserialize, Default, Eq, Clone)]
-  pub struct i53(pub i64);
   pub struct ValidationError(pub String);
   pub type ValidationResult = Result<(), ValidationError>;
 
@@ -1025,61 +1019,6 @@ pub mod idol {
       match value {
         serde_json::Value::Null => serde_json::to_value(0.0).ok(),
         _ => None,
-      }
-    }
-  }
-
-  impl ExpandsJson for i53 {
-    fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
-      match get_list_scalar(value) {
-        Some(mut v) => {
-          return match i53::expand_json(&mut v) {
-            Some(v_) => Some(v_),
-            None => Some(v),
-          };
-        }
-        None => (),
-      };
-
-      match value {
-        serde_json::Value::Null => serde_json::to_value(0).ok(),
-        _ => None,
-      }
-    }
-  }
-
-  impl ValidatesJson for i53 {
-    fn validate_json(value: &serde_json::Value) -> ValidationResult {
-      let mut number: Option<Result<i64, ValidationError>> = None;
-
-      if let serde_json::Value::String(s) = value {
-        number = Some(
-          s.parse::<i64>()
-            .map_err(|_| ValidationError(\"value was not a properly formatted i64.\".to_string())),
-        );
-      }
-
-      if let serde_json::Value::Number(n) = value {
-        if n.is_i64() {
-          number = Some(serde_json::from_value(value.to_owned()).map_err(|_| unreachable!()));
-        };
-      }
-
-      match number {
-        Some(Ok(i)) => {
-          if i > 9007199254740991 {
-            Err(ValidationError(\"value is too large for i53\".to_string()))
-          } else if i < -9007199254740991 {
-            Err(ValidationError(\"value is too small for i53\".to_string()))
-          } else {
-            Ok(())
-          }
-        }
-        Some(Err(e)) => Err(e),
-        None => Err(ValidationError(format!(
-          \"value was expected to be a ii53, but found {}\",
-          value
-        ))),
       }
     }
   }

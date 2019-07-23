@@ -20,13 +20,17 @@ addons:
     - jq
     - python3.6
   homebrew:
+    update: true
     packages:
-      - python36
       - jq
+      - node@8
 script:
 - |
   set -e
   export PATH="$PWD/test:$PATH"
+  export PATH="/usr/local/opt/node@8/bin:$PATH"
+  export PATH="$PWD/node_modules/.bin:$PATH"
+  npm install
   make test
   make release
 

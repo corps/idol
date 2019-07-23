@@ -376,20 +376,16 @@ impl SchemaRegistry {
     fn add_type_and_replace_dependencies(
         module: &mut Module,
         module_resolver: &ModuleResolver,
-        t: Type,
+        mut t: Type,
     ) -> Result<(), ModuleError> {
-        let from = Reference {
-            qualified_name: module_resolver.qualify(&t.type_name),
-            module_name: module.module_name.to_owned(),
-            type_name: t.type_name.to_owned(),
-        };
+        let from = &t.named;
 
         // remove any existing dependencies from this module.
-        if module.types_by_name.contains_key(&t.type_name) {
+        if module.types_by_name.contains_key(&t.named.type_name) {
             module.dependencies = module
                 .dependencies
                 .iter()
-                .filter(|d| d.from == from)
+                .filter(|d| &d.from != from)
                 .cloned()
                 .collect();
         }
@@ -397,17 +393,21 @@ impl SchemaRegistry {
         if t.is_abstract() {
             module
                 .abstract_types_by_name
-                .insert(t.type_name.to_owned(), t);
+                .insert(t.named.type_name.to_owned(), t);
             return Ok(());
         }
 
-        for inner_struct in t.inner_structs() {
-            if let Some(dependency) = inner_struct.as_dependency_from(&from) {
+        let mut new_type_deps: Vec<Dependency> = vec![];
+        for inner_struct in t.inner_structs().iter() {
+            if let Some(dependency) = inner_struct.as_dependency_from(from) {
+                new_type_deps.push(dependency.to_owned());
                 module.dependencies.push(dependency);
             }
         }
 
-        module.types_by_name.insert(t.type_name.to_owned(), t);
+        t.dependencies = new_type_deps;
+
+        module.types_by_name.insert(t.named.type_name.to_owned(), t);
 
         Ok(())
     }
@@ -467,8 +467,10 @@ impl ModuleResolver {
             type_vars: type_dec.type_vars.to_owned(),
         };
 
+        let named = Reference::from(self.qualify(type_name).as_ref());
+
         Ok(Type {
-            type_name: type_name.to_owned(),
+            named,
             ..type_resolver
                 .type_of_dec(type_dec)
                 .map_err(|fe| ModuleError::TypeDecError(type_name.to_owned(), fe))?
@@ -536,7 +538,7 @@ impl<'a> TypeResolver<'a> {
                 .type_struct_of_dec(&field_dec.0[0])
                 .map_err(|e| TypeDecError::FieldError(field_name.to_owned(), e))?;
 
-            if type_struct.is_literal {
+            if type_struct.literal.is_some() {
                 return Err(TypeDecError::FieldError(
                     field_name.to_owned(),
                     FieldDecError::LiteralInStructError,
@@ -618,7 +620,7 @@ impl<'a> TypeResolver<'a> {
 
                             for p_str in p_strs {
                                 let type_struct = self.type_struct_of_dec(p_str.trim())?;
-                                if type_struct.is_literal {
+                                if type_struct.literal.is_some() {
                                     return Err(FieldDecError::InvalidParameter(format!(
                                         "{} was a literal, but reference is required",
                                         p_str
@@ -668,16 +670,18 @@ fn parse_literal_annotation<'a>(
     let mut result = TypeStruct::default();
     result.struct_kind = StructKind::Scalar;
     result.primitive_type = parse_primitive_type(lit_type)?;
-    result.is_literal = true;
+
+    let mut literal = Literal::default();
 
     match result.primitive_type {
-        PrimitiveType::int53 => result.literal_int53 = serde_json::from_str(val)?,
-        PrimitiveType::int64 => result.literal_int64 = serde_json::from_str(val)?,
-        PrimitiveType::string => result.literal_string = val.to_owned(),
-        PrimitiveType::double => result.literal_double = serde_json::from_str(val)?,
-        PrimitiveType::bool => result.literal_bool = serde_json::from_str(val)?,
+        PrimitiveType::int => literal.int = serde_json::from_str(val)?,
+        PrimitiveType::string => literal.string = val.to_owned(),
+        PrimitiveType::double => literal.double = serde_json::from_str(val)?,
+        PrimitiveType::bool => literal.bool = serde_json::from_str(val)?,
         PrimitiveType::any => return Err(FieldDecError::LiteralAnyError),
     }
+
+    result.literal = Some(literal);
     return Ok(result);
 }
 
@@ -957,6 +961,118 @@ mod tests {
                 )
             ))
         )
+    }
+
+    #[test]
+    fn test_local_abstractions_dependencies() {
+        let mut registry = SchemaRegistry::new();
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            fields: map! {
+                "a".to_string() => FieldDec(vec!["T[]".to_owned()]),
+                "b".to_string() => FieldDec(vec!["b.Model2".to_owned()])
+            },
+            type_vars: vec!["T".to_string()],
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("Model".to_owned(), type_dec);
+        let result = registry.process_module("a".to_owned(), &module_dec);
+        assert_eq!(result, Ok(()));
+
+        assert_eq!(registry.unresolved_abstractions.len(), 0);
+        assert_eq!(registry.modules.get("a").unwrap().dependencies, vec![]);
+
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            is_a: "a.Model<c.Model>".to_string(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("Model".to_owned(), type_dec);
+        let type_dec = TypeDec {
+            is_a: "string".to_string(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("Model2".to_owned(), type_dec);
+        let result = registry.process_module("b".to_owned(), &module_dec);
+        assert_eq!(result, Ok(()));
+
+        assert_eq!(registry.unresolved_abstractions.len(), 0);
+        let bMod = registry.modules.get("b").unwrap();
+        assert_eq!(bMod.dependencies, vec![Dependency {
+            from: Reference::from("b.Model"),
+            to: Reference::from("c.Model"),
+            is_abstraction: false,
+            is_local: false,
+        }, Dependency {
+            from: Reference::from("b.Model"),
+            to: Reference::from("b.Model2"),
+            is_abstraction: false,
+            is_local: true,
+        }]);
+
+        assert_eq!(bMod.dependencies, bMod.types_by_name.get("Model").unwrap().dependencies);
+    }
+
+
+    #[test]
+    fn test_dependent_abstractions_dependencies() {
+        let mut registry = SchemaRegistry::new();
+
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            is_a: "a.Model<c.Model>".to_string(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("Model".to_owned(), type_dec);
+        let type_dec = TypeDec {
+            is_a: "string".to_string(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("Model2".to_owned(), type_dec);
+        let result = registry.process_module("b".to_owned(), &module_dec);
+        assert_eq!(result, Ok(()));
+
+        assert_eq!(registry.unresolved_abstractions.len(), 1);
+        let bMod = registry.modules.get("b").unwrap();
+        assert_eq!(bMod.dependencies, vec![Dependency {
+            from: Reference::from("b.Model"),
+            to: Reference::from("a.Model"),
+            is_abstraction: true,
+            is_local: false,
+        }]);
+
+        assert_eq!(bMod.dependencies, bMod.types_by_name.get("Model").unwrap().dependencies);
+
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            fields: map! {
+                "a".to_string() => FieldDec(vec!["T[]".to_owned()]),
+                "b".to_string() => FieldDec(vec!["b.Model2".to_owned()])
+            },
+            type_vars: vec!["T".to_string()],
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("Model".to_owned(), type_dec);
+        let result = registry.process_module("a".to_owned(), &module_dec);
+        assert_eq!(result, Ok(()));
+
+        assert_eq!(registry.unresolved_abstractions.len(), 0);
+        assert_eq!(registry.modules.get("a").unwrap().dependencies, vec![]);
+
+        let bMod = registry.modules.get("b").unwrap();
+        assert_eq!(bMod.dependencies, vec![Dependency {
+            from: Reference::from("b.Model"),
+            to: Reference::from("c.Model"),
+            is_abstraction: false,
+            is_local: false,
+        }, Dependency {
+            from: Reference::from("b.Model"),
+            to: Reference::from("b.Model2"),
+            is_abstraction: false,
+            is_local: true,
+        }]);
+
+        assert_eq!(bMod.dependencies, bMod.types_by_name.get("Model").unwrap().dependencies);
     }
 
     #[test]

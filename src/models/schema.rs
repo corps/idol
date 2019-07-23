@@ -73,8 +73,7 @@ impl idol::ValidatesJson for StructKind {
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
 pub enum PrimitiveType {
-  int53,
-  int64,
+  int,
   double,
   string,
   bool,
@@ -83,25 +82,23 @@ pub enum PrimitiveType {
 
 impl Default for PrimitiveType {
   fn default() -> PrimitiveType {
-    PrimitiveType::int53
+    PrimitiveType::int
   }
 }
 
 impl From<usize> for PrimitiveType {
   fn from(i: usize) -> PrimitiveType {
-    if i >= 6 {
-      PrimitiveType::int53
+    if i >= 5 {
+      PrimitiveType::int
     } else if i == 0 {
-      PrimitiveType::int53
+      PrimitiveType::int
     } else if i == 1 {
-      PrimitiveType::int64
-    } else if i == 2 {
       PrimitiveType::double
-    } else if i == 3 {
+    } else if i == 2 {
       PrimitiveType::string
-    } else if i == 4 {
+    } else if i == 3 {
       PrimitiveType::bool
-    } else if i == 5 {
+    } else if i == 4 {
       PrimitiveType::any
     } else {
       unreachable!()
@@ -112,12 +109,11 @@ impl From<usize> for PrimitiveType {
 impl Into<usize> for PrimitiveType {
   fn into(self) -> usize {
     match self {
-      PrimitiveType::int53 => 0,
-      PrimitiveType::int64 => 1,
-      PrimitiveType::double => 2,
-      PrimitiveType::string => 3,
-      PrimitiveType::bool => 4,
-      PrimitiveType::any => 5,
+      PrimitiveType::int => 0,
+      PrimitiveType::double => 1,
+      PrimitiveType::string => 2,
+      PrimitiveType::bool => 3,
+      PrimitiveType::any => 4,
     }
   }
 }
@@ -148,6 +144,77 @@ impl idol::ExpandsJson for PrimitiveType {
 impl idol::ValidatesJson for PrimitiveType {
   fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
     return serde_json::from_value::<PrimitiveType>(value.to_owned()).map_err(|_| idol::ValidationError(format!("expected a valid enum value for PrimitiveType, but found {}", value))).map(|_| ());
+  }
+}
+
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
+pub struct Literal {
+  pub r#bool: bool,
+  pub r#double: f64,
+  pub r#int: i64,
+  pub r#string: String,
+}
+
+impl idol::ExpandsJson for Literal {
+  fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match Literal::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
+    if value.is_null() {
+      return Some(serde_json::value::to_value(Literal::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
+    }
+
+    match bool::expand_json(&mut value["bool"]) {
+      Some(v) => value["bool"] = v,
+      None => (),
+    }
+
+    match f64::expand_json(&mut value["double"]) {
+      Some(v) => value["double"] = v,
+      None => (),
+    }
+
+    match i64::expand_json(&mut value["int"]) {
+      Some(v) => value["int"] = v,
+      None => (),
+    }
+
+    match String::expand_json(&mut value["string"]) {
+      Some(v) => value["string"] = v,
+      None => (),
+    }
+
+    None
+  }
+}
+
+impl idol::ValidatesJson for Literal {
+  fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
+    if !value.is_object() {
+      return Err(idol::ValidationError(format!("expected an object but found {}", value)));
+    }
+
+    bool::validate_json(&value["bool"]).map_err(|e| idol::ValidationError(format!("field bool: {}", e)))?;
+    f64::validate_json(&value["double"]).map_err(|e| idol::ValidationError(format!("field double: {}", e)))?;
+    i64::validate_json(&value["int"]).map_err(|e| idol::ValidationError(format!("field int: {}", e)))?;
+    String::validate_json(&value["string"]).map_err(|e| idol::ValidationError(format!("field string: {}", e)))?;
+
+    Ok(())
   }
 }
 
@@ -217,12 +284,7 @@ impl idol::ValidatesJson for Reference {
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
 pub struct TypeStruct {
-  pub r#is_literal: bool,
-  pub r#literal_bool: bool,
-  pub r#literal_double: f64,
-  pub r#literal_int53: idol::i53,
-  pub r#literal_int64: i64,
-  pub r#literal_string: String,
+  pub r#literal: Option<Literal>,
   pub r#parameters: Vec<Reference>,
   pub r#primitive_type: PrimitiveType,
   pub r#reference: Reference,
@@ -253,33 +315,8 @@ impl idol::ExpandsJson for TypeStruct {
       return None;
     }
 
-    match bool::expand_json(&mut value["is_literal"]) {
-      Some(v) => value["is_literal"] = v,
-      None => (),
-    }
-
-    match bool::expand_json(&mut value["literal_bool"]) {
-      Some(v) => value["literal_bool"] = v,
-      None => (),
-    }
-
-    match f64::expand_json(&mut value["literal_double"]) {
-      Some(v) => value["literal_double"] = v,
-      None => (),
-    }
-
-    match idol::i53::expand_json(&mut value["literal_int53"]) {
-      Some(v) => value["literal_int53"] = v,
-      None => (),
-    }
-
-    match i64::expand_json(&mut value["literal_int64"]) {
-      Some(v) => value["literal_int64"] = v,
-      None => (),
-    }
-
-    match String::expand_json(&mut value["literal_string"]) {
-      Some(v) => value["literal_string"] = v,
+    match Option::<Literal>::expand_json(&mut value["literal"]) {
+      Some(v) => value["literal"] = v,
       None => (),
     }
 
@@ -313,12 +350,7 @@ impl idol::ValidatesJson for TypeStruct {
       return Err(idol::ValidationError(format!("expected an object but found {}", value)));
     }
 
-    bool::validate_json(&value["is_literal"]).map_err(|e| idol::ValidationError(format!("field is_literal: {}", e)))?;
-    bool::validate_json(&value["literal_bool"]).map_err(|e| idol::ValidationError(format!("field literal_bool: {}", e)))?;
-    f64::validate_json(&value["literal_double"]).map_err(|e| idol::ValidationError(format!("field literal_double: {}", e)))?;
-    idol::i53::validate_json(&value["literal_int53"]).map_err(|e| idol::ValidationError(format!("field literal_int53: {}", e)))?;
-    i64::validate_json(&value["literal_int64"]).map_err(|e| idol::ValidationError(format!("field literal_int64: {}", e)))?;
-    String::validate_json(&value["literal_string"]).map_err(|e| idol::ValidationError(format!("field literal_string: {}", e)))?;
+    Option::<Literal>::validate_json(&value["literal"]).map_err(|e| idol::ValidationError(format!("field literal: {}", e)))?;
     Vec::<Reference>::validate_json(&value["parameters"]).map_err(|e| idol::ValidationError(format!("field parameters: {}", e)))?;
     PrimitiveType::validate_json(&value["primitive_type"]).map_err(|e| idol::ValidationError(format!("field primitive_type: {}", e)))?;
     Reference::validate_json(&value["reference"]).map_err(|e| idol::ValidationError(format!("field reference: {}", e)))?;
@@ -393,91 +425,6 @@ impl idol::ValidatesJson for Field {
 }
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
-pub struct Type {
-  pub r#fields: HashMap<String, Field>,
-  pub r#is_a: Option<TypeStruct>,
-  pub r#options: Vec<String>,
-  pub r#tags: Vec<String>,
-  pub r#type_name: String,
-  pub r#type_vars: Vec<String>,
-}
-
-impl idol::ExpandsJson for Type {
-  fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
-
-    match idol::get_list_scalar(value) {
-      Some(mut v) => {
-        return match Type::expand_json(&mut v) {
-          Some(v_) => Some(v_),
-          None => Some(v),
-        }
-        ;
-      }
-      None => (),
-    }
-    ;
-
-
-    if value.is_null() {
-      return Some(serde_json::value::to_value(Type::default()).unwrap());
-    }
-
-    if !value.is_object() {
-      return None;
-    }
-
-    match HashMap::<String, Field>::expand_json(&mut value["fields"]) {
-      Some(v) => value["fields"] = v,
-      None => (),
-    }
-
-    match Option::<TypeStruct>::expand_json(&mut value["is_a"]) {
-      Some(v) => value["is_a"] = v,
-      None => (),
-    }
-
-    match Vec::<String>::expand_json(&mut value["options"]) {
-      Some(v) => value["options"] = v,
-      None => (),
-    }
-
-    match Vec::<String>::expand_json(&mut value["tags"]) {
-      Some(v) => value["tags"] = v,
-      None => (),
-    }
-
-    match String::expand_json(&mut value["type_name"]) {
-      Some(v) => value["type_name"] = v,
-      None => (),
-    }
-
-    match Vec::<String>::expand_json(&mut value["type_vars"]) {
-      Some(v) => value["type_vars"] = v,
-      None => (),
-    }
-
-    None
-  }
-}
-
-impl idol::ValidatesJson for Type {
-  fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
-    if !value.is_object() {
-      return Err(idol::ValidationError(format!("expected an object but found {}", value)));
-    }
-
-    HashMap::<String, Field>::validate_json(&value["fields"]).map_err(|e| idol::ValidationError(format!("field fields: {}", e)))?;
-    Option::<TypeStruct>::validate_json(&value["is_a"]).map_err(|e| idol::ValidationError(format!("field is_a: {}", e)))?;
-    Vec::<String>::validate_json(&value["options"]).map_err(|e| idol::ValidationError(format!("field options: {}", e)))?;
-    Vec::<String>::validate_json(&value["tags"]).map_err(|e| idol::ValidationError(format!("field tags: {}", e)))?;
-    String::validate_json(&value["type_name"]).map_err(|e| idol::ValidationError(format!("field type_name: {}", e)))?;
-    Vec::<String>::validate_json(&value["type_vars"]).map_err(|e| idol::ValidationError(format!("field type_vars: {}", e)))?;
-
-    Ok(())
-  }
-}
-
-#[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Dependency {
   pub r#from: Reference,
   pub r#is_abstraction: bool,
@@ -543,6 +490,98 @@ impl idol::ValidatesJson for Dependency {
     bool::validate_json(&value["is_abstraction"]).map_err(|e| idol::ValidationError(format!("field is_abstraction: {}", e)))?;
     bool::validate_json(&value["is_local"]).map_err(|e| idol::ValidationError(format!("field is_local: {}", e)))?;
     Reference::validate_json(&value["to"]).map_err(|e| idol::ValidationError(format!("field to: {}", e)))?;
+
+    Ok(())
+  }
+}
+
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
+pub struct Type {
+  pub r#dependencies: Vec<Dependency>,
+  pub r#fields: HashMap<String, Field>,
+  pub r#is_a: Option<TypeStruct>,
+  pub r#named: Reference,
+  pub r#options: Vec<String>,
+  pub r#tags: Vec<String>,
+  pub r#type_vars: Vec<String>,
+}
+
+impl idol::ExpandsJson for Type {
+  fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match Type::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+
+    if value.is_null() {
+      return Some(serde_json::value::to_value(Type::default()).unwrap());
+    }
+
+    if !value.is_object() {
+      return None;
+    }
+
+    match Vec::<Dependency>::expand_json(&mut value["dependencies"]) {
+      Some(v) => value["dependencies"] = v,
+      None => (),
+    }
+
+    match HashMap::<String, Field>::expand_json(&mut value["fields"]) {
+      Some(v) => value["fields"] = v,
+      None => (),
+    }
+
+    match Option::<TypeStruct>::expand_json(&mut value["is_a"]) {
+      Some(v) => value["is_a"] = v,
+      None => (),
+    }
+
+    match Reference::expand_json(&mut value["named"]) {
+      Some(v) => value["named"] = v,
+      None => (),
+    }
+
+    match Vec::<String>::expand_json(&mut value["options"]) {
+      Some(v) => value["options"] = v,
+      None => (),
+    }
+
+    match Vec::<String>::expand_json(&mut value["tags"]) {
+      Some(v) => value["tags"] = v,
+      None => (),
+    }
+
+    match Vec::<String>::expand_json(&mut value["type_vars"]) {
+      Some(v) => value["type_vars"] = v,
+      None => (),
+    }
+
+    None
+  }
+}
+
+impl idol::ValidatesJson for Type {
+  fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
+    if !value.is_object() {
+      return Err(idol::ValidationError(format!("expected an object but found {}", value)));
+    }
+
+    Vec::<Dependency>::validate_json(&value["dependencies"]).map_err(|e| idol::ValidationError(format!("field dependencies: {}", e)))?;
+    HashMap::<String, Field>::validate_json(&value["fields"]).map_err(|e| idol::ValidationError(format!("field fields: {}", e)))?;
+    Option::<TypeStruct>::validate_json(&value["is_a"]).map_err(|e| idol::ValidationError(format!("field is_a: {}", e)))?;
+    Reference::validate_json(&value["named"]).map_err(|e| idol::ValidationError(format!("field named: {}", e)))?;
+    Vec::<String>::validate_json(&value["options"]).map_err(|e| idol::ValidationError(format!("field options: {}", e)))?;
+    Vec::<String>::validate_json(&value["tags"]).map_err(|e| idol::ValidationError(format!("field tags: {}", e)))?;
+    Vec::<String>::validate_json(&value["type_vars"]).map_err(|e| idol::ValidationError(format!("field type_vars: {}", e)))?;
 
     Ok(())
   }
