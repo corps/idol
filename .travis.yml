@@ -54,7 +54,7 @@ before_deploy:
 - git config --local user.email "recursive.cookie.jar@gmail.com"
 - |
   export TRAVIS_TAG=${TRAVIS_TAG:-v$(./bin/idol --version | cut -d' ' -f2).$(git log --format=%h -1)}
-- git tag $TRAVIS_TAG
+- git tag $TRAVIS_TAG || git fetch --tags
 deploy:
   provider: releases
   api_key:
