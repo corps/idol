@@ -1608,15 +1608,16 @@ function camelCase(s) {
   });
 }
 
-function mkdirP(path) {
-  if (_fs["default"].existsSync(path)) return;
-  var parent = path.dirname(path);
+function mkdirP(p) {
+  if (_fs["default"].existsSync(p)) return;
+
+  var parent = _path["default"].dirname(p);
 
   if (!_fs["default"].existsSync(parent)) {
     mkdirP(parent);
   }
 
-  _fs["default"].mkdirSync(path);
+  _fs["default"].mkdirSync(p);
 }
 
 main();

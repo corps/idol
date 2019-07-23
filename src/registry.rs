@@ -378,18 +378,14 @@ impl SchemaRegistry {
         module_resolver: &ModuleResolver,
         mut t: Type,
     ) -> Result<(), ModuleError> {
-        let from = Reference {
-            qualified_name: module_resolver.qualify(&t.named.type_name),
-            module_name: module.module_name.to_owned(),
-            type_name: t.named.type_name.to_owned(),
-        };
+        let from = &t.named;
 
         // remove any existing dependencies from this module.
         if module.types_by_name.contains_key(&t.named.type_name) {
             module.dependencies = module
                 .dependencies
                 .iter()
-                .filter(|d| d.from == from)
+                .filter(|d| &d.from != from)
                 .cloned()
                 .collect();
         }
@@ -403,7 +399,7 @@ impl SchemaRegistry {
 
         let mut new_type_deps: Vec<Dependency> = vec![];
         for inner_struct in t.inner_structs().iter() {
-            if let Some(dependency) = inner_struct.as_dependency_from(&from) {
+            if let Some(dependency) = inner_struct.as_dependency_from(from) {
                 new_type_deps.push(dependency.to_owned());
                 module.dependencies.push(dependency);
             }
@@ -966,6 +962,118 @@ mod tests {
                 )
             ))
         )
+    }
+
+    #[test]
+    fn test_local_abstractions_dependencies() {
+        let mut registry = SchemaRegistry::new();
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            fields: map! {
+                "a".to_string() => FieldDec(vec!["T[]".to_owned()]),
+                "b".to_string() => FieldDec(vec!["b.Model2".to_owned()])
+            },
+            type_vars: vec!["T".to_string()],
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("Model".to_owned(), type_dec);
+        let result = registry.process_module("a".to_owned(), &module_dec);
+        assert_eq!(result, Ok(()));
+
+        assert_eq!(registry.unresolved_abstractions.len(), 0);
+        assert_eq!(registry.modules.get("a").unwrap().dependencies, vec![]);
+
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            is_a: "a.Model<c.Model>".to_string(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("Model".to_owned(), type_dec);
+        let type_dec = TypeDec {
+            is_a: "string".to_string(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("Model2".to_owned(), type_dec);
+        let result = registry.process_module("b".to_owned(), &module_dec);
+        assert_eq!(result, Ok(()));
+
+        assert_eq!(registry.unresolved_abstractions.len(), 0);
+        let bMod = registry.modules.get("b").unwrap();
+        assert_eq!(bMod.dependencies, vec![Dependency {
+            from: Reference::from("b.Model"),
+            to: Reference::from("c.Model"),
+            is_abstraction: false,
+            is_local: false,
+        }, Dependency {
+            from: Reference::from("b.Model"),
+            to: Reference::from("b.Model2"),
+            is_abstraction: false,
+            is_local: true,
+        }]);
+
+        assert_eq!(bMod.dependencies, bMod.types_by_name.get("Model").unwrap().dependencies);
+    }
+
+
+    #[test]
+    fn test_dependent_abstractions_dependencies() {
+        let mut registry = SchemaRegistry::new();
+
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            is_a: "a.Model<c.Model>".to_string(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("Model".to_owned(), type_dec);
+        let type_dec = TypeDec {
+            is_a: "string".to_string(),
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("Model2".to_owned(), type_dec);
+        let result = registry.process_module("b".to_owned(), &module_dec);
+        assert_eq!(result, Ok(()));
+
+        assert_eq!(registry.unresolved_abstractions.len(), 1);
+        let bMod = registry.modules.get("b").unwrap();
+        assert_eq!(bMod.dependencies, vec![Dependency {
+            from: Reference::from("b.Model"),
+            to: Reference::from("a.Model"),
+            is_abstraction: true,
+            is_local: false,
+        }]);
+
+        assert_eq!(bMod.dependencies, bMod.types_by_name.get("Model").unwrap().dependencies);
+
+        let mut module_dec = ModuleDec::default();
+        let type_dec = TypeDec {
+            fields: map! {
+                "a".to_string() => FieldDec(vec!["T[]".to_owned()]),
+                "b".to_string() => FieldDec(vec!["b.Model2".to_owned()])
+            },
+            type_vars: vec!["T".to_string()],
+            ..TypeDec::default()
+        };
+        module_dec.0.insert("Model".to_owned(), type_dec);
+        let result = registry.process_module("a".to_owned(), &module_dec);
+        assert_eq!(result, Ok(()));
+
+        assert_eq!(registry.unresolved_abstractions.len(), 0);
+        assert_eq!(registry.modules.get("a").unwrap().dependencies, vec![]);
+
+        let bMod = registry.modules.get("b").unwrap();
+        assert_eq!(bMod.dependencies, vec![Dependency {
+            from: Reference::from("b.Model"),
+            to: Reference::from("c.Model"),
+            is_abstraction: false,
+            is_local: false,
+        }, Dependency {
+            from: Reference::from("b.Model"),
+            to: Reference::from("b.Model2"),
+            is_abstraction: false,
+            is_local: true,
+        }]);
+
+        assert_eq!(bMod.dependencies, bMod.types_by_name.get("Model").unwrap().dependencies);
     }
 
     #[test]
