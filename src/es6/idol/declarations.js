@@ -21,13 +21,13 @@ export function TypeDec(val) {
     return TypeDec.wrap.apply(this, arguments)
 }
 
-Struct_(TypeDec, {
-    enum: ["enum", List_.of(Primitive_.of("string"))],
-    fields: ["fields", Map_.of(FieldDec)],
-    isA: ["is_a", Primitive_.of("string")],
-    tags: ["tags", List_.of(Primitive_.of("string"))],
-    typeVars: ["type_vars", List_.of(Primitive_.of("string"))],
-})
+Struct_(TypeDec, [
+    ["enum", "enum", List_.of(Primitive_.of("string"))],
+    ["fields", "fields", Map_.of(FieldDec)],
+    ["isA", "is_a", Primitive_.of("string")],
+    ["tags", "tags", List_.of(Primitive_.of("string"))],
+    ["typeVars", "type_vars", List_.of(Primitive_.of("string"))],
+]);
 
 TypeDec.metadata = {"dependencies":[{"from":{"module_name":"declarations","qualified_name":"declarations.TypeDec","type_name":"TypeDec"},"is_abstraction":false,"is_local":true,"to":{"module_name":"declarations","qualified_name":"declarations.FieldDec","type_name":"FieldDec"}}],"fields":{"enum":{"field_name":"enum","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Repeated"}},"fields":{"field_name":"fields","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"int53","reference":{"module_name":"declarations","qualified_name":"declarations.FieldDec","type_name":"FieldDec"},"struct_kind":"Map"}},"is_a":{"field_name":"is_a","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}},"tags":{"field_name":"tags","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Repeated"}},"type_vars":{"field_name":"type_vars","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Repeated"}}},"is_a":null,"named":{"module_name":"declarations","qualified_name":"declarations.TypeDec","type_name":"TypeDec"},"options":[],"tags":[],"type_vars":[]};
 

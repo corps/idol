@@ -12,14 +12,6 @@ exports.Struct = Struct;
 exports.List = List;
 exports.Map = Map;
 
-function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
-
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
-
-function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
-
-function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
-
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function isObj(v) {
@@ -205,24 +197,21 @@ Struct.of = function StructOf(fieldTypes, constructor) {
     path = path || [];
     if (!isObj(json)) throw new Error("".concat(path.join('.'), " Expected an object, found ").concat(json));
     var metadata = this.metadata;
-
-    for (var propName in this.fieldTypes) {
-      var _this$fieldTypes$prop = _slicedToArray(this.fieldTypes[propName], 2),
-          fieldName = _this$fieldTypes$prop[0],
-          typeFunc = _this$fieldTypes$prop[1];
-
+    this.fieldTypes.forEach(function (fieldType) {
+      var fieldName = fieldType[1];
+      var typeFunc = fieldType[2];
       var val = json[fieldName];
       var field = metadata.fields[fieldName];
       var optional = field.tags.indexOf('optional') !== -1;
 
       if (optional) {
-        if (val == null) continue;
+        if (val == null) return;
       } else {
         if (val == null) throw new Error("".concat(path.join('.'), " Missing key ").concat(fieldName));
       }
 
       typeFunc.validate(val, path.concat([fieldName]));
-    }
+    });
   };
 
   constructor.expand = function expand(json) {
@@ -237,12 +226,9 @@ Struct.of = function StructOf(fieldTypes, constructor) {
     }
 
     var metadata = this.metadata;
-
-    for (var propName in this.fieldTypes) {
-      var _this$fieldTypes$prop2 = _slicedToArray(this.fieldTypes[propName], 2),
-          fieldName = _this$fieldTypes$prop2[0],
-          typeFunc = _this$fieldTypes$prop2[1];
-
+    this.fieldTypes.forEach(function (fieldType) {
+      var fieldName = fieldType[1];
+      var typeFunc = fieldType[2];
       var val = json[fieldName];
       var field = metadata.fields[fieldName];
       var optional = field.tags.indexOf('optional') !== -1;
@@ -262,8 +248,7 @@ Struct.of = function StructOf(fieldTypes, constructor) {
       } else {
         json[fieldName] = typeFunc.expand(val);
       }
-    }
-
+    });
     return json;
   };
 
@@ -277,23 +262,20 @@ Struct.of = function StructOf(fieldTypes, constructor) {
     }
 
     var innerConstructor = this.constructor;
-
-    for (var propName in innerConstructor.fieldTypes) {
-      var _innerConstructor$fie = _slicedToArray(innerConstructor.fieldTypes[propName], 2),
-          fieldName = _innerConstructor$fie[0],
-          fieldType = _innerConstructor$fie[1];
-
+    var self = this;
+    innerConstructor.fieldTypes.forEach(function (fieldType) {
+      var fieldName = fieldType[1];
+      var typeFunc = fieldType[2];
       var fieldVal = val[fieldName];
-      this[fieldName] = fieldType(fieldVal);
-    }
+      self[fieldName] = typeFunc(fieldVal);
+    });
   };
 
-  var _loop = function _loop(propName) {
-    var _constructor$fieldTyp = _slicedToArray(constructor.fieldTypes[propName], 1),
-        fieldName = _constructor$fieldTyp[0]; // No need to make a recursive mapping.
+  constructor.fieldTypes.forEach(function (fieldType) {
+    var propName = fieldType[0];
+    var fieldName = fieldType[1]; // No need to make a recursive mapping.
 
-
-    if (fieldName === propName) return "continue";
+    if (fieldName === propName) return;
     Object.defineProperty(constructor.prototype, propName, {
       get: function get() {
         return this[fieldName];
@@ -302,14 +284,7 @@ Struct.of = function StructOf(fieldTypes, constructor) {
         this[fieldName] = v;
       }
     });
-  };
-
-  for (var propName in constructor.fieldTypes) {
-    var _ret = _loop(propName);
-
-    if (_ret === "continue") continue;
-  }
-
+  });
   constructor.isValid = mkIsValid(constructor);
   return constructor;
 };
@@ -328,8 +303,6 @@ List.of = function ListOf(innerKind, constructor) {
   constructor.innerKind = constructor.innerKind === undefined ? innerKind : constructor.innerKind;
 
   constructor.validate = function validate(val, path) {
-    var _this = this;
-
     path = path || [];
 
     if (!Array.isArray(val)) {
@@ -344,8 +317,9 @@ List.of = function ListOf(innerKind, constructor) {
       }
     }
 
+    var innerKind = this.innerKind;
     val.forEach(function (v, i) {
-      _this.innerKind.validate(v, path.concat("[".concat(i, "]")));
+      innerKind.validate(v, path.concat("[".concat(i, "]")));
     });
   };
 
@@ -366,10 +340,10 @@ List.of = function ListOf(innerKind, constructor) {
       }
     }
 
-    for (var i = 0; i < val.length; ++i) {
-      val[i] = this.innerKind.expand(val[i]);
-    }
-
+    var innerKind = this.innerKind;
+    val.forEach(function (v, i) {
+      val[i] = innerKind.expand(v);
+    });
     return val;
   };
 
@@ -401,9 +375,11 @@ Map.of = function MapOf(innerKind, constructor) {
       throw new Error("".concat(path.join('.'), " Expected object but found ").concat(val));
     }
 
+    var innerKind = this.innerKind;
+
     for (var k in val) {
       if (!val.hasOwnProperty(k)) continue;
-      this.innerKind.validate(val[k], path.concat([k]));
+      innerKind.validate(val[k], path.concat([k]));
     }
   };
 
@@ -418,9 +394,11 @@ Map.of = function MapOf(innerKind, constructor) {
       return val;
     }
 
+    var innerKind = this.innerKind;
+
     for (var k in val) {
       if (!val.hasOwnProperty(k)) continue;
-      val[k] = this.innerKind.expand(val[k]);
+      val[k] = innerKind.expand(val[k]);
     }
 
     return val;
@@ -428,10 +406,11 @@ Map.of = function MapOf(innerKind, constructor) {
 
   constructor.wrap = function wrap(val) {
     var result = {};
+    var innerKind = this.innerKind;
 
     for (var k in val) {
       if (!val.hasOwnProperty(k)) continue;
-      result[k] = this.innerKind(val[k]);
+      result[k] = innerKind(val[k]);
     }
 
     return result;

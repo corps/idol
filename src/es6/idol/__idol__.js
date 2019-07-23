@@ -169,20 +169,21 @@ Struct.of = function StructOf(fieldTypes, constructor) {
         if (!isObj(json)) throw new Error(`${path.join('.')} Expected an object, found ${json}`);
         const metadata = this.metadata;
 
-        for (let propName in this.fieldTypes) {
-            const [fieldName, typeFunc] = this.fieldTypes[propName];
+        this.fieldTypes.forEach(function(fieldType) {
+            const fieldName = fieldType[1];
+            const typeFunc = fieldType[2];
             let val = json[fieldName];
             const field = metadata.fields[fieldName];
             const optional = field.tags.indexOf('optional') !== -1;
 
             if (optional) {
-                if (val == null) continue;
+                if (val == null) return;
             } else {
                 if (val == null) throw new Error(`${path.join('.')} Missing key ${fieldName}`);
             }
 
             typeFunc.validate(val, path.concat([fieldName]));
-        }
+        });
     };
 
     constructor.expand = function expand(json) {
@@ -198,8 +199,9 @@ Struct.of = function StructOf(fieldTypes, constructor) {
 
         const metadata = this.metadata;
 
-        for (let propName in this.fieldTypes) {
-            const [fieldName, typeFunc] = this.fieldTypes[propName];
+        this.fieldTypes.forEach(function(fieldType) {
+            const fieldName = fieldType[1];
+            const typeFunc = fieldType[2];
             let val = json[fieldName];
             const field = metadata.fields[fieldName];
             const optional = field.tags.indexOf('optional') !== -1;
@@ -219,7 +221,7 @@ Struct.of = function StructOf(fieldTypes, constructor) {
             } else {
                 json[fieldName] = typeFunc.expand(val);
             }
-        }
+        });
 
         return json
     };
@@ -235,19 +237,21 @@ Struct.of = function StructOf(fieldTypes, constructor) {
 
         const innerConstructor = this.constructor;
 
-        for (let propName in innerConstructor.fieldTypes) {
-            let [fieldName, fieldType] = innerConstructor.fieldTypes[propName];
+        const self = this;
+        innerConstructor.fieldTypes.forEach(function(fieldType) {
+            const fieldName = fieldType[1];
+            const typeFunc = fieldType[2];
             const fieldVal = val[fieldName];
-
-            this[fieldName] = fieldType(fieldVal);
-        }
+            self[fieldName] = typeFunc(fieldVal);
+        });
     };
 
-    for (let propName in constructor.fieldTypes) {
-        let [fieldName] = constructor.fieldTypes[propName];
+    constructor.fieldTypes.forEach(function(fieldType) {
+        const propName = fieldType[0];
+        const fieldName = fieldType[1];
 
         // No need to make a recursive mapping.
-        if (fieldName === propName) continue;
+        if (fieldName === propName) return;
 
         Object.defineProperty(constructor.prototype, propName, {
             get: function () {
@@ -257,7 +261,7 @@ Struct.of = function StructOf(fieldTypes, constructor) {
                 this[fieldName] = v;
             },
         });
-    }
+    });
 
     constructor.isValid = mkIsValid(constructor);
 
@@ -290,9 +294,10 @@ List.of = function ListOf(innerKind, constructor) {
             }
         }
 
+        const innerKind = this.innerKind;
         val.forEach(
             (v, i) => {
-                this.innerKind.validate(v, path.concat(`[${i}]`));
+                innerKind.validate(v, path.concat(`[${i}]`));
             });
     };
 
@@ -312,9 +317,10 @@ List.of = function ListOf(innerKind, constructor) {
             }
         }
 
-        for (let i = 0; i < val.length; ++i) {
-            val[i] = this.innerKind.expand(val[i]);
-        }
+        const innerKind = this.innerKind;
+        val.forEach(function(v, i) {
+            val[i] = innerKind.expand(v);
+        });
 
         return val;
     };
@@ -347,9 +353,10 @@ Map.of = function MapOf(innerKind, constructor) {
             throw new Error(`${path.join('.')} Expected object but found ${val}`)
         }
 
+        const innerKind = this.innerKind;
         for (let k in val) {
             if (!val.hasOwnProperty(k)) continue;
-            this.innerKind.validate(val[k], path.concat([k]));
+            innerKind.validate(val[k], path.concat([k]));
         }
     };
 
@@ -364,9 +371,10 @@ Map.of = function MapOf(innerKind, constructor) {
             return val;
         }
 
+        const innerKind = this.innerKind;
         for (let k in val) {
             if (!val.hasOwnProperty(k)) continue;
-            val[k] = this.innerKind.expand(val[k]);
+            val[k] = innerKind.expand(val[k]);
         }
 
         return val;
@@ -375,9 +383,10 @@ Map.of = function MapOf(innerKind, constructor) {
     constructor.wrap = function wrap(val) {
         const result = {};
 
+        const innerKind = this.innerKind;
         for (let k in val) {
             if (!val.hasOwnProperty(k)) continue;
-            result[k] = this.innerKind(val[k]);
+            result[k] = innerKind(val[k]);
         }
 
         return result;

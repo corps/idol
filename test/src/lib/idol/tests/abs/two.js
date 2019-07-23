@@ -14,8 +14,8 @@ export function SideImport(val) {
     return SideImport.wrap.apply(this, arguments)
 }
 
-Struct_(SideImport, {
-    sideImport: ["side_import", Primitive_.of("string")],
-})
+Struct_(SideImport, [
+    ["sideImport", "side_import", Primitive_.of("string")],
+]);
 
 SideImport.metadata = {"dependencies":[],"fields":{"side_import":{"field_name":"side_import","tags":[],"type_struct":{"literal":null,"parameters":[],"primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}}},"is_a":null,"named":{"module_name":"tests.abs.two","qualified_name":"tests.abs.two.SideImport","type_name":"SideImport"},"options":[],"tags":[],"type_vars":[]};

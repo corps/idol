@@ -45,13 +45,7 @@ function TypeDec(val) {
   return TypeDec.wrap.apply(this, arguments);
 }
 
-(0, _idol__.Struct)(TypeDec, {
-  "enum": ["enum", _idol__.List.of(_idol__.Primitive.of("string"))],
-  fields: ["fields", _idol__.Map.of(FieldDec)],
-  isA: ["is_a", _idol__.Primitive.of("string")],
-  tags: ["tags", _idol__.List.of(_idol__.Primitive.of("string"))],
-  typeVars: ["type_vars", _idol__.List.of(_idol__.Primitive.of("string"))]
-});
+(0, _idol__.Struct)(TypeDec, [["enum", "enum", _idol__.List.of(_idol__.Primitive.of("string"))], ["fields", "fields", _idol__.Map.of(FieldDec)], ["isA", "is_a", _idol__.Primitive.of("string")], ["tags", "tags", _idol__.List.of(_idol__.Primitive.of("string"))], ["typeVars", "type_vars", _idol__.List.of(_idol__.Primitive.of("string"))]]);
 TypeDec.metadata = {
   "dependencies": [{
     "from": {

@@ -211,22 +211,18 @@ class ModuleBuildEnv {
         yield "}";
         yield "";
 
-        yield `Struct_(${type.named.typeName}, {`;
+        yield `Struct_(${type.named.typeName}, [`;
         yield* this.withIndention(function* () {
             for (let i = 0; i < fieldNames.length; ++i) {
                 const fieldName = fieldNames[i];
                 const cameled = camelCase(fieldName);
                 const field = type.fields[fieldName];
                 const func = self.typeStructFunc(field.typeStruct);
-                yield `${cameled}: [${JSON.stringify(fieldName)}, ${func}],`;
+                yield `[${JSON.stringify(cameled)}, ${JSON.stringify(fieldName)}, ${func}],`;
             }
         });
-        yield `})`;
+        yield `]);`;
         yield "";
-
-        yield* type.options.map(option => {
-            return `${type.named.typeName}.options.${option.toUpperCase()} = ${JSON.stringify(option)};`;
-        });
     }
 
     * withIndention(f) {

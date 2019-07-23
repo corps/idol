@@ -1350,7 +1350,7 @@ function () {
 
             case 10:
               _context15.next = 12;
-              return "Struct_(".concat(type.named.typeName, ", {");
+              return "Struct_(".concat(type.named.typeName, ", [");
 
             case 12:
               return _context15.delegateYield(this.withIndention(
@@ -1374,7 +1374,7 @@ function () {
                         field = type.fields[fieldName];
                         func = self.typeStructFunc(field.typeStruct);
                         _context14.next = 8;
-                        return "".concat(cameled, ": [").concat(JSON.stringify(fieldName), ", ").concat(func, "],");
+                        return "[".concat(JSON.stringify(cameled), ", ").concat(JSON.stringify(fieldName), ", ").concat(func, "],");
 
                       case 8:
                         ++i;
@@ -1391,18 +1391,13 @@ function () {
 
             case 13:
               _context15.next = 15;
-              return "})";
+              return "]);";
 
             case 15:
               _context15.next = 17;
               return "";
 
             case 17:
-              return _context15.delegateYield(type.options.map(function (option) {
-                return "".concat(type.named.typeName, ".options.").concat(option.toUpperCase(), " = ").concat(JSON.stringify(option), ";");
-              }), "t2", 18);
-
-            case 18:
             case "end":
               return _context15.stop();
           }
