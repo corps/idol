@@ -1,0 +1,13 @@
+{
+  "name": "idol",
+  "version": "1.0.0",
+  "description": "**idol is a minimalistic, language-agnostic, transport agnostic, IDL**",
+  "dependencies": {
+    "esm": "^3.2.25",
+    "prettier": "^1.18.2",
+    "regenerator-runtime": "^0.13.3"
+  },
+  "scripts": {
+    "compile": "babel --source-type module src/es6 -d src/lib"
+  }
+}

@@ -10,5 +10,5 @@ while [ -h "$SOURCE" ]; do
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
-export NODE_PATH="$DIR/../lib/idol:$NODE_PATH"
-exec node $DIR/../lib/idol/idol_js.js $@
+export NODE_PATH="$DIR/../lib/idol:$DIR/../lib/idol/node_modules:$NODE_PATH"
+exec node -r esm $DIR/../lib/idol/idol_js.js $@

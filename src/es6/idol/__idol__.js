@@ -1,397 +1,361 @@
-export function isObj(v) {
+// @flow
+
+export function isObj(v: any): boolean {
     return !Array.isArray(v) && v instanceof Object;
 }
 
-export function getListScalar(v) {
+export function getListScalar(v: any): any {
     while (v instanceof Array) {
         v = v[0];
     }
     return v;
 }
 
-function mkIsValid(Type) {
-    return function isValid(val) {
-        try {
-            Type.validate(val);
-            return true;
-        } catch (e) {
-            return false;
-        }
-    }
+export interface IdolTypeConstructor {
+    isRepeated?: boolean,
+    wrap: (val: any) => any,
+    unwrap: (val: any) => any,
+    isValid: (val: any) => boolean,
+    validate: (val: any, path?: Array<string>) => void,
+    expand: (val: any) => any,
 }
 
-export function Primitive(constructor, primitiveKind) {
-    return Primitive.of(primitiveKind, constructor);
-}
-
-const primCache = {};
-Primitive.of = function PrimitiveOf(primitiveKind, constructor) {
-    if (constructor == null) {
-        const cached = primCache[primitiveKind];
-        if (cached) return cached;
-
-        constructor = function Primitive(val) { return val; }
-        primCache[primitiveKind] = constructor;
-    }
-
-
-    constructor.validate = function validate(val, path) {
-        path = path || [];
-        switch (typeof val) {
-            case "string":
-                if (primitiveKind !== "string") {
-                    throw new Error(`${path.join('.')} Found string, expected ${primitiveKind}`);
-                }
-                return;
-            case "number":
-                if ((val | 0) === val) {
-                    if (primitiveKind !== "int" && primitiveKind !== "double") {
-                        throw new Error(`${path.join('.')} Found int, expected ${primitiveKind}`);
-                    }
-                } else {
-                    if (primitiveKind !== "double") {
-                        throw new Error(`${path.join('.')} Found double, expected ${primitiveKind}`);
-                    }
-                }
-                return;
-            case "boolean":
-                if (primitiveKind !== "bool") {
-                    throw new Error(`${path.join('.')} Found boolean, expected ${primitiveKind}`);
-                }
-                return;
-            case "object":
-                if (val == null) {
-                    throw new Error(`${path.join('.')} Found null, expected ${primitiveKind}`);
-                }
+const primCache: { [k: string]: IdolTypeConstructor } = {};
+export const Primitive = {
+    of(primitiveKind: "string" | "bool" | "int" | "double"): IdolTypeConstructor {
+        if (primitiveKind in primCache) {
+            return primCache[primitiveKind];
         }
 
-        throw new Error(`${path.join('.')} Found ${typeof val}, expected ${primitiveKind}`);
-    };
-
-    constructor.expand = function expand(val) {
-        val = getListScalar(val);
-        if (val == null) {
-            switch (primitiveKind) {
+        function validate(val: any, path: Array<string> = []) {
+            switch (typeof val) {
                 case "string":
-                    return "";
-                case "int":
-                case "double":
-                    return 0;
-                case "bool":
+                    if (primitiveKind !== "string") {
+                        throw new Error(`${path.join('.')} Found string, expected ${primitiveKind}`);
+                    }
+                    return;
+                case "number":
+                    if ((val | 0) === val) {
+                        if (primitiveKind !== "int" && primitiveKind !== "double") {
+                            throw new Error(`${path.join('.')} Found int, expected ${primitiveKind}`);
+                        }
+                    } else {
+                        if (primitiveKind !== "double") {
+                            throw new Error(`${path.join('.')} Found double, expected ${primitiveKind}`);
+                        }
+                    }
+                    return;
+                case "boolean":
+                    if (primitiveKind !== "bool") {
+                        throw new Error(`${path.join('.')} Found boolean, expected ${primitiveKind}`);
+                    }
+                    return;
+                case "object":
+                    if (val == null) {
+                        throw new Error(`${path.join('.')} Found null, expected ${primitiveKind}`);
+                    }
+            }
+
+            throw new Error(`${path.join('.')} Found ${typeof val}, expected ${primitiveKind}`);
+        }
+
+        const result: IdolTypeConstructor = {
+            validate,
+            isValid(val) {
+                try {
+                    validate(val);
+                    return true;
+                } catch (e) {
                     return false;
+                }
+            },
+            expand(val) {
+                val = getListScalar(val);
+                if (val == null) {
+                    switch (primitiveKind) {
+                        case "string":
+                            return "";
+                        case "int":
+                        case "double":
+                            return 0;
+                        case "bool":
+                            return false;
+                    }
+                }
+
+                return val;
+            },
+            wrap(val) { return val; },
+            unwrap(val) { return val; }
+        };
+
+        primCache[primitiveKind] = result;
+        return result;
+    }
+};
+
+export const Literal = {
+    of(value: any): IdolTypeConstructor {
+        function validate(val: any, path: Array<string> = []) {
+            if (val !== value) {
+                throw new Error(`${path.join('.')} Expected ${value} but found ${val}`)
             }
         }
 
-        return val;
-    };
+        const result: IdolTypeConstructor = {
+            validate,
+            isValid(val) {
+                try {
+                    validate(val);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            },
+            expand(val) {
+                return value;
+            },
+            wrap(val) { return val; },
+            unwrap(val) { return val; }
+        };
 
-    constructor.isValid = mkIsValid(constructor);
-
-    return constructor;
+        return result;
+    }
 };
 
-export function Enum(constructor, options) {
-    return Enum.of(options, constructor);
-}
+export function Enum(values: any) {
+    const options = values.options;
+    const def = values.default;
 
-Enum.of = function EnumOf(options, constructor) {
-    if (constructor == null) {
-        constructor = function Enum(val) {
-            return val;
-        }
-    }
-
-    constructor.default = constructor.default === undefined ? options[0] : constructor.default;
-
-    constructor.validate = function validate(val, path) {
-        path = path || [];
+    function validate(val: any, path: Array<string> = []) {
         if (options.indexOf(val) === -1) {
             throw new Error(`${path.join('.')} Expected one of ${options.join(', ')}, found ${val}`);
         }
-    };
-
-    constructor.expand = function expand(val) {
-        val = getListScalar(val);
-        return val == null ? this.default : val;
-    };
-
-    constructor.isValid = mkIsValid(constructor);
-
-
-    return constructor;
-};
-
-export function Literal(constructor, literal) {
-    return Literal.of(literal, constructor);
-}
-
-Literal.of = function LiteralOf(literal, constructor) {
-    if (constructor == null) {
-        constructor = function Literal(val) {
-            return Literal.literal;
-        }
     }
 
-    constructor.literal = constructor.literal === undefined ? literal : constructor.literal;
-
-    constructor.validate = function validate(val, path) {
-        path = path || [];
-        if (val !== this.literal) {
-            throw new Error(`${path.join('.')} Expected ${this.literal} but found ${val}`)
-        }
+    const cons: IdolTypeConstructor = {
+        isValid(val: any) {
+            try {
+                validate(val);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        },
+        validate,
+        wrap(val: any) { return val },
+        unwrap(val: any) { return val },
+        expand(val: any) {
+            val = getListScalar(val);
+            return val == null ? def : val;
+        },
     };
 
-    constructor.expand = function expand(val) {
-        return this.literal;
-    };
-
-    constructor.isValid = mkIsValid(constructor);
-
-    return constructor;
-};
-
-export function Struct(constructor, fieldTypes) {
-    return Struct.of(fieldTypes, constructor);
+    Object.assign((values: any), (cons: any));
 }
 
-Struct.of = function StructOf(fieldTypes, constructor) {
-    if (constructor == null) {
-        constructor = function Struct(val) {
-            return Struct.wrap.apply(this, arguments);
-        }
-    }
-
-    constructor.fieldTypes = fieldTypes;
-
-    constructor.validate = function validate(json, path) {
-        path = path || [];
+type Field = { fieldName: string, type: IdolTypeConstructor, optional: boolean };
+export function Struct(klass: any, fields: Array<Field>) {
+    function validate(json: any, path: Array<string> = []) {
         if (!isObj(json)) throw new Error(`${path.join('.')} Expected an object, found ${json}`);
-        const metadata = this.metadata;
 
-        this.fieldTypes.forEach(function(fieldType) {
-            const fieldName = fieldType[1];
-            const typeFunc = fieldType[2];
+        fields.forEach(function (field: Field) {
+            const { fieldName, type, optional } = field;
+
             let val = json[fieldName];
-            const field = metadata.fields[fieldName];
-            const optional = field.tags.indexOf('optional') !== -1;
-
             if (optional) {
                 if (val == null) return;
             } else {
                 if (val == null) throw new Error(`${path.join('.')} Missing key ${fieldName}`);
             }
 
-            typeFunc.validate(val, path.concat([fieldName]));
+            type.validate(val, path.concat([fieldName]));
         });
-    };
+    }
 
-    constructor.expand = function expand(json) {
-        json = getListScalar(json);
+    const cons: IdolTypeConstructor = {
+        validate,
+        isValid(val: any) {
+            try {
+                validate(val);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        },
+        expand(json: any) {
+            json = getListScalar(json);
 
-        if (json == null) {
-            json = {};
-        }
+            if (json == null) {
+                json = {};
+            }
 
-        if (!isObj(json)) {
-            return json;
-        }
+            if (!isObj(json)) {
+                return json;
+            }
 
-        const metadata = this.metadata;
+            fields.forEach(function (field: Field) {
+                const { fieldName, type, optional } = field;
 
-        this.fieldTypes.forEach(function(fieldType) {
-            const fieldName = fieldType[1];
-            const typeFunc = fieldType[2];
-            let val = json[fieldName];
-            const field = metadata.fields[fieldName];
-            const optional = field.tags.indexOf('optional') !== -1;
+                let val = json[fieldName];
 
-            if (optional) {
-                if (field.type_struct.struct_kind !== 'repeated') {
-                    val = getListScalar(val);
-                }
+                if (optional) {
+                    if (!type.isRepeated) {
+                        val = getListScalar(val);
+                    }
 
-                if (val != null) {
-                    val = typeFunc.expand(val);
+                    if (val != null) {
+                        val = type.expand(val);
+                    } else {
+                        val = null;
+                    }
+
+                    json[fieldName] = val;
                 } else {
-                    val = null;
+                    json[fieldName] = type.expand(val);
+                }
+            });
+
+            return json
+        },
+
+        wrap(val: any) {
+            if (val == null) {
+                return val;
+            }
+
+            if (!(val instanceof klass)) {
+                return new this(val);
+            }
+
+            return val;
+        },
+
+        unwrap(val: any) {
+            if (val instanceof klass) {
+                return val._original;
+            }
+
+            return val;
+        },
+    };
+
+    Object.assign((klass: any), (cons: any));
+}
+
+export const List = {
+    of(innerKind: IdolTypeConstructor, { atleastOne }: { atleastOne: boolean }): IdolTypeConstructor {
+        function validate(val: any, path: Array<string> = []) {
+            if (!(Array.isArray(val))) {
+                throw new Error(`${path.join('.')} Expected array but found ${val}`)
+            }
+
+            if (atleastOne) {
+                if (val.length < 1) {
+                    throw new Error(`${path.join('.')} Expected atleast one element but found empty list`);
+                }
+            }
+
+            val.forEach(
+                (v, i) => {
+                    innerKind.validate(v, path.concat(`[${i}]`));
+                });
+        }
+
+        const result: IdolTypeConstructor = {
+            isRepeated: true,
+            validate,
+            isValid(val) {
+                try {
+                    validate(val);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            },
+            expand(val) {
+                if (val == null) {
+                    val = [];
                 }
 
-                json[fieldName] = val;
-            } else {
-                json[fieldName] = typeFunc.expand(val);
-            }
-        });
+                if (!(Array.isArray(val))) {
+                    val = [val];
+                }
 
-        return json
-    };
+                if (atleastOne) {
+                    if (val.length < 1) {
+                        val.push(null);
+                    }
+                }
 
-    constructor.wrap = function (val) {
-        if (val == null) {
-            return val;
-        }
+                val.forEach(function (v, i) {
+                    val[i] = innerKind.expand(v);
+                });
 
-        if (!(this instanceof constructor)) {
-            return new constructor(val);
-        }
-
-        const innerConstructor = this.constructor;
-
-        const self = this;
-        innerConstructor.fieldTypes.forEach(function(fieldType) {
-            const fieldName = fieldType[1];
-            const typeFunc = fieldType[2];
-            const fieldVal = val[fieldName];
-            self[fieldName] = typeFunc(fieldVal);
-        });
-    };
-
-    constructor.fieldTypes.forEach(function(fieldType) {
-        const propName = fieldType[0];
-        const fieldName = fieldType[1];
-
-        // No need to make a recursive mapping.
-        if (fieldName === propName) return;
-
-        Object.defineProperty(constructor.prototype, propName, {
-            get: function () {
-                return this[fieldName];
+                return val;
             },
-            set: function (v) {
-                this[fieldName] = v;
-            },
-        });
-    });
-
-    constructor.isValid = mkIsValid(constructor);
-
-    return constructor;
-};
-
-export function List(constructor, innerKind) {
-    return List.of(innerKind, constructor);
-}
-
-List.of = function ListOf(innerKind, constructor) {
-    if (constructor == null) {
-        constructor = function List(val) {
-            return List.wrap.apply(List, arguments);
-        }
-    }
-
-    constructor.innerKind = constructor.innerKind === undefined ? innerKind : constructor.innerKind;
-
-    constructor.validate = function validate(val, path) {
-        path = path || [];
-        if (!(Array.isArray(val))) {
-            throw new Error(`${path.join('.')} Expected array but found ${val}`)
-        }
-
-        const metadata = this.metadata;
-        if (metadata && metadata.tags.indexOf('atleast_one') !== -1) {
-            if (val.length < 1) {
-                throw new Error(`${path.join('.')} Expected atleast one element but found empty list`);
-            }
-        }
-
-        const innerKind = this.innerKind;
-        val.forEach(
-            (v, i) => {
-                innerKind.validate(v, path.concat(`[${i}]`));
-            });
-    };
-
-    constructor.expand = function expand(val) {
-        if (val == null) {
-            val = [];
-        }
-
-        if (!(Array.isArray(val))) {
-            val = [val];
-        }
-
-        const metadata = this.metadata;
-        if (metadata && metadata.tags.indexOf('atleast_one') !== -1) {
-            if (val.length < 1) {
-                val.push(null);
-            }
-        }
-
-        const innerKind = this.innerKind;
-        val.forEach(function(v, i) {
-            val[i] = innerKind.expand(v);
-        });
-
-        return val;
-    };
-
-    constructor.wrap = function wrap(val) {
-        return val.map(this.innerKind);
-    };
-
-    constructor.isValid = mkIsValid(constructor);
-
-    return constructor;
-};
-
-export function Map(constructor, innerKind) {
-    return Map.of(innerKind, constructor);
-}
-
-Map.of = function MapOf(innerKind, constructor) {
-    if (constructor == null) {
-        constructor = function Map(val) {
-            return Map.wrap.apply(Map, arguments);
-        }
-    }
-
-    constructor.innerKind = constructor.innerKind === undefined ? innerKind : constructor.innerKind;
-
-    constructor.validate = function validate(val, path) {
-        path = path || [];
-        if (!(isObj(val))) {
-            throw new Error(`${path.join('.')} Expected object but found ${val}`)
-        }
-
-        const innerKind = this.innerKind;
-        for (let k in val) {
-            if (!val.hasOwnProperty(k)) continue;
-            innerKind.validate(val[k], path.concat([k]));
-        }
-    };
-
-    constructor.expand = function expand(val) {
-        val = getListScalar(val);
-
-        if (val == null) {
-            val = {};
-        }
-
-        if (!(isObj(val))) {
-            return val;
-        }
-
-        const innerKind = this.innerKind;
-        for (let k in val) {
-            if (!val.hasOwnProperty(k)) continue;
-            val[k] = innerKind.expand(val[k]);
-        }
-
-        return val;
-    };
-
-    constructor.wrap = function wrap(val) {
-        const result = {};
-
-        const innerKind = this.innerKind;
-        for (let k in val) {
-            if (!val.hasOwnProperty(k)) continue;
-            result[k] = innerKind(val[k]);
-        }
+            wrap(val) { return val.map(v => innerKind.wrap(v)); },
+            unwrap(val) { return val.map(v => innerKind.unwrap(v)); }
+        };
 
         return result;
-    };
+    }
+};
 
-    constructor.isValid = mkIsValid(constructor);
 
-    return constructor;
+export const Map = {
+    of(innerKind: IdolTypeConstructor): IdolTypeConstructor {
+        function validate(val: any, path: Array<string> = []) {
+            if (!(isObj(val))) {
+                throw new Error(`${path.join('.')} Expected object but found ${val}`)
+            }
+
+            for (let k in val) {
+                innerKind.validate(val[k], path.concat([k]));
+            }
+        }
+
+        const result: IdolTypeConstructor = {
+            validate,
+            isValid(val: any) {
+                try {
+                    validate(val);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            },
+            expand(val: any) {
+                val = getListScalar(val);
+
+                if (val == null) {
+                    val = {};
+                }
+
+                if (!(isObj(val))) {
+                    return val;
+                }
+
+                for (let k in val) {
+                    val[k] = innerKind.expand(val[k]);
+                }
+
+                return val;
+            },
+            wrap(val) {
+                const result = {};
+
+                for (let k in val) {
+                    result[k] = innerKind.wrap(val[k]);
+                }
+
+                return result;
+            },
+            unwrap(val) {
+                return val;
+            }
+        };
+
+        return result;
+    }
 };

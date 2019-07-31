@@ -1,0 +1,15 @@
+[ignore]
+.*\.json
+test/
+
+[include]
+src/es6/idol
+flow-typed
+
+[libs]
+
+[lints]
+
+[options]
+
+[strict]

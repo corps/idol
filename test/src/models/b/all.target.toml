@@ -1,0 +1,5 @@
+[AssembledRequired]
+is_a = "all.required.Assembled"
+
+[AssembledOptional]
+is_a = "all.optional.Assembled"

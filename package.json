@@ -2,18 +2,18 @@
   "name": "idol",
   "version": "1.0.0",
   "description": "**idol is a minimalistic, language-agnostic, transport agnostic, IDL**",
-  "devDependencies": {
+  "dependencies": {
     "@babel/cli": "^7.5.5",
     "@babel/core": "^7.5.5",
     "@babel/node": "^7.5.5",
     "@babel/preset-env": "^7.5.5",
-    "regenerator-runtime": "^0.13.3"
+    "@babel/preset-flow": "^7.0.0",
+    "babel-loader": "^8.0.6",
+    "babel-plugin-syntax-dynamic-import": "^6.18.0",
+    "flow-bin": "^0.104.0",
+    "graphql": "^14.4.2"
   },
   "scripts": {
-    "clean": "rm -f ./idol_js.js",
-    "es6-compile": "babel --source-type module src/es6 -d src/lib",
-    "add-runtime": "cp ./src/lib/idol/idol_js.js . && cat ./node_modules/regenerator-runtime/runtime.js ./idol_js.js > ./src/lib/idol/idol_js.js",
-    "chmod": "chmod +x ./src/lib/idol/idol_js.js",
-    "compile": "npm run clean && npm run es6-compile && npm run add-runtime && npm run chmod"
+    "compile": "babel --source-type module src/es6 -d src/lib"
   }
 }

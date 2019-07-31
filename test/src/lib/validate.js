@@ -1,6 +1,6 @@
 #! /usr/bin/env babel-node
 
-import { Assembled } from './idol/all/optional';
+import { allOptionalAssembled as Assembled } from './idol/codegen/all/optional';
 import fs from 'fs';
 
 var data = fs.readFileSync(0, 'utf-8');
