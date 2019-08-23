@@ -17,9 +17,11 @@ target/release/idol: src/*.rs $(SOURCE_FILES) src/bin/idol.rs
 target/release/idol_rs: src/*.rs $(SOURCE_FILES) src/bin/idol_rs.rs
 	cargo build --bin idol_rs --release
 
-src/lib/idol/idol_js.js: src/es6/idol/*.js
-	node --version
+src/lib/idol/idol_js.js: src/es6/idol/*.js src/lib/idol/node_modules
 	npm run compile
+
+src/lib/idol/node_modules:
+	node --version
 	(cd src/lib/idol && npm install)
 
 models: $(MODELS)
