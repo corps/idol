@@ -6,7 +6,7 @@ from typing import Dict, List, Union, Generic, TypeVar, Optional, Callable, Tupl
 from .build_env import BuildEnv
 from .utils import as_path, relative_path_from
 from .functional import OrderedObj, Conflictable, flatten_to_list
-from .schema import Module, Type
+from .schema import Module, Type, Reference, PrimitiveType, TypeStruct, StructKind
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -171,6 +171,192 @@ class OutputMapper(Generic[T, R]):
 
 
 OutputTypePathConfig = OrderedObj[Conflictable[str]]
+
+
+class Tags:
+    field_tags: List[str]
+    type_tags: List[str]
+
+    def __init__(self, field_tags=[], type_tags=[]):
+        self.field_tags = field_tags
+        self.type_tags = type_tags
+
+
+class ScalarHandler(Generic[R]):
+    def __init__(
+        self,
+        alias: Callable[[Reference, Tags], R] = None,
+        primitive: Callable[[PrimitiveType, Tags], R] = None,
+        literal: Callable[[TypeStruct, Tags], R] = None,
+    ):
+        if alias:
+            self.alias = alias
+
+        if primitive:
+            self.primitive = primitive
+
+        if literal:
+            self.literal = literal
+
+    def alias(self, alias: Reference, tags: Tags = Tags()) -> R:
+        pass
+
+    def primitive(self, primitive_type: PrimitiveType, tags: Tags = Tags()) -> R:
+        pass
+
+    def literal(self, primitive_type: PrimitiveType, value, tags: Tags = Tags()) -> R:
+        pass
+
+    def map_type_struct(self, type_struct: TypeStruct, tags: Tags = Tags()) -> R:
+        if type_struct.is_alias:
+            return self.alias(type_struct.reference, tags)
+        if type_struct.is_literal:
+            return self.literal(type_struct.primitive_type, type_struct.literal_value, tags)
+        return self.primitive(type_struct.primitive_type, tags)
+
+    __call__ = map_type_struct
+
+
+class TypeStructHandler(Generic[R]):
+    def __init__(
+        self,
+        scalar: Callable[[TypeStruct, Tags], R] = None,
+        map: Callable[[R, Tags], R] = None,
+        repeated: Callable[[R, Tags], R] = None,
+    ):
+        if scalar:
+            self.scalar = scalar
+
+        if map:
+            self.map = map
+
+        if repeated:
+            self.repeated = repeated
+
+    def scalar(self, type_struct: TypeStruct, tags: Tags = Tags()) -> R:
+        pass
+
+    def map(self, scalar: R, tags: Tags = Tags()) -> R:
+        pass
+
+    def repeated(self, scalar: R, tags: Tags = Tags()) -> R:
+        pass
+
+    def map_type_struct(self, type_struct: TypeStruct, tags: Tags = Tags()) -> R:
+        scalar = self.scalar(type_struct, tags)
+        if type_struct.struct_kind == StructKind.SCALAR:
+            return scalar
+        if type_struct.struct_kind == StructKind.REPEATED:
+            return self.repeated(scalar, tags)
+        return self.map(scalar, tags)
+
+    __call__ = map_type_struct
+
+
+class TypeHandler(Generic[A, B]):
+    def __init__(
+        self,
+        type_struct: Callable[[Type, TypeStruct, Tags], A] = None,
+        enum: Callable[[Type, List[str]], A] = None,
+        field: Callable[[TypeStruct, Tags], B] = None,
+        struct: Callable[[Type, OrderedObj[B]], A] = None,
+    ):
+        if type_struct:
+            self.type_struct = type_struct
+
+        if enum:
+            self.enum = enum
+
+        if field:
+            self.field = field
+
+        if struct:
+            self.struct = struct
+
+    def type_struct(self, t: Type, type_struct: TypeStruct, tags: Tags = Tags()) -> A:
+        pass
+
+    def enum(self, t: Type, options: List[str]) -> A:
+        pass
+
+    def field(self, type_struct: TypeStruct, tags: Tags = Tags()) -> B:
+        pass
+
+    def struct(self, t: Type, fields: OrderedObj[B]) -> A:
+        pass
+
+    def map_type(self, type: Type) -> A:
+        if type.is_a:
+            return self.type_struct(type, type.is_a, Tags(type_tags=type.tags))
+
+        if type.is_enum:
+            return self.enum(type, type.options)
+
+        fields = OrderedObj(type.fields).map(
+            lambda f: self.field(f.type_struct, Tags(field_tags=f.tags))
+        )
+        return self.struct(type, fields)
+
+
+class MaterialTypeHandler(Generic[R]):
+    all_types: Dict[str, Type]
+    material_of_scalar_handler: ScalarHandler[Type]
+    material_of_type_struct_handler: TypeStructHandler[Type]
+    type_handler: TypeHandler[R]
+
+    def __init__(
+        self,
+        all_types: Dict[str, Type],
+        struct: Callable[[Type], R] = None,
+        enum: Callable[[Type], R] = None,
+        type_struct: Callable[[Type], R] = None,
+    ):
+        self.all_types = all_types
+
+        self.material_of_scalar_handler = ScalarHandler(
+            alias=lambda r, *args: self.all_types[r.qualified_name]
+        )
+        self.material_of_type_struct_handler = TypeStructHandler(
+            scalar=lambda ts, *args: self.material_of_scalar_handler.map_type_struct(ts)
+        )
+
+        self.type_handler = TypeHandler(
+            enum=lambda t, *args: self.enum(t),
+            type_struct=self.map_material_type_struct,
+            struct=lambda t, *args: self.struct(t),
+        )
+
+        if struct:
+            self.struct = struct
+
+        if enum:
+            self.enum = enum
+
+        if type_struct:
+            self.type_struct = type_struct
+
+    def map_material_type_struct(self, t: Type, ts: TypeStruct, tags: Tags = Tags()) -> R:
+        material_of_type_struct = self.material_of_type_struct_handler.map_type_struct(ts)
+        if material_of_type_struct:
+            return self.type_handler.map_type(material_of_type_struct)
+
+        return self.type_struct(t)
+
+    def struct(self, t: Type) -> R:
+        pass
+
+    def enum(self, t: Type) -> R:
+        pass
+
+    def type_struct(self, t: Type) -> R:
+        pass
+
+    def map_type(self, t: Type) -> R:
+        return self.type_handler.map_type(t)
+
+
+def map_type(self, t: Type) -> R:
+    pass
 
 
 class GeneratorConfig:

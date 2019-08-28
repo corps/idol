@@ -105,6 +105,14 @@ class TypeStruct(_Struct):
         return not self.is_primitive
 
     @property
+    def is_literal(self):
+        return bool(self.literal)
+
+    @property
+    def is_alias(self):
+        return bool(self.reference.type_name)
+
+    @property
     def literal_value(self):
         if self.primitive_type == PrimitiveType.BOOL:
             return self.literal.bool
@@ -155,6 +163,10 @@ class Type(_Struct):
     __metadata__ = json.loads(
         '{"dependencies": [{"from": {"module_name": "schema", "qualified_name": "schema.Type", "type_name": "Type"}, "is_abstraction": false, "is_local": true, "to": {"module_name": "schema", "qualified_name": "schema.Dependency", "type_name": "Dependency"}}, {"from": {"module_name": "schema", "qualified_name": "schema.Type", "type_name": "Type"}, "is_abstraction": false, "is_local": true, "to": {"module_name": "schema", "qualified_name": "schema.Field", "type_name": "Field"}}, {"from": {"module_name": "schema", "qualified_name": "schema.Type", "type_name": "Type"}, "is_abstraction": false, "is_local": true, "to": {"module_name": "schema", "qualified_name": "schema.TypeStruct", "type_name": "TypeStruct"}}, {"from": {"module_name": "schema", "qualified_name": "schema.Type", "type_name": "Type"}, "is_abstraction": false, "is_local": true, "to": {"module_name": "schema", "qualified_name": "schema.Reference", "type_name": "Reference"}}], "fields": {"dependencies": {"field_name": "dependencies", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int", "reference": {"module_name": "schema", "qualified_name": "schema.Dependency", "type_name": "Dependency"}, "struct_kind": "Repeated"}}, "fields": {"field_name": "fields", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int", "reference": {"module_name": "schema", "qualified_name": "schema.Field", "type_name": "Field"}, "struct_kind": "Map"}}, "is_a": {"field_name": "is_a", "tags": ["optional"], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int", "reference": {"module_name": "schema", "qualified_name": "schema.TypeStruct", "type_name": "TypeStruct"}, "struct_kind": "Scalar"}}, "named": {"field_name": "named", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "int", "reference": {"module_name": "schema", "qualified_name": "schema.Reference", "type_name": "Reference"}, "struct_kind": "Scalar"}}, "options": {"field_name": "options", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Repeated"}}, "tags": {"field_name": "tags", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Repeated"}}, "type_vars": {"field_name": "type_vars", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Repeated"}}}, "is_a": null, "named": {"module_name": "schema", "qualified_name": "schema.Type", "type_name": "Type"}, "options": [], "tags": [], "type_vars": []}'
     )
+
+    @property
+    def is_enum(self):
+        return bool(len(self.options))
 
 
 class Module(_Struct):
