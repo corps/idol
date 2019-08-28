@@ -1,26 +1,39 @@
-from typing import TypeVar, MutableSequence, Optional, MutableMapping, Generic, Any, Iterable, \
-    Tuple, Union
+from typing import (
+    TypeVar,
+    MutableSequence,
+    Optional,
+    MutableMapping,
+    Generic,
+    Any,
+    Iterable,
+    Tuple,
+    Union,
+)
 from enum import Enum as enumEnum
 import sys
 
 NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
 if NEW_TYPING:
     import collections.abc
-    from typing import (
-        Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias
-    )
+    from typing import Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias
 else:
     from typing import (
-        Callable, CallableMeta, Union, _Union, TupleMeta, TypeVar,
-        _ClassVar, GenericMeta,
+        Callable,
+        CallableMeta,
+        Union,
+        _Union,
+        TupleMeta,
+        TypeVar,
+        _ClassVar,
+        GenericMeta,
     )
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def _gorg(cls):
     assert isinstance(cls, GenericMeta)
-    if hasattr(cls, '_gorg'):
+    if hasattr(cls, "_gorg"):
         return cls._gorg
     while cls.__origin__ is not None:
         cls = cls.__origin__
@@ -29,8 +42,7 @@ def _gorg(cls):
 
 def is_union_type(tp):
     if NEW_TYPING:
-        return (tp is Union or
-                isinstance(tp, _GenericAlias) and tp.__origin__ is Union)
+        return tp is Union or isinstance(tp, _GenericAlias) and tp.__origin__ is Union
     return type(tp) is _Union
 
 
@@ -61,19 +73,25 @@ def _eval_args(args):
 
 def is_generic_type(tp):
     if NEW_TYPING:
-        return (isinstance(tp, type) and issubclass(tp, Generic) or
-                isinstance(tp, _GenericAlias) and
-                tp.__origin__ not in (Union, tuple))
-    return (isinstance(tp, GenericMeta) and not
-    isinstance(tp, (CallableMeta, TupleMeta)))
+        return (
+            isinstance(tp, type)
+            and issubclass(tp, Generic)
+            or isinstance(tp, _GenericAlias)
+            and tp.__origin__ not in (Union, tuple)
+        )
+    return isinstance(tp, GenericMeta) and not isinstance(tp, (CallableMeta, TupleMeta))
 
 
 def is_tuple_type(tp):
     if NEW_TYPING:
-        return (tp is Tuple or isinstance(tp, _GenericAlias) and
-                tp.__origin__ is tuple or
-                isinstance(tp, type) and issubclass(tp, Generic) and
-                issubclass(tp, tuple))
+        return (
+            tp is Tuple
+            or isinstance(tp, _GenericAlias)
+            and tp.__origin__ is tuple
+            or isinstance(tp, type)
+            and issubclass(tp, Generic)
+            and issubclass(tp, tuple)
+        )
     return type(tp) is TupleMeta
 
 
@@ -148,14 +166,14 @@ def is_valid(cls, json):
 
 
 def expand(cls, json):
-    if hasattr(cls, 'expand'):
+    if hasattr(cls, "expand"):
         return cls.expand(json, concrete_cls=cls)
 
     return expand_primitive(cls, json)
 
 
 def validate(cls, json, path=[]):
-    if hasattr(cls, 'validate'):
+    if hasattr(cls, "validate"):
         return cls.validate(json, path=path, concrete_cls=cls)
 
     return validate_primitive(cls, json, path=path)
@@ -171,23 +189,23 @@ def expand_primitive(cls, json, concrete_cls=None):
         return json
 
     if issubclass(cls, int):
-        primitive_type = 'int64'
+        primitive_type = "int64"
     if issubclass(cls, float):
-        primitive_type = 'double'
+        primitive_type = "double"
     if issubclass(cls, str):
-        primitive_type = 'string'
+        primitive_type = "string"
     if issubclass(cls, bool):
-        primitive_type = 'boolean'
+        primitive_type = "boolean"
 
-    if primitive_type == 'int53':
+    if primitive_type == "int53":
         return 0
-    if primitive_type == 'int64':
+    if primitive_type == "int64":
         return 0
-    if primitive_type == 'double':
+    if primitive_type == "double":
         return 0.0
-    if primitive_type == 'string':
+    if primitive_type == "string":
         return ""
-    if primitive_type == 'boolean':
+    if primitive_type == "boolean":
         return False
 
     return json
@@ -198,31 +216,31 @@ def validate_primitive(cls, json, path=[], concrete_cls=None):
         cls = concrete_cls
 
     if issubclass(cls, int):
-        primitive_type = 'int64'
+        primitive_type = "int64"
     if issubclass(cls, float):
-        primitive_type = 'double'
+        primitive_type = "double"
     if issubclass(cls, str):
-        primitive_type = 'string'
+        primitive_type = "string"
     if issubclass(cls, bool):
-        primitive_type = 'boolean'
+        primitive_type = "boolean"
 
-    if primitive_type == 'int53':
+    if primitive_type == "int53":
         if not isinstance(json, int):
             raise TypeError(f"{'.'.join(path)} Expected a int, found {type(json)}")
         if json > 9007199254740991 or json < -9007199254740991:
             raise ValueError(f"{'.'.join(path)} value was out of range for i53")
-    if primitive_type == 'int64':
+    if primitive_type == "int64":
         if not isinstance(json, int):
             raise TypeError(f"{'.'.join(path)} Expected a int, found {type(json)}")
         if json > 9223372036854775807 or json < -9223372036854775807:
             raise ValueError(f"{'.'.join(path)} value was out of range for i64")
-    if primitive_type == 'double':
+    if primitive_type == "double":
         if not isinstance(json, float):
             raise TypeError(f"{'.'.join(path)} Expected a float, found {type(json)}")
-    if primitive_type == 'string':
+    if primitive_type == "string":
         if not isinstance(json, str):
             raise TypeError(f"{'.'.join(path)} Expected a str, found {type(json)}")
-    if primitive_type == 'boolean':
+    if primitive_type == "boolean":
         if not isinstance(json, bool):
             raise TypeError(f"{'.'.join(path)} Expected a bool, found {type(json)}")
 
@@ -334,12 +352,12 @@ class List(Generic[T], MutableSequence[T], WrapsValue):
         if concrete_cls:
             cls = concrete_cls
 
-        metadata = getattr(cls, '__metadata__', dict(tags=[]))
+        metadata = getattr(cls, "__metadata__", dict(tags=[]))
 
         if not isinstance(json, list):
             raise TypeError(f"{'.'.join(path)} Expected a list, found {type(json)}")
 
-        if 'atleast_one' in metadata['tags']:
+        if "atleast_one" in metadata["tags"]:
             if not len(json):
                 raise ValueError(f"{'.'.join(path)} Expected atleast one item, but it was empty")
 
@@ -354,7 +372,7 @@ class List(Generic[T], MutableSequence[T], WrapsValue):
         if concrete_cls:
             cls = concrete_cls
 
-        metadata = getattr(cls, '__metadata__', dict(tags=[]))
+        metadata = getattr(cls, "__metadata__", dict(tags=[]))
 
         if json is None:
             json = []
@@ -362,7 +380,7 @@ class List(Generic[T], MutableSequence[T], WrapsValue):
         if not isinstance(json, list):
             json = [json]
 
-        if 'atleast_one' in metadata['tags']:
+        if "atleast_one" in metadata["tags"]:
             if not len(json):
                 json.append(None)
 
@@ -484,12 +502,12 @@ class StructMeta(type):
     def __new__(cls, name, bases, dct):
         cls = super().__new__(cls, name, bases, dct)
 
-        annotations = getattr(cls, '__annotations__', {})
+        annotations = getattr(cls, "__annotations__", {})
         for attr, type in annotations.items():
 
             target_attr = attr
             if attr in KEYWORDS:
-                target_attr = attr + '_'
+                target_attr = attr + "_"
             setattr(cls, target_attr, create_struct_prop(attr, type))
 
         return cls
@@ -526,9 +544,9 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
         if not isinstance(json, dict):
             raise TypeError(f"{'.'.join(path)} Expected a dict, found {type(json)}")
 
-        for field_name, field in metadata['fields'].items():
+        for field_name, field in metadata["fields"].items():
             val = json.get(field_name, None)
-            optional = 'optional' in field['tags']
+            optional = "optional" in field["tags"]
 
             if val is None:
                 if optional:
@@ -538,7 +556,7 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
 
             annotation_name = field_name
             if field_name in KEYWORDS:
-                annotation_name += '_'
+                annotation_name += "_"
 
             if optional:
                 validate(cls.__annotations__[annotation_name].__args__[0], val, path + [field_name])
@@ -564,9 +582,9 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
         if not isinstance(json, dict):
             return json
 
-        for field_name, field in metadata['fields'].items():
+        for field_name, field in metadata["fields"].items():
             val = json.get(field_name, None)
-            optional = 'optional' in field['tags']
+            optional = "optional" in field["tags"]
 
             if val is None:
                 if optional:
@@ -575,10 +593,10 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
 
             annotation_name = field_name
             if field_name in KEYWORDS:
-                annotation_name += '_'
+                annotation_name += "_"
 
             if optional:
-                if field['type_struct']['struct_kind'] != 'repeated':
+                if field["type_struct"]["struct_kind"] != "repeated":
                     val = get_list_scalar(val)
                 if val is not None:
                     expand(cls.__annotations__[annotation_name].__args__[0], val)
@@ -591,37 +609,37 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
 
 
 KEYWORDS = {
-    'False',
-    'True',
-    'class',
-    'finally',
-    'is',
-    'return',
-    'None',
-    'continue',
-    'for',
-    'lambda',
-    'try',
-    'def',
-    'from',
-    'nonlocal',
-    'while',
-    'and',
-    'del',
-    'global',
-    'not',
-    'with',
-    'as',
-    'elif',
-    'if',
-    'or',
-    'yield',
-    'assert',
-    'else',
-    'import',
-    'pass',
-    'break',
-    'except',
-    'in',
-    'raise',
+    "False",
+    "True",
+    "class",
+    "finally",
+    "is",
+    "return",
+    "None",
+    "continue",
+    "for",
+    "lambda",
+    "try",
+    "def",
+    "from",
+    "nonlocal",
+    "while",
+    "and",
+    "del",
+    "global",
+    "not",
+    "with",
+    "as",
+    "elif",
+    "if",
+    "or",
+    "yield",
+    "assert",
+    "else",
+    "import",
+    "pass",
+    "break",
+    "except",
+    "in",
+    "raise",
 }

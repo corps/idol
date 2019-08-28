@@ -43,7 +43,6 @@ def recursive_copy(src: str, dest: str, replace: bool):
             os.makedirs(dest, exist_ok=True)
         files = os.listdir(src)
         for f in files:
-            recursive_copy(os.path.join(src, f),
-                           os.path.join(dest, f))
+            recursive_copy(os.path.join(src, f), os.path.join(dest, f))
     else:
         shutil.copyfile(src, dest)

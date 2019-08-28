@@ -1,5 +1,15 @@
+import re
+
+from idol.schema import Reference
+
+
+def snakify(name):
+    first_pass = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", first_pass).lower()
+
+
 def as_path(name: str):
-    return name.replace(".", "/") + ".py"
+    return "/".join(snakify(p) for p in name.split(".")) + ".py"
 
 
 def as_python_module_path(path: str):
@@ -13,7 +23,7 @@ def relative_path_from(f: str, t: str) -> str:
     i = len(from_parts) - 1
 
     while i >= 0 and from_parts[:i] != to_parts[:i]:
-        parts.append('..')
+        parts.append("..")
         i -= 1
 
     while i < len(to_parts):
@@ -21,3 +31,12 @@ def relative_path_from(f: str, t: str) -> str:
         i += 1
 
     return "/".join(parts)
+
+
+def as_qualified_ident(reference: Reference) -> str:
+    cameled = camelify(reference.qualified_name)
+    return cameled[0].upper() + cameled[1:]
+
+
+def camelify(name: str) -> str:
+    return ""

@@ -2,8 +2,8 @@ from functools import reduce
 
 from typing import TypeVar, Generic, Dict, List, Iterator, Iterable, Callable, Tuple, Optional
 
-T = TypeVar('T')
-R = TypeVar('R')
+T = TypeVar("T")
+R = TypeVar("R")
 
 
 class OrderedObj(Generic[T]):
@@ -20,7 +20,7 @@ class OrderedObj(Generic[T]):
     def __len__(self):
         return len(self.obj)
 
-    def concat(self, other: 'OrderedObj[T]') -> 'OrderedObj[T]':
+    def concat(self, other: "OrderedObj[T]") -> "OrderedObj[T]":
         ordering = self.ordering + [i for i in other.ordering if i not in self.obj]
         obj: Dict[str, T] = {}
 
@@ -36,10 +36,12 @@ class OrderedObj(Generic[T]):
 
     __add__ = concat
 
-    def zip_with_keys_from(self, other: 'OrderedObj[str]') -> 'OrderedObj[T]':
+    def zip_with_keys_from(self, other: "OrderedObj[str]") -> "OrderedObj[T]":
         return reduce(
             lambda agg, k: agg + OrderedObj({other.obj[k]: self.obj[k]}) if k in other.obj else agg,
-            self.keys(), OrderedObj())
+            self.keys(),
+            OrderedObj(),
+        )
 
     def keys(self) -> Iterable[str]:
         return self.ordering
@@ -52,13 +54,13 @@ class OrderedObj(Generic[T]):
         for k in self.ordering:
             yield k, self.obj[k]
 
-    def map(self, f: Callable[[T, str], R]) -> 'OrderedObj[R]':
+    def map(self, f: Callable[[T, str], R]) -> "OrderedObj[R]":
         obj: Dict[str, R] = {}
         for k in self.ordering:
             obj[k] = f(self.obj[k], k)
         return OrderedObj(obj, self.ordering)
 
-    def bimap(self, f: Callable[[T, str], Tuple[str, R]]) -> 'OrderedObj[R]':
+    def bimap(self, f: Callable[[T, str], Tuple[str, R]]) -> "OrderedObj[R]":
         obj: Dict[str, R] = {}
         new_ordering = []
         for old_k in self.ordering:
@@ -78,7 +80,7 @@ class Conflictable(Generic[T]):
     def __init__(self, values: List[T] = None):
         self.values = values
 
-    def concat(self, other: 'Conflictable[T]'):
+    def concat(self, other: "Conflictable[T]"):
         return Conflictable(self.values + other.values)
 
     __add__ = concat
@@ -89,8 +91,9 @@ class Conflictable(Generic[T]):
 
         return self.values[0] if len(self.values) else None
 
-    def expect_one(self, empty_message="No value found",
-                   conflict_message="Unexpected conflict found") -> T:
+    def expect_one(
+        self, empty_message="No value found", conflict_message="Unexpected conflict found"
+    ) -> T:
         if not self.values:
             raise ValueError(empty_message)
 

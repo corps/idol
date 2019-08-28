@@ -58,11 +58,9 @@ export type GeneratorParams = {
     options: { [k: string]: Array<string> },
 };
 
-export type OutputTypePathConfig = OrderedObj<Conflictable<string>>;
-
 export class GeneratorConfig {
     codegenRoot: string;
-    qualifiedNamesToPaths: OutputTypeMapping<OutputTypePathConfig>;
+    qualifiedNamesToPaths: OutputTypeMapping<OrderedObj<string>>;
     name: string;
     params: GeneratorParams;
 
@@ -108,7 +106,7 @@ export class GeneratorConfig {
 
         this.qualifiedNamesToPaths = OutputTypeMappers.fromOne(pathOfType => {
             const typeToPathObj = (type: Type) => new OrderedObj<Conflictable<string>>({
-                [type.named.qualifiedName]: new Conflictable([pathOfType(type)])
+                [type.named.qualifiedName]: pathOfType(type)
             });
             return concatMap(this.params.allTypes.items(), typeToPathObj, new OrderedObj());
         })(pathOfOutputType);
@@ -364,8 +362,8 @@ export function render(
     config: GeneratorConfig,
     output: SinglePassGeneratorOutput,
 ): RenderedFilesOutput {
-    const lookupPathAndRender = ([output, pathConfig]: [TypedGeneratorOutput, OutputTypePathConfig]) =>
-        output.zipWithKeysFrom(pathConfig.map(v => v.expectOne())).map(file => new Conflictable(file.isEmpty() ? [] : [file.render()]));
+    const lookupPathAndRender = ([output, pathConfig]: [TypedGeneratorOutput, OrderedObj<string>]) =>
+        output.zipWithKeysFrom(pathConfig).map(file => new Conflictable(file.isEmpty() ? [] : [file.render()]));
     const combineModuleAndPathConfig = OutputTypeMappers.zipper(OutputTypeMappers.fromOne(lookupPathAndRender));
     const preparedTypeFileOutputs = combineModuleAndPathConfig({ codegen: output.codegen, scaffold: output.scaffold }, config.qualifiedNamesToPaths);
     return preparedTypeFileOutputs.scaffold.concat(preparedTypeFileOutputs.codegen).concat(output.supplemental);
