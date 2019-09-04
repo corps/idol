@@ -1,7 +1,7 @@
 import operator
 import idol.scripter as scripter
 
-from typing import Dict, List, Union, Generic, TypeVar, Optional, Callable, Tuple
+from typing import Dict, List, Union, Generic, TypeVar, Optional, Callable, Tuple, Any
 
 from .build_env import BuildEnv
 from .utils import as_path, relative_path_from
@@ -187,7 +187,7 @@ class ScalarHandler(Generic[R]):
         self,
         alias: Callable[[Reference, Tags], R] = None,
         primitive: Callable[[PrimitiveType, Tags], R] = None,
-        literal: Callable[[TypeStruct, Tags], R] = None,
+        literal: Callable[[TypeStruct, Any, Tags], R] = None,
     ):
         if alias:
             self.alias = alias
@@ -355,10 +355,6 @@ class MaterialTypeHandler(Generic[R]):
         return self.type_handler.map_type(t)
 
 
-def map_type(self, t: Type) -> R:
-    pass
-
-
 class GeneratorConfig:
     codegen_root: str
     qualified_names_to_path: OutputTypeMapping[OrderedObj[str]]
@@ -485,9 +481,9 @@ class SinglePassGeneratorOutput:
 
     def __init__(
         self,
-        codegen: TypedGeneratorOutput,
-        scaffold: TypedGeneratorOutput,
-        supplemental: RenderedFilesOutput,
+        codegen: TypedGeneratorOutput = OrderedObj(),
+        scaffold: TypedGeneratorOutput = OrderedObj(),
+        supplemental: RenderedFilesOutput = OrderedObj(),
     ):
         self.codegen = codegen
         self.scaffold = scaffold

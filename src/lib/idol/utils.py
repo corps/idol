@@ -1,6 +1,17 @@
 import re
+from typing import List
 
 from idol.schema import Reference
+
+
+def get_tag_value(tags: List[str], tag: str, d: str):
+    if tags:
+        for t in tags:
+            pre = t.index(tag + ":")
+            if pre == 0:
+                return t[len(tag) + 1:]
+
+    return d
 
 
 def snakify(name):

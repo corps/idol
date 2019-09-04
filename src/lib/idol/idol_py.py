@@ -1,342 +1,27 @@
 #! /usr/bin/env python3
 
-import sys
-import os.path
+from typing import List, Callable, Tuple, Iterable, Dict, Any
 
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "lib")))
-from typing import List, Callable
-
+from idol import scripter
 from idol.cli import start, CliConfig
-from idol.functional import OrderedObj
+from idol.functional import OrderedObj, flatten_to_ordered_obj, Conflictable
 from idol.generator import (
     GeneratorParams,
     GeneratorConfig as BaseGeneratorConfig,
     OutputTypeSpecifier,
-    DependencySpecifier,
-    Scaffold,
     dependency_specifier,
     Keys,
     output_type_specifier,
-)
+    TypeHandler,
+    TypeStructHandler,
+    ScalarHandler,
+    Tags,
+    TypedGeneratorOutput,
+    TypedOutputBuilder,
+    MaterialTypeHandler, SinglePassGeneratorOutput, render, build)
 from idol.schema import *
-from idol.__idol__ import Map, Optional, KEYWORDS
-import idol.__idol__
-from contextlib import contextmanager
-import argparse
-import json
-import sys
-import tempfile
-import os
-import shutil
-
-# class ReferenceExt(Reference):
-#     def display_from(self, root_module, cur_module):
-#         if self.module_name == cur_module:
-#             return self.type_name
-#
-#         return f"{root_module}.{self.qualified_name}"
-#
-#
-# class TypeStructExt(TypeStruct):
-#     reference: ReferenceExt
-#
-#     @property
-#     def is_primitive(self):
-#         return not bool(self.reference.qualified_name)
-#
-#     @property
-#     def is_reference(self):
-#         return not self.is_primitive
-#
-#     @property
-#     def literal_value(self):
-#         if self.primitive_type == PrimitiveType.BOOL:
-#             return self.literal.bool
-#         elif self.primitive_type == PrimitiveType.DOUBLE:
-#             return self.literal.double
-#         elif self.primitive_type == PrimitiveType.INT:
-#             return self.literal.int
-#         elif self.primitive_type == PrimitiveType.STRING:
-#             return self.literal.string
-#
-#
-# class FieldExt(Field):
-#     type_struct: TypeStructExt
-#
-#
-# class TypeExt(Type):
-#     is_a: Optional[TypeStructExt]
-#     fields: Map[FieldExt]
-#
-#
-# def main():
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument(
-#         "--module",
-#         type=str,
-#         help="The dotted module base that the output python classes should be packaged into.",
-#     )
-#     parser.add_argument(
-#         "--output",
-#         type=str,
-#         help="The dotted module base that the output python classes should be packaged into.",
-#     )
-#     parser.add_argument(
-#         "input_json", type=str, help="Output from idol to generate python classes from.", nargs="?"
-#     )
-#     args = parser.parse_args(sys.argv)
-#
-#     if sys.stdin.isatty():
-#         data = open(args.input_json, "r").read()
-#     else:
-#         data = sys.stdin.read()
-#
-#     modules = json.loads(data)
-#     modules: Map[Module] = Map[Module](modules)
-#
-#     build_env = BuildEnv(args.module)
-#     for module in modules.values():
-#         build_env.build_module(module)
-#
-#     build_env.finalize(args.output)
-#
-#
-# class BuildEnv:
-#     def __init__(self, root_python_module):
-#         self.build_dir = tempfile.mkdtemp()
-#         self.root_python_module = root_python_module
-#
-#     def build_module(self, module: Module):
-#         return ModuleBuildEnv(self, module.module_name).write_module(module)
-#
-#     def finalize(self, output_dir):
-#         self.finalize_idol_file(output_dir)
-#         return recursive_copy(self.build_dir, output_dir)
-#
-#     def finalize_idol_file(self, output_dir):
-#         os.makedirs(output_dir, exist_ok=True)
-#         content = open(idol.__idol__.__file__, "r").read()
-#         with open(os.path.join(output_dir, "__idol__.py"), "w") as file:
-#             file.write(content)
-#
-#
-# class ModuleBuildEnv:
-#     INDENTIONS = [
-#         "",
-#         "    ",
-#         "        ",
-#         "            ",
-#         "                ",
-#         "                    ",
-#     ]
-#
-#     def __init__(self, build_env: BuildEnv, module_name: str):
-#         self.module_name = module_name
-#         self.build_env = build_env
-#         self.indention_level = 0
-#
-#     @property
-#     def root_python_module(self):
-#         return self.build_env.root_python_module
-#
-#     def write_module(self, module: Module):
-#         module_file_path = os.path.join(
-#             self.build_env.build_dir, ModuleBuildEnv.to_module_path(self.module_name)
-#         )
-#         os.makedirs(os.path.dirname(module_file_path), exist_ok=True)
-#
-#         with open(module_file_path, "w") as file:
-#             file.write("\n".join(self.indented(l) for l in self.gen_module(module)))
-#
-#     def format_idol_import(self, item):
-#         return f"{item} as _{item}"
-#
-#     def gen_module(self, module: Module):
-#         joined_imports = ", ".join(
-#             self.format_idol_import(item)
-#             for item in [
-#                 "Struct",
-#                 "List",
-#                 "Map",
-#                 "Optional",
-#                 "Enum",
-#                 "Any",
-#                 "Literal",
-#                 "expand_primitive",
-#                 "validate_primitive",
-#             ]
-#         )
-#         yield f"from {self.root_python_module}.__idol__ import {joined_imports}"
-#         yield "import json"
-#         yield "import types"
-#         yield ""
-#
-#         seen_modules = set()
-#         for dependency in module.dependencies:
-#             mod_name = dependency.to.module_name
-#             if mod_name in seen_modules:
-#                 continue
-#
-#             seen_modules.add(mod_name)
-#             yield f"import {self.root_python_module}.{mod_name}"
-#
-#         yield "# DO NOT EDIT THIS FILE"
-#         yield "# This file is generated via idol_py.py.  You can either subclass these types"
-#         yield "# in your own module file or update the relevant model.toml file and regenerate."
-#
-#         yield ""
-#         yield "__all__ = ["
-#
-#         with self.in_block():
-#             for type_name in module.types_dependency_ordering:
-#                 yield f'"{type_name}",'
-#
-#         yield "]"
-#
-#         for type_name in module.types_dependency_ordering:
-#             type = TypeExt(module.types_by_name[type_name])
-#             yield ""
-#             yield ""
-#
-#             if type.is_a:
-#                 type_struct = type.is_a
-#                 if type_struct.struct_kind == StructKind.SCALAR:
-#                     if type_struct.literal:
-#                         yield from self.gen_literal_impl(module, type)
-#                     else:
-#                         yield from self.gen_scalar_impl(module, type)
-#                 elif type_struct.struct_kind == StructKind.REPEATED:
-#                     yield from self.gen_repeated_impl(module, type)
-#                 elif type_struct.struct_kind == StructKind.MAP:
-#                     yield from self.gen_map_impl(module, type)
-#             elif len(type.fields):
-#                 yield from self.gen_struct_impl(module, type)
-#             elif len(type.options):
-#                 yield from self.gen_enum_impl(module, type)
-#
-#         yield ""
-#
-#     def indented(self, line):
-#         i = self.INDENTIONS[self.indention_level]
-#         return f"{i}{line}"
-#
-#     @contextmanager
-#     def in_block(self):
-#         self.indention_level += 1
-#         yield
-#         self.indention_level -= 1
-#
-#     @classmethod
-#     def to_module_path(cls, module_name):
-#         as_path = "/".join(module_name.split("."))
-#         return f"{as_path}.py"
-#
-#     def metadata_as_pycode(self, type: TypeExt):
-#         return f"json.loads({repr(json.dumps(type.unwrap(), sort_keys=True))})"
-#
-#     def gen_class_extensions(self, type: TypeExt):
-#         yield ""
-#         yield "# Required to ensure stable ordering.  str() on python dicts is unstable,"
-#         yield "# but the json.dumps is stable."
-#         yield f"__metadata__ = {self.metadata_as_pycode(type)}"
-#
-#     def gen_enum_impl(self, module: Module, type: TypeExt):
-#         yield f"class {type.named.type_name}(_Enum):"
-#         with self.in_block():
-#             options = sorted(type.options)
-#             for option in options:
-#                 option_name = option.upper()
-#                 yield f"{option_name} = {repr(option)}"
-#
-#             yield from self.gen_class_extensions(type)
-#
-#     def gen_struct_impl(self, module: Module, type: TypeExt):
-#         yield f"class {type.named.type_name}(_Struct):"
-#         with self.in_block():
-#             field_names = sorted(type.fields.keys())
-#             for field_name in field_names:
-#                 field = type.fields[field_name]
-#
-#                 if field_name in KEYWORDS:
-#                     field_name += "_"
-#
-#                 field_type = self.display_type(field.type_struct)
-#                 if "optional" in field.tags:
-#                     field_type = f"_Optional[{field_type}]"
-#
-#                 yield f"{field_name}: {field_type}"
-#
-#             yield from self.gen_class_extensions(type)
-#
-#     def gen_literal_impl(self, module: Module, type: TypeExt):
-#         type_struct = type.is_a
-#         scalar_type = self.display_scalar_type(type_struct)
-#         yield f"class {type.named.type_name}(_Literal[{scalar_type}]):"
-#         with self.in_block():
-#             yield f"literal: {scalar_type} = {repr(type.is_a.literal_value)}"
-#             yield ""
-#             yield from self.gen_class_extensions(type)
-#
-#     def gen_wrap_type(self, type: TypeExt):
-#         type_name_as_str = json.dumps(type.named.type_name)
-#         yield f"locals()[{type_name_as_str}] = types.new_class({type_name_as_str}, (locals()[{type_name_as_str}],))"
-#         yield f"{type.named.type_name}.__metadata__ = {self.metadata_as_pycode(type)}"
-#
-#     def gen_scalar_impl(self, module: Module, type: TypeExt):
-#         type_struct = type.is_a
-#         scalar_type = self.display_scalar_type(type_struct)
-#         yield f"{type.named.type_name} = {scalar_type}"
-#         yield from self.gen_wrap_type(type)
-#
-#         if type_struct.is_primitive:
-#             yield f"{type.named.type_name}.expand = classmethod(_expand_primitive)"
-#             yield f"{type.named.type_name}.validate = classmethod(_validate_primitive)"
-#
-#     def gen_repeated_impl(self, module: Module, type: TypeExt):
-#         type_struct = type.is_a
-#         scalar_type = self.display_scalar_type(type_struct)
-#         yield f"{type.named.type_name} = _List[{scalar_type}]"
-#         yield from self.gen_wrap_type(type)
-#
-#     def gen_map_impl(self, module: Module, type: TypeExt):
-#         type_struct = type.is_a
-#         scalar_type = self.display_scalar_type(type_struct)
-#         yield f"{type.named.type_name} = _Map[{scalar_type}]"
-#         yield from self.gen_wrap_type(type)
-#
-#     scalar_name_mappings = {
-#         PrimitiveType.BOOL: "bool",
-#         PrimitiveType.INT: "int",
-#         PrimitiveType.STRING: "str",
-#         PrimitiveType.DOUBLE: "float",
-#         PrimitiveType.ANY: "_Any",
-#     }
-#
-#     def display_type(self, type_struct: TypeStructExt):
-#         if type_struct.struct_kind == StructKind.SCALAR:
-#             return self.display_scalar_type(type_struct)
-#         elif type_struct.struct_kind == StructKind.MAP:
-#             return f"_Map[{self.display_scalar_type(type_struct)}]"
-#         elif type_struct.struct_kind == StructKind.REPEATED:
-#             return f"_List[{self.display_scalar_type(type_struct)}]"
-#
-#     def display_scalar_type(self, type_struct: TypeStructExt):
-#         if type_struct.is_primitive:
-#             return self.scalar_name_mappings[type_struct.primitive_type]
-#         else:
-#             return type_struct.reference.display_from(self.root_python_module, self.module_name)
-#
-#
-# def recursive_copy(src, dest):
-#     if os.path.isdir(src):
-#         if not os.path.isdir(dest):
-#             os.makedirs(dest, exist_ok=True)
-#         files = os.listdir(src)
-#         for f in files:
-#             recursive_copy(os.path.join(src, f), os.path.join(dest, f))
-#     else:
-#         shutil.copyfile(src, dest)
 from idol.utils import as_qualified_ident
+import os.path
 
 
 class GeneratorConfig(BaseGeneratorConfig):
@@ -347,13 +32,13 @@ class GeneratorConfig(BaseGeneratorConfig):
         self.idol_py_path = self.codegen_root + "/__idol__.py"
 
     def idol_py_imports(
-        self, module: Callable[[OutputTypeSpecifier], str], *imports: List[str]
+            self, module: Callable[[OutputTypeSpecifier], str], *imports
     ) -> OrderedObj[set]:
         path = self.resolve_path(module, dependency_specifier(Keys.supplemental, self.idol_py_path))
         return OrderedObj({path: set(f"{i} as {i}_" for i in imports)})
 
     def codegen_reference_import(
-        self, module: Callable[[OutputTypeSpecifier], str], reference: Reference
+            self, module: Callable[[OutputTypeSpecifier], str], reference: Reference
     ) -> OrderedObj[set]:
         path = self.resolve_path(
             module, output_type_specifier(Keys.codegen, reference.qualified_name)
@@ -361,13 +46,347 @@ class GeneratorConfig(BaseGeneratorConfig):
         return OrderedObj({path: {as_qualified_ident(reference)}})
 
     def scaffold_reference_import(
-        self, module: Callable[[OutputTypeSpecifier], str], reference: Reference
+            self, module: Callable[[OutputTypeSpecifier], str], reference: Reference
     ) -> OrderedObj[set]:
         path = self.resolve_path(
             module, output_type_specifier(Keys.scaffold, reference.qualified_name)
         )
         qualified_name = as_qualified_ident(reference)
         return OrderedObj({path: {f"{reference.type_name} as {qualified_name}"}})
+
+    def scalar_import_handler(
+            self, module: Callable[[OutputTypeSpecifier], str]
+    ) -> ScalarHandler[OrderedObj[set]]:
+        new_class = OrderedObj({"types": {"new_class"}})
+        return ScalarHandler(
+            literal=lambda *args: self.idol_py_imports(module, "Literal") + new_class,
+            primitive=lambda primitive_type, tags: self.idol_py_imports(
+                module, "Any" if primitive_type == PrimitiveType.ANY else "Primitive"
+            )
+                                                   + new_class,
+            alias=lambda reference, tags: self.codegen_reference_import(module, reference),
+        )
+
+    def type_struct_import_handler(
+            self, module: Callable[[OutputTypeSpecifier], str]
+    ) -> TypeStructHandler[OrderedObj[set]]:
+        return TypeStructHandler(
+            scalar=lambda type_struct, tags: self.scalar_import_handler(module).map_type_struct(
+                type_struct, tags
+            ),
+            repeated=lambda scalar_imports, tags: scalar_imports
+                                                  + self.idol_py_imports(module, "List"),
+            map=lambda scalar_imports, tags: scalar_imports + self.idol_py_imports(module, "Map"),
+        )
+
+    def field_type_struct_import_handler(
+            self, module: Callable[[OutputTypeSpecifier], str]
+    ) -> TypeStructHandler[OrderedObj[set]]:
+        scalar_handler = self.scalar_import_handler(module)
+        type_struct_handler = self.type_struct_import_handler(module)
+
+        scalar_handler = ScalarHandler(
+            alias=scalar_handler.alias,
+            literal=lambda *args: OrderedObj(),
+            primitive=lambda *args: OrderedObj(),
+        )
+
+        return TypeStructHandler(
+            scalar=lambda type_struct, tags: scalar_handler.map_type_struct(type_struct, tags),
+            repeated=type_struct_handler.repeated,
+            map=type_struct_handler.map,
+        )
+
+    def type_import_handler(
+            self, module: Callable[[OutputTypeSpecifier], str]
+    ) -> TypeHandler[OrderedObj[set]]:
+        type_handler = self.type_struct_import_handler(module)
+        field_handler = self.field_type_struct_import_handler(module)
+        return TypeHandler(
+            type_struct=lambda type, type_struct, tags: type_handler.map_type_struct(
+                type_struct, tags
+            ),
+            enum=lambda type, options: self.idol_py_imports(module, "Enum"),
+            field=lambda type_struct, tags: field_handler.map_type_struct(type_struct, tags),
+            struct=lambda type, fields: flatten_to_ordered_obj(fields)
+                                        + self.idol_py_imports(module, "Struct"),
+        )
+
+
+class ScalarTypingHandler(ScalarHandler):
+    def literal(self, primitive_type: PrimitiveType, value, tags: Tags = Tags()) -> str:
+        return self.primitive(primitive_type, tags)
+
+    def primitive(self, primitive_type: PrimitiveType, tags: Tags = Tags()) -> str:
+        return self.scalar_name_mappings[primitive_type]
+
+    def alias(self, alias: Reference, tags: Tags = Tags()) -> str:
+        return as_qualified_ident(alias)
+
+    scalar_name_mappings = {
+        PrimitiveType.BOOL: "bool",
+        PrimitiveType.INT: "int",
+        PrimitiveType.STRING: "str",
+        PrimitiveType.DOUBLE: "float",
+        PrimitiveType.ANY: "Any_",
+    }
+
+
+class ScalarSubclassingTypeHandler(TypeHandler):
+    scalar_typing_handler: ScalarHandler[str]
+
+    def __init__(self, scalar_typing_handler: ScalarHandler[str] = ScalarTypingHandler()):
+        super(ScalarSubclassingTypeHandler, self).__init__()
+        self.scalar_typing_handler = scalar_typing_handler
+
+    def type_struct(
+            self, t: Type, type_struct: TypeStruct, tags: Tags = Tags()
+    ) -> TypedGeneratorOutput:
+        scalar_handler: ScalarHandler[OrderedObj] = ScalarHandler(
+            alias=lambda reference, tags: (
+                OrderedObj()
+            ),
+            primitive=lambda prim_type, tags: (
+                self.as_new_class(t.named, ["Primitive_"])
+            ),
+            literal=lambda prim_type, value, tags: (
+                self.as_new_class(t.named, ["Literal_"], value=scripter.literal(value))
+            ),
+        )
+
+        typing = self.scalar_typing_handler.map_type_struct(type_struct, tags)
+
+        return TypeStructHandler(
+            scalar=lambda *args: scalar_handler.map_type_struct(*args),
+            map=lambda *args: self.as_new_class(t.named, [], inner_class=typing),
+            repeated=lambda *args: self.as_new_class(t.named, [], inner_class=typing),
+        ).map_type_struct(type_struct, tags)
+
+    def noop(self, *args) -> TypedGeneratorOutput:
+        return OrderedObj()
+
+    enum = noop
+    field = noop
+    struct = noop
+
+    def as_new_class(
+            self, reference: Reference, base_class: Iterable[str], **class_dict
+    ) -> OrderedObj[TypedOutputBuilder]:
+        ref_ident = as_qualified_ident(reference)
+        ref_local = scripter.index_access(
+            scripter.invocation("locals"), scripter.literal(ref_ident)
+        )
+
+        return OrderedObj(
+            {
+                reference.qualified_name: TypedOutputBuilder(
+                    [
+                        scripter.assignment(
+                            ref_local,
+                            scripter.invocation(
+                                "new_class",
+                                scripter.literal(ref_ident),
+                                scripter.tuple(ref_local, *base_class),
+                                **class_dict,
+                            ),
+                        )
+                    ]
+                )
+            }
+        )
+
+
+class TypeStructTypingHandler(TypeStructHandler):
+    scalar_dec_handler: ScalarHandler[List[str]]
+    scalar_handler: ScalarHandler[str]
+
+    def __init__(self, scalar_handler: ScalarHandler[str] = ScalarTypingHandler()):
+        self.scalar_handler = scalar_handler
+        super(TypeStructTypingHandler, self).__init__()
+
+    def scalar(self, type_struct: TypeStruct, tags: Tags = Tags()) -> str:
+        return self.scalar_handler.map_type_struct(type_struct, tags)
+
+    def repeated(self, scalar: str, tags: Tags = Tags()) -> str:
+        return scripter.type_parameterized("List_", scalar)
+
+    def map(self, scalar: Tuple[List[str], str], tags: Tags = Tags()) -> str:
+        return scripter.type_parameterized("Map_", scalar)
+
+
+class TypeDeclarationHandler(TypeHandler):
+    type_struct_handler: TypeStructHandler[str]
+    scalar_subclassing_handler: TypeHandler[List[str]]
+
+    def __init__(
+            self,
+            type_struct_handler: TypeStructHandler[str] = TypeStructTypingHandler(),
+            scalar_subclassing_handler: TypeHandler[List[str]] = ScalarSubclassingTypeHandler(),
+    ):
+        super(TypeDeclarationHandler, self).__init__()
+        self.type_struct_handler = type_struct_handler
+        self.scalar_subclassing_handler = scalar_subclassing_handler
+
+    def enum(self, t: Type, options: List[str]) -> List:
+        return scripter.class_dec(
+            as_qualified_ident(t.named),
+            ("Enum_",),
+            [scripter.assignment(o.upper(), scripter.literal(o)) for o in options],
+        )
+
+    def type_struct(self, t: Type, type_struct: TypeStruct, tags: Tags = Tags()) -> List:
+        return [
+            scripter.assignment(
+                as_qualified_ident(t.named),
+                self.type_struct_handler.map_type_struct(type_struct, tags),
+            )
+        ]
+
+    def field(self, type_struct: TypeStruct, tags: Tags = Tags()) -> str:
+        return self.type_struct_handler.map_type_struct(type_struct, tags)
+
+    def struct(self, t: Type, fields: OrderedObj[str]) -> List:
+        return [scripter.class_dec(as_qualified_ident(t.named), ("Struct_",),
+                                   self.struct_class_methods(t, fields))]
+
+    def struct_class_methods(self, t: Type, fields: OrderedObj[str]) -> Iterable:
+        for field_type, field_name in fields:
+            getter = scripter.invocation(scripter.prop_access(field_type, "wrap"),
+                                         scripter.invocation(
+                                             scripter.prop_access("self", "_orig", "get"),
+                                             scripter.literal(field_name)))
+
+            setter = scripter.assignment(
+                scripter.index_access(scripter.prop_access("self", "_orig"),
+                                      scripter.literal(field_name)),
+                scripter.invocation(scripter.prop_access(field_type, "unwrap"), "v"))
+
+            prop_name = safe_name(field_name)
+
+            yield scripter.func_dec(prop_name, ["self"],
+                                    typing=field_type,
+                                    decorators=["property"],
+                                    body=[
+                                        scripter.ret(getter)
+                                    ])
+
+            yield scripter.func_dec(prop_name, ["self", "v"],
+                                    typing=field_type,
+                                    decorators=[f"{prop_name}.setter"],
+                                    body=[
+                                        setter
+                                    ])
+
+        yield scripter.assignment("fields", scripter.array(
+            scripter.array((
+                scripter.literal(field_name),
+                scripter.literal(safe_name(field_name)),
+                field_type,
+                scripter.literal({
+                    "optional": "optional" in t.fields[field_name].tags
+                })
+            )) for field_type, field_name in fields
+        ))
+
+    def map_type(self, t: Type) -> List:
+        return super(TypeDeclarationHandler, self).map_type(
+            t
+        ) + self.scalar_subclassing_handler.map_type(t)
+
+
+class ScaffoldTypeHandler(MaterialTypeHandler):
+    config: GeneratorConfig
+
+    def __init__(self, all_types: Dict[str, Type], config: GeneratorConfig):
+        super(ScaffoldTypeHandler, self).__init__(all_types)
+        self.config = config
+
+    def type_struct(self, t: Type) -> TypedOutputBuilder:
+        return TypedOutputBuilder(
+            [scripter.assignment(t.named.type_name, as_qualified_ident(t.named))],
+            imports=self.config.codegen_reference_import(
+                output_type_specifier(Keys.codegen, t.named.qualified_name), t.named)
+        )
+
+    def struct(self, t: Type) -> TypedOutputBuilder:
+        return TypedOutputBuilder(
+            scripter.class_dec(t.named.type_name, [as_qualified_ident(t.named)], []),
+            imports=self.config.codegen_reference_import(
+                output_type_specifier(Keys.codegen, t.named.qualified_name), t.named))
+
+    def enum(self, t: Type) -> TypedOutputBuilder:
+        return TypedOutputBuilder(
+            scripter.class_dec(t.named.type_name, [as_qualified_ident(t.named)], []),
+            imports=self.config.codegen_reference_import(
+                output_type_specifier(Keys.codegen, t.named.qualified_name), t.named))
+
+
+def idol_py_output(config: GeneratorConfig) -> SinglePassGeneratorOutput:
+    return SinglePassGeneratorOutput(supplemental=OrderedObj({
+        config.idol_py_path: Conflictable([
+            open(os.path.join(os.path.dirname(__file__), "__idol__.py"), encoding='utf-8').read()
+        ])
+    }))
+
+
+KEYWORDS = {
+    "False",
+    "True",
+    "class",
+    "finally",
+    "is",
+    "return",
+    "None",
+    "continue",
+    "for",
+    "lambda",
+    "try",
+    "def",
+    "from",
+    "nonlocal",
+    "while",
+    "and",
+    "del",
+    "global",
+    "not",
+    "with",
+    "as",
+    "elif",
+    "if",
+    "or",
+    "yield",
+    "assert",
+    "else",
+    "import",
+    "pass",
+    "break",
+    "except",
+    "in",
+    "raise",
+}
+
+
+def safe_name(name: str) -> str:
+    if name in KEYWORDS:
+        return name + "_"
+
+    return name
+
+
+def run_generator(params: GeneratorParams, config: GeneratorConfig,
+                  type_dec_handler: TypeHandler[TypedOutputBuilder, Any] = None,
+                  scaffold_type_handler: MaterialTypeHandler[
+                      TypedOutputBuilder] = None) -> SinglePassGeneratorOutput:
+    if type_dec_handler is None:
+        type_dec_handler = TypeDeclarationHandler()
+
+    if scaffold_type_handler is None:
+        scaffold_type_handler = ScaffoldTypeHandler(params.all_types.obj, config)
+
+    return SinglePassGeneratorOutput(
+        codegen=params.all_types.map(lambda t, qn: type_dec_handler.map_type(t)),
+        scaffold=params.scaffold_types.map(lambda t, qn: scaffold_type_handler.map_type(t)),
+    ).concat(idol_py_output(config))
 
 
 def main():
@@ -379,6 +398,14 @@ def main():
             }
         )
     )
+
+    config = GeneratorConfig(params)
+    config.with_path_config()
+
+    pojos = run_generator(params, config)
+    rendered = render(config, pojos)
+    move_to = build(config, rendered)
+    move_to(params.output_dir)
 
 
 if __name__ == "__main__":
