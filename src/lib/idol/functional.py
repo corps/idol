@@ -52,7 +52,7 @@ class OrderedObj(Generic[T]):
 
     def __iter__(self) -> Iterable[Tuple[T, str]]:
         for k in self.ordering:
-            yield k, self.obj[k]
+            yield self.obj[k], k
 
     def map(self, f: Callable[[T, str], R]) -> "OrderedObj[R]":
         obj: Dict[str, R] = {}

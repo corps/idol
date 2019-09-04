@@ -49,7 +49,7 @@ def index_access(value: str, key: str):
 
 
 def prop_access(value: str, *props):
-    props = [value] + props
+    props = [value] + list(props)
     return ".".join(props)
 
 

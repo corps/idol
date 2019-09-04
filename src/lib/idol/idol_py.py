@@ -160,8 +160,8 @@ class ScalarSubclassingTypeHandler(TypeHandler):
             repeated=lambda *args: self.as_new_class(t.named, [], inner_class=typing),
         ).map_type_struct(type_struct, tags)
 
-    def noop(self, *args) -> TypedGeneratorOutput:
-        return OrderedObj()
+    def noop(self, *args) -> List:
+        return []
 
     enum = noop
     field = noop
