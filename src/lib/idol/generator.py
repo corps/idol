@@ -302,7 +302,7 @@ class MaterialTypeHandler(Generic[R]):
     all_types: Dict[str, Type]
     material_of_scalar_handler: ScalarHandler[Type]
     material_of_type_struct_handler: TypeStructHandler[Type]
-    type_handler: TypeHandler[R]
+    type_handler: TypeHandler[R, Any]
 
     def __init__(
         self,
@@ -404,7 +404,7 @@ class GeneratorConfig:
         )
 
         self.qualified_names_to_path = OutputTypeMapper.from_one(
-            lambda path_of: self.params.all_types.map(lambda t: path_of(t[0]))
+            lambda path_of: self.params.all_types.map(lambda t, *args: path_of(t))
         ).for_mapping(path_of_output_type)
 
     def resolve_path(

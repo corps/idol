@@ -184,5 +184,5 @@ class Module(_Struct):
 
     def types_as_ordered_obj(self) -> OrderedObj[Type]:
         return OrderedObj(self.types_by_name, self.types_dependency_ordering).bimap(
-            lambda t, _: (t.reference.qualified_name, t)
+            lambda t, _: (t.named.qualified_name, t)
         )

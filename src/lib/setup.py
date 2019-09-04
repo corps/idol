@@ -8,7 +8,7 @@ setup(
     author="Zach Collins",
     author_email="zach.collins@lyric.com",
     license="MIT",
-    packages=["src/lib/idol"],
+    packages=["idol"],
     install_requires=["black"],
     zip_safe=False,
 )

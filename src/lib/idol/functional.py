@@ -12,7 +12,7 @@ class OrderedObj(Generic[T]):
 
     def __init__(self, obj: Dict[str, T] = None, ordering: List[str] = None):
         self.obj = obj or {}
-        self.ordering = ordering or sorted(obj.keys())
+        self.ordering = ordering or sorted(self.obj.keys())
 
     def __bool__(self):
         return bool(self.obj)

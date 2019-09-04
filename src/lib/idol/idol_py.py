@@ -99,7 +99,7 @@ class GeneratorConfig(BaseGeneratorConfig):
 
     def type_import_handler(
             self, module: Callable[[OutputTypeSpecifier], str]
-    ) -> TypeHandler[OrderedObj[set]]:
+    ) -> TypeHandler[OrderedObj[set], OrderedObj[set]]:
         type_handler = self.type_struct_import_handler(module)
         field_handler = self.field_type_struct_import_handler(module)
         return TypeHandler(
@@ -216,12 +216,13 @@ class TypeStructTypingHandler(TypeStructHandler):
 
 class TypeDeclarationHandler(TypeHandler):
     type_struct_handler: TypeStructHandler[str]
-    scalar_subclassing_handler: TypeHandler[List[str]]
+    scalar_subclassing_handler: TypeHandler[List[str], Any]
 
     def __init__(
             self,
             type_struct_handler: TypeStructHandler[str] = TypeStructTypingHandler(),
-            scalar_subclassing_handler: TypeHandler[List[str]] = ScalarSubclassingTypeHandler(),
+            scalar_subclassing_handler: TypeHandler[
+                List[str], Any] = ScalarSubclassingTypeHandler(),
     ):
         super(TypeDeclarationHandler, self).__init__()
         self.type_struct_handler = type_struct_handler

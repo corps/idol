@@ -33,7 +33,7 @@ class CliConfig:
             self.argparse.add_argument("--" + arg, help=desc, action="store_true")
 
         self.argparse.add_argument(
-            "input_json",
+            "-input_json",
             help="ignored when stdin is piped into this program, otherwise should be a json file containing the output of an idol run.",
         )
 
