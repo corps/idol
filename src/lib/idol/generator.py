@@ -293,7 +293,7 @@ class TypeHandler(Generic[A, B]):
             return self.enum(type, type.options)
 
         fields = OrderedObj(type.fields).map(
-            lambda f: self.field(f.type_struct, Tags(field_tags=f.tags))
+            lambda f, *args: self.field(f.type_struct, Tags(field_tags=f.tags))
         )
         return self.struct(type, fields)
 

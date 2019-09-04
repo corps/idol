@@ -39,7 +39,7 @@ def assignment(target: str, value: str, typing=None) -> str:
 
 def invocation(callable: str, *args, **kwds):
     kwds = [f"{k}={v}" for k, v in kwds.items()]
-    args += kwds
+    args = list(args) + kwds
     args = ", ".join(args)
     return f"{callable}({args})"
 

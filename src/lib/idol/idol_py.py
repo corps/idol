@@ -141,11 +141,9 @@ class ScalarSubclassingTypeHandler(TypeHandler):
 
     def type_struct(
             self, t: Type, type_struct: TypeStruct, tags: Tags = Tags()
-    ) -> TypedGeneratorOutput:
-        scalar_handler: ScalarHandler[OrderedObj] = ScalarHandler(
-            alias=lambda reference, tags: (
-                OrderedObj()
-            ),
+    ) -> List:
+        scalar_handler: ScalarHandler[List] = ScalarHandler(
+            alias=lambda reference, tags: [],
             primitive=lambda prim_type, tags: (
                 self.as_new_class(t.named, ["Primitive_"])
             ),
@@ -171,29 +169,21 @@ class ScalarSubclassingTypeHandler(TypeHandler):
 
     def as_new_class(
             self, reference: Reference, base_class: Iterable[str], **class_dict
-    ) -> OrderedObj[TypedOutputBuilder]:
+    ) -> List:
         ref_ident = as_qualified_ident(reference)
         ref_local = scripter.index_access(
             scripter.invocation("locals"), scripter.literal(ref_ident)
         )
 
-        return OrderedObj(
-            {
-                reference.qualified_name: TypedOutputBuilder(
-                    [
-                        scripter.assignment(
-                            ref_local,
-                            scripter.invocation(
-                                "new_class",
-                                scripter.literal(ref_ident),
-                                scripter.tuple(ref_local, *base_class),
-                                **class_dict,
-                            ),
-                        )
-                    ]
-                )
-            }
-        )
+        return [scripter.assignment(
+            ref_local,
+            scripter.invocation(
+                "new_class",
+                scripter.literal(ref_ident),
+                scripter.tuple(ref_local, *base_class),
+                **class_dict,
+            ),
+        )]
 
 
 class TypeStructTypingHandler(TypeStructHandler):
