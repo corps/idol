@@ -1,11 +1,17 @@
-from typing import Iterable, List, Dict, Any
+from typing import Iterable, List, Dict
 
 import black
-import json
 
 
 def render(inner, mode=black.FileMode()):
-    return black.format_str("\n".join(flatten_inner(inner)), mode=mode)
+    body = "\n".join(flatten_inner(inner))
+    try:
+        return black.format_str(body, mode=mode)
+    except:
+        print("")
+        print(body)
+        print("")
+        raise
 
 
 def from_import(module_name: str, *things: List[str]) -> str:
@@ -13,15 +19,16 @@ def from_import(module_name: str, *things: List[str]) -> str:
     return f"from {module_name} import {things_str}"
 
 
-def flatten_inner(inner):
+def flatten_inner(inner, indent=0):
     if isinstance(inner, str):
         yield inner
         return
 
     try:
         for block in inner:
-            for line in flatten_inner(block):
-                yield f"  {line}"
+            for line in flatten_inner(block, indent + 1):
+                yield ("  " * indent) + line
+        return
     except TypeError:
         pass
 
