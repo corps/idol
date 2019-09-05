@@ -1,0 +1,5 @@
+#
+
+
+class Reference(SchemaReference):
+    pass

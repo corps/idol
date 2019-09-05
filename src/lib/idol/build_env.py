@@ -22,7 +22,7 @@ class BuildEnv:
             file.write(contents)
 
     def finalize(self, output_dir: str, replace: bool = False):
-        existing_codegen = self.abs_path(self.codegen_root)
+        existing_codegen = os.path.join(output_dir, self.codegen_root)
         if os.path.exists(existing_codegen):
             shutil.rmtree(existing_codegen)
 
@@ -30,14 +30,6 @@ class BuildEnv:
 
 
 def recursive_copy(src: str, dest: str, replace: bool):
-    if not replace:
-        if os.path.exists(dest):
-            if os.path.isfile(dest):
-                return
-
-            if os.path.isdir(src):
-                return
-
     if os.path.isdir(src):
         if not os.path.isdir(dest):
             os.makedirs(dest, exist_ok=True)
@@ -45,4 +37,7 @@ def recursive_copy(src: str, dest: str, replace: bool):
         for f in files:
             recursive_copy(os.path.join(src, f), os.path.join(dest, f), replace)
     else:
-        shutil.copyfile(src, dest)
+        if not replace and os.path.exists(dest):
+            print("Skipping", dest, "...")
+        else:
+            shutil.copyfile(src, dest)

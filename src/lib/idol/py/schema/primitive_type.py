@@ -1,0 +1,5 @@
+#
+
+
+class PrimitiveType(SchemaPrimitiveType):
+    pass

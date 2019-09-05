@@ -1,0 +1,1 @@
+['DeclarationsModuleDec = Map_[DeclarationsTypeDec]', "locals()['DeclarationsModuleDec'] = new_class('DeclarationsModuleDec', (locals()['DeclarationsModuleDec'],), inner_class=DeclarationsTypeDec)"]

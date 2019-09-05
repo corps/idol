@@ -1,0 +1,5 @@
+#
+
+
+class TypeStruct(SchemaTypeStruct):
+    pass

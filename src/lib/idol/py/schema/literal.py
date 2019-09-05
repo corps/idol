@@ -1,0 +1,5 @@
+#
+
+
+class Literal(SchemaLiteral):
+    pass

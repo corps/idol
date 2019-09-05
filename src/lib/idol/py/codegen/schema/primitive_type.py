@@ -1,0 +1,1 @@
+['class SchemaPrimitiveType(Enum_):', ["INT = 'int'", "DOUBLE = 'double'", "STRING = 'string'", "BOOL = 'bool'", "ANY = 'any'"]]

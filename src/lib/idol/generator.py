@@ -4,7 +4,7 @@ import idol.scripter as scripter
 from typing import Dict, List, Union, Generic, TypeVar, Optional, Callable, Tuple, Any
 
 from .build_env import BuildEnv
-from .utils import as_path, relative_path_from
+from .utils import as_path, relative_path_from, as_python_module_path
 from .functional import OrderedObj, Conflictable, flatten_to_list
 from .schema import Module, Type, Reference, PrimitiveType, TypeStruct, StructKind
 
@@ -434,8 +434,8 @@ class GeneratorConfig:
         return relative_path_from(from_path, to_path)
 
 
-def import_line(names: set, module: str) -> str:
-    return scripter.from_import(module, *sorted(names))
+def import_line(names: set, path: str) -> str:
+    return scripter.from_import(as_python_module_path(path), *sorted(names))
 
 
 def imports_obj_as_code(imports: OrderedObj[set]) -> List[str]:

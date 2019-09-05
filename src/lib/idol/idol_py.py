@@ -107,7 +107,7 @@ class GeneratorConfig(BaseGeneratorConfig):
             ),
             enum=lambda type, options: self.idol_py_imports(module, "Enum"),
             field=lambda type_struct, tags: field_handler.map_type_struct(type_struct, tags),
-            struct=lambda type, fields: flatten_to_ordered_obj(fields)
+            struct=lambda type, fields: flatten_to_ordered_obj(fields.values())
                                         + self.idol_py_imports(module, "Struct"),
         )
 
@@ -374,7 +374,11 @@ def run_generator(params: GeneratorParams, config: GeneratorConfig,
         scaffold_type_handler = ScaffoldTypeHandler(params.all_types.obj, config)
 
     return SinglePassGeneratorOutput(
-        codegen=params.all_types.map(lambda t, qn: type_dec_handler.map_type(t)),
+        codegen=params.all_types.map(lambda t, qn: TypedOutputBuilder(type_dec_handler.map_type(t),
+                                                                      imports=config.type_import_handler(
+                                                                          output_type_specifier(
+                                                                              Keys.codegen,
+                                                                              qn)).map_type(t))),
         scaffold=params.scaffold_types.map(lambda t, qn: scaffold_type_handler.map_type(t)),
     ).concat(idol_py_output(config))
 

@@ -1,0 +1,1 @@
+['DeclarationsFieldDec = List_[str]', "locals()['DeclarationsFieldDec'] = new_class('DeclarationsFieldDec', (locals()['DeclarationsFieldDec'],), inner_class=str)"]

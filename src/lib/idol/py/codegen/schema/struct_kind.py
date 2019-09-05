@@ -1,0 +1,1 @@
+['class SchemaStructKind(Enum_):', ["SCALAR = 'Scalar'", "REPEATED = 'Repeated'", "MAP = 'Map'"]]

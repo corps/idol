@@ -1,0 +1,5 @@
+#
+
+
+class StructKind(SchemaStructKind):
+    pass

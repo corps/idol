@@ -30,7 +30,12 @@ class OrderedObj(Generic[T]):
             elif k not in other.obj:
                 obj[k] = self.obj[k]
             else:
-                obj[k] = self.obj[k] + other.obj[k]
+                left = self.obj[k]
+                right = other.obj[k]
+                if isinstance(left, set):
+                    obj[k] = left.union(right)
+                else:
+                    obj[k] = left + right
 
         return OrderedObj(obj, ordering)
 
