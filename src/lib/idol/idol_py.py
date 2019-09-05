@@ -16,7 +16,6 @@ from idol.generator import (
     TypeStructHandler,
     ScalarHandler,
     Tags,
-    TypedGeneratorOutput,
     TypedOutputBuilder,
     MaterialTypeHandler, SinglePassGeneratorOutput, render, build)
 from idol.schema import *

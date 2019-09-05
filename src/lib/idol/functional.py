@@ -60,6 +60,15 @@ class OrderedObj(Generic[T]):
             obj[k] = f(self.obj[k], k)
         return OrderedObj(obj, self.ordering)
 
+    def filter(self, f: Callable[[T, str], bool]) -> "OrderedObj[T]":
+        obj: Dict[str, T] = {}
+        ordering: List[str] = []
+        for k in self.ordering:
+            if f(self.obj[k], k):
+                obj[k] = self.obj[k]
+                ordering.append(k)
+        return OrderedObj(obj, ordering)
+
     def bimap(self, f: Callable[[T, str], Tuple[str, R]]) -> "OrderedObj[R]":
         obj: Dict[str, R] = {}
         new_ordering = []
@@ -92,7 +101,7 @@ class Conflictable(Generic[T]):
         return self.values[0] if len(self.values) else None
 
     def expect_one(
-        self, empty_message="No value found", conflict_message="Unexpected conflict found"
+            self, empty_message="No value found", conflict_message="Unexpected conflict found"
     ) -> T:
         if not self.values:
             raise ValueError(empty_message)

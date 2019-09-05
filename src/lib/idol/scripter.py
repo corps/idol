@@ -16,6 +16,7 @@ def from_import(module_name: str, *things: List[str]) -> str:
 def flatten_inner(inner):
     if isinstance(inner, str):
         yield inner
+        return
 
     try:
         for block in inner:

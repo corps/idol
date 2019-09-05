@@ -45,10 +45,9 @@ def relative_path_from(f: str, t: str) -> str:
 
 
 def as_qualified_ident(reference: Reference) -> str:
-    cameled = camelify(reference.qualified_name)
-    return cameled[0].upper() + cameled[1:]
+    cameled = camelify(reference.module_name)
+    return cameled[0].upper() + cameled[1:] + reference.type_name
 
 
 def camelify(name: str) -> str:
-    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
+    return "".join(p[0].upper() + p[1:] for p in re.split('[._]', name) if p)

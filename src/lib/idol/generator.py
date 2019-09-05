@@ -43,7 +43,7 @@ OutputTypeSpecifier = Union[Codegen, Scaffold]
 
 
 def output_type_specifier(
-    k: Union[Codegen, Scaffold], v: A
+        k: Union[Codegen, Scaffold], v: A
 ) -> Callable[[OutputTypeSpecifier], Optional[A]]:
     return lambda x: v if x is k else None
 
@@ -52,7 +52,7 @@ OutputSpecifier = Union[Codegen, Scaffold, Supplemental]
 
 
 def output_specifier(
-    k: Union[Codegen, Scaffold, Supplemental], v: A
+        k: Union[Codegen, Scaffold, Supplemental], v: A
 ) -> Callable[[OutputSpecifier], Optional[A]]:
     return lambda x: v if x is k else None
 
@@ -61,19 +61,19 @@ DependencySpecifier = Union[Codegen, Scaffold, Supplemental, Absolute]
 
 
 def dependency_specifier(
-    k: Union[Codegen, Scaffold, Supplemental, Absolute], v: A
+        k: Union[Codegen, Scaffold, Supplemental, Absolute], v: A
 ) -> Callable[[DependencySpecifier], Optional[A]]:
     return lambda x: v if x is k else None
 
 
 class GeneratorParams:
     def __init__(
-        self,
-        all_modules: OrderedObj[Module],
-        all_types: OrderedObj[Type],
-        scaffold_types: OrderedObj[Type],
-        output_dir: str,
-        options: Dict[str, Union[List[str], bool]],
+            self,
+            all_modules: OrderedObj[Module],
+            all_types: OrderedObj[Type],
+            scaffold_types: OrderedObj[Type],
+            output_dir: str,
+            options: Dict[str, Union[List[str], bool]],
     ):
         self.all_modules = all_modules
         self.all_types = all_types
@@ -154,7 +154,7 @@ class OutputMapper(Generic[T, R]):
     supplemental_mapper: Callable[[T], R]
 
     def __init__(
-        self, output_type_mapper: OutputTypeMapper[T, R], supplemental_mapper: Callable[[T], R]
+            self, output_type_mapper: OutputTypeMapper[T, R], supplemental_mapper: Callable[[T], R]
     ):
         self.output_type_mapper = output_type_mapper
         self.supplemental_mapper = supplemental_mapper
@@ -184,10 +184,10 @@ class Tags:
 
 class ScalarHandler(Generic[R]):
     def __init__(
-        self,
-        alias: Callable[[Reference, Tags], R] = None,
-        primitive: Callable[[PrimitiveType, Tags], R] = None,
-        literal: Callable[[TypeStruct, Any, Tags], R] = None,
+            self,
+            alias: Callable[[Reference, Tags], R] = None,
+            primitive: Callable[[PrimitiveType, Tags], R] = None,
+            literal: Callable[[TypeStruct, Any, Tags], R] = None,
     ):
         if alias:
             self.alias = alias
@@ -219,10 +219,10 @@ class ScalarHandler(Generic[R]):
 
 class TypeStructHandler(Generic[R]):
     def __init__(
-        self,
-        scalar: Callable[[TypeStruct, Tags], R] = None,
-        map: Callable[[R, Tags], R] = None,
-        repeated: Callable[[R, Tags], R] = None,
+            self,
+            scalar: Callable[[TypeStruct, Tags], R] = None,
+            map: Callable[[R, Tags], R] = None,
+            repeated: Callable[[R, Tags], R] = None,
     ):
         if scalar:
             self.scalar = scalar
@@ -255,11 +255,11 @@ class TypeStructHandler(Generic[R]):
 
 class TypeHandler(Generic[A, B]):
     def __init__(
-        self,
-        type_struct: Callable[[Type, TypeStruct, Tags], A] = None,
-        enum: Callable[[Type, List[str]], A] = None,
-        field: Callable[[TypeStruct, Tags], B] = None,
-        struct: Callable[[Type, OrderedObj[B]], A] = None,
+            self,
+            type_struct: Callable[[Type, TypeStruct, Tags], A] = None,
+            enum: Callable[[Type, List[str]], A] = None,
+            field: Callable[[TypeStruct, Tags], B] = None,
+            struct: Callable[[Type, OrderedObj[B]], A] = None,
     ):
         if type_struct:
             self.type_struct = type_struct
@@ -305,11 +305,11 @@ class MaterialTypeHandler(Generic[R]):
     type_handler: TypeHandler[R, Any]
 
     def __init__(
-        self,
-        all_types: Dict[str, Type],
-        struct: Callable[[Type], R] = None,
-        enum: Callable[[Type], R] = None,
-        type_struct: Callable[[Type], R] = None,
+            self,
+            all_types: Dict[str, Type],
+            struct: Callable[[Type], R] = None,
+            enum: Callable[[Type], R] = None,
+            type_struct: Callable[[Type], R] = None,
     ):
         self.all_types = all_types
 
@@ -380,7 +380,7 @@ class GeneratorConfig:
         return as_path(t.named.type_name)
 
     def vary_on_scaffold(
-        self, without_scaffold: Callable[[Type], str], with_scaffold: Callable[[Type], str]
+            self, without_scaffold: Callable[[Type], str], with_scaffold: Callable[[Type], str]
     ) -> Callable[[Type], str]:
         def vary(t: Type) -> str:
             if t.named.qualified_name in self.params.scaffold_types.obj:
@@ -408,7 +408,7 @@ class GeneratorConfig:
         ).for_mapping(path_of_output_type)
 
     def resolve_path(
-        self, f: Callable[[OutputSpecifier], str], t: Callable[[DependencySpecifier], str]
+            self, f: Callable[[OutputSpecifier], str], t: Callable[[DependencySpecifier], str]
     ) -> str:
         if t(Keys.absolute) is not None:
             return t(Keys.absolute)
@@ -439,7 +439,7 @@ def import_line(names: set, module: str) -> str:
 
 
 def imports_obj_as_code(imports: OrderedObj[set]) -> List[str]:
-    return list(imports.map(import_line).values())
+    return list(imports.filter(lambda _, p: bool(p)).map(import_line).values())
 
 
 class TypedOutputBuilder:
@@ -448,7 +448,7 @@ class TypedOutputBuilder:
     body: List[str]
 
     def __init__(
-        self, body: List = [], imports: OrderedObj[set] = OrderedObj(), comment_header: str = ""
+            self, body: List = [], imports: OrderedObj[set] = OrderedObj(), comment_header: str = ""
     ):
         self.imports = imports
         self.body = body
@@ -480,10 +480,10 @@ class SinglePassGeneratorOutput:
     supplemental: RenderedFilesOutput
 
     def __init__(
-        self,
-        codegen: TypedGeneratorOutput = OrderedObj(),
-        scaffold: TypedGeneratorOutput = OrderedObj(),
-        supplemental: RenderedFilesOutput = OrderedObj(),
+            self,
+            codegen: TypedGeneratorOutput = OrderedObj(),
+            scaffold: TypedGeneratorOutput = OrderedObj(),
+            supplemental: RenderedFilesOutput = OrderedObj(),
     ):
         self.codegen = codegen
         self.scaffold = scaffold
@@ -504,20 +504,20 @@ class SinglePassGeneratorOutput:
 
 def render(config: GeneratorConfig, output: SinglePassGeneratorOutput) -> RenderedFilesOutput:
     def lookup_and_render(
-        t: Tuple[RenderedFilesOutput, OrderedObj[str]]
+            t: Tuple[RenderedFilesOutput, OrderedObj[str]]
     ) -> OrderedObj[Conflictable[str]]:
         files, path_config = t
 
         return files.zip_with_keys_from(path_config).map(
-            lambda file: Conflictable([str(file)] if file else [])
+            lambda file, *args: Conflictable([str(file)] if file else [])
         )
 
     type_outputs = output.as_mapping().type_mapping
 
     rendered_output_type_files = (
         OutputTypeMapper.from_one(lookup_and_render)
-        .for_mapping(type_outputs.zip(config.qualified_names_to_path))
-        .join(operator.add)
+            .for_mapping(type_outputs.zip(config.qualified_names_to_path))
+            .join(operator.add)
     )
 
     return rendered_output_type_files + output.supplemental
