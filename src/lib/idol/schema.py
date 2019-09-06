@@ -18,6 +18,7 @@ import idol.schema
 # This file is generated via idol_py.py.  You can either subclass these types
 # in your own module file or update the relevant model.toml file and regenerate.
 from .functional import OrderedObj
+import re
 
 __all__ = [
     "StructKind",
@@ -81,6 +82,29 @@ class Reference(_Struct):
     __metadata__ = json.loads(
         '{"dependencies": [], "fields": {"module_name": {"field_name": "module_name", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "qualified_name": {"field_name": "qualified_name", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}, "type_name": {"field_name": "type_name", "tags": [], "type_struct": {"literal": null, "parameters": [], "primitive_type": "string", "reference": {"module_name": "", "qualified_name": "", "type_name": ""}, "struct_kind": "Scalar"}}}, "is_a": null, "named": {"module_name": "schema", "qualified_name": "schema.Reference", "type_name": "Reference"}, "options": [], "tags": [], "type_vars": []}'
     )
+
+    @property
+    def as_qn_path(self):
+        return "/".join(self.snakify().qualified_name.split(".")) + ".py"
+
+    @property
+    def as_type_path(self):
+        return "/".join(self.snakify().qualified_name.split(".")) + ".py"
+
+    @property
+    def as_module_path(self):
+        return "/".join(self.snakify().module_name.split(".")) + ".py"
+
+    def snakify(self) -> "Reference":
+        def snakify(name):
+            first_pass = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+            return re.sub("([a-z0-9])([A-Z])", r"\1_\2", first_pass).lower()
+
+        return Reference({
+            "module_name": snakify(self.module_name),
+            "qualified_name": snakify(self.qualified_name),
+            "type_name": snakify(self.type_name),
+        })
 
 
 class TypeStruct(_Struct):

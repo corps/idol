@@ -56,10 +56,10 @@ def prepare_generator_params(
     modules: Map[Module] = Map[Module](modules)
 
     all_modules: OrderedObj[Module] = OrderedObj(modules)
-    all_types = flatten_to_ordered_obj(m.types_as_ordered_obj() for m in all_modules.values())
+    all_types = OrderedObj.from_iterable(m.types_as_ordered_obj() for m in all_modules.values())
 
     targets = options.get("target", [])
-    scaffold_types = flatten_to_ordered_obj(
+    scaffold_types = OrderedObj.from_iterable(
         modules[target].types_as_ordered_obj() for target in targets
     )
 

@@ -1,9 +1,19 @@
+from contextlib import contextmanager
 from functools import reduce
 
-from typing import TypeVar, Generic, Dict, List, Iterator, Iterable, Callable, Tuple, Optional
+from typing import Dict, TypeVar, Generic, Callable, Tuple, List, Iterable, Any
+
+A = TypeVar("A")
+B = TypeVar("B")
+C = TypeVar("C")
 
 T = TypeVar("T")
 R = TypeVar("R")
+
+
+class mset(set):
+    __add__ = set.union
+    concat = __add__
 
 
 class OrderedObj(Generic[T]):
@@ -13,6 +23,13 @@ class OrderedObj(Generic[T]):
     def __init__(self, obj: Dict[str, T] = None, ordering: List[str] = None):
         self.obj = obj or {}
         self.ordering = ordering or sorted(self.obj.keys())
+
+    @classmethod
+    def from_iterable(cls, items: Iterable["OrderedObj[T]"]) -> "OrderedObj[T]":
+        result = OrderedObj()
+        for o in items:
+            result += o
+        return result
 
     def __bool__(self):
         return bool(self.obj)
@@ -32,21 +49,11 @@ class OrderedObj(Generic[T]):
             else:
                 left = self.obj[k]
                 right = other.obj[k]
-                if isinstance(left, set):
-                    obj[k] = left.union(right)
-                else:
-                    obj[k] = left + right
+                obj[k] = left + right
 
         return OrderedObj(obj, ordering)
 
     __add__ = concat
-
-    def zip_with_keys_from(self, other: "OrderedObj[str]") -> "OrderedObj[T]":
-        return reduce(
-            lambda agg, k: agg + OrderedObj({other.obj[k]: self.obj[k]}) if k in other.obj else agg,
-            self.keys(),
-            OrderedObj(),
-        )
 
     def keys(self) -> Iterable[str]:
         return self.ordering
@@ -65,11 +72,11 @@ class OrderedObj(Generic[T]):
             obj[k] = f(self.obj[k], k)
         return OrderedObj(obj, self.ordering)
 
-    def filter(self, f: Callable[[T, str], bool]) -> "OrderedObj[T]":
+    def filter(self, f: Callable[[T], bool]) -> "OrderedObj[T]":
         obj: Dict[str, T] = {}
         ordering: List[str] = []
         for k in self.ordering:
-            if f(self.obj[k], k):
+            if f(self.obj[k]):
                 obj[k] = self.obj[k]
                 ordering.append(k)
         return OrderedObj(obj, ordering)
@@ -88,47 +95,110 @@ class OrderedObj(Generic[T]):
         return OrderedObj(obj, new_ordering)
 
 
-class Conflictable(Generic[T]):
-    values: List[T]
+class Acc(Generic[A]):
+    result: A
 
-    def __init__(self, values: List[T] = None):
-        self.values = values
+    def __init__(self, initial: A):
+        self.result = initial
 
-    def concat(self, other: "Conflictable[T]"):
-        return Conflictable(self.values + other.values)
+    def __call__(self, other: Tuple[B, A]) -> B:
+        self.result += other[1]
+        return other[0]
+
+
+@contextmanager
+def acc(initial: A):
+    yield Acc(initial)
+
+
+class Alt(Generic[A]):
+    v: List[A]
+
+    def __init__(self, v: List[A]):
+        self.v = v
+
+    @classmethod
+    def mapply(cls, a: List[Callable[[], A]], *args) -> "Alt[A]":
+        return cls([lambda f: f(*args) for f in a])
+
+    @classmethod
+    def mbind(cls, m: List[A], f: Callable[[A], List[B]]) -> "Alt[B]":
+        return cls([
+            b
+            for a in m
+            for b in f(a)
+        ])
+
+    @classmethod
+    def unfold(cls, m: List[Callable[[], "Alt[A]"]]) -> "Alt[A]":
+        applied: Alt[Alt[A]] = cls.mapply(m)
+        bound: Alt[A] = cls.mbind(applied.v, lambda alt: alt.v)
+        return bound
+
+    @classmethod
+    def with_val(cls, v: A) -> "Alt[A]":
+        return cls((v,))
+
+    @classmethod
+    def empty(cls) -> "Alt[Any]":
+        return cls([])
+
+    def unwrap(self) -> A:
+        return self.v[0]
+
+    def get_or(self, d: A) -> A:
+        if not self.has_one:
+            return d
+        return self.unwrap()
+
+    def get_or_fail(self, msg: str) -> A:
+        if self.has_one:
+            return self.unwrap()
+        raise ValueError(msg)
+
+    @property
+    def has_one(self):
+        return len(self.v) > 0
+
+    @property
+    def has_many(self):
+        return len(self.v) > 1
+
+    def map(self, f: Callable[[A], B]) -> "Alt[B]":
+        return Alt([f(i) for i in self.v])
+
+    def concat(self, other: "Alt[A]") -> "Alt[A]":
+        return Alt(self.v + other.v)
 
     __add__ = concat
 
-    def unwrap(self, err_message="Unexpected conflict found") -> Optional[T]:
-        if len(self.values) > 1:
-            raise ValueError(err_message)
+    def __call__(self, a: List[A]) -> "Alt[A]":
+        cls = self.__class__
+        return self + cls(a)
 
-        return self.values[0] if len(self.values) else None
 
-    def expect_one(
-            self, empty_message="No value found", conflict_message="Unexpected conflict found"
-    ) -> T:
-        if not self.values:
-            raise ValueError(empty_message)
+class Disjoint(Alt):
+    def unwrap(self) -> A:
+        if self.has_many:
+            raise ValueError(f"Unexpected conflict found!")
 
-        return self.unwrap(conflict_message)
+        return super(Disjoint, self).unwrap()
 
-    def unwrap_conflicts(self, map_conflicts: Callable[[List[T]], R]) -> List[R]:
-        if len(self.values) > 1:
-            return [map_conflicts(self.values)]
+    def unwrap_errors(self) -> List[A]:
+        if self.has_many:
+            return self.v
 
         return []
 
 
-def flatten_to_list(iterable: Iterable[List[T]]) -> List[T]:
-    result = []
-    for inner in iterable:
-        result += inner
-    return result
+def naive_object_concat(self, other: object):
+    new_dict = dict(**self.__dict__)
+    for k, v in other.__dict__.items():
+        if k in new_dict:
+            new_dict[k] += v
+        else:
+            new_dict[k] = v
 
-
-def flatten_to_ordered_obj(iterable: Iterable[OrderedObj[T]]) -> OrderedObj[T]:
-    result = OrderedObj()
-    for inner in iterable:
-        result += inner
+    result = self.__class__.__new__()
+    result.__dict__ = new_dict
     return result

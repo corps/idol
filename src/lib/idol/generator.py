@@ -1,69 +1,76 @@
+import functools
 import operator
 import idol.scripter as scripter
+from enum import Enum
+from abc import ABC, abstractmethod
 
-from typing import Dict, List, Union, Generic, TypeVar, Optional, Callable, Tuple, Any
+from typing import Dict, List, Union, Generic, TypeVar, Callable, Tuple, Any, cast, Iterable
 
 from .build_env import BuildEnv
-from .utils import as_path, relative_path_from, as_python_module_path
-from .functional import OrderedObj, Conflictable, flatten_to_list
-from .schema import Module, Type, Reference, PrimitiveType, TypeStruct, StructKind
+from .functional import OrderedObj, Alt, mset, Disjoint, naive_object_concat
+from .schema import Module, Type, Reference, PrimitiveType, TypeStruct, StructKind, Field
 
-T = TypeVar("T")
-R = TypeVar("R")
 A = TypeVar("A")
 B = TypeVar("B")
 C = TypeVar("C")
-T_con = TypeVar("T_con", contravariant=True)
+D = TypeVar("D")
 
 
-class Codegen:
-    pass
+class Identifier(ABC):
+    @property
+    @abstractmethod
+    def as_name(self) -> str:
+        pass
 
 
-class Scaffold:
-    pass
+Ident = TypeVar("Ident", bound=Identifier)
 
 
-class Supplemental:
-    pass
+class Path:
+    path: str
 
+    def __init__(self, path: str):
+        self.path = path
 
-class Absolute:
-    pass
+    @property
+    def is_local(self):
+        return self.path == ""
 
+    @staticmethod
+    def is_path_local(path: "Path") -> bool:
+        return path.is_local
 
-class Keys:
-    absolute = Absolute()
-    supplemental = Supplemental()
-    scaffold = Scaffold()
-    codegen = Codegen()
+    def __eq__(self, other):
+        return self.path == other.path
 
+    def relative_path_to(self, to_path: "Path") -> "Path":
+        # Special case for relative path to self => is_local
+        if self == to_path:
+            return Path("")
 
-OutputTypeSpecifier = Union[Codegen, Scaffold]
+        from_parts = self.path.split("/")
+        to_parts = to_path.path.split("/")
+        parts = []
+        i = len(from_parts) - 1
 
+        while i >= 0 and from_parts[:i] != to_parts[:i]:
+            parts.append("..")
+            i -= 1
 
-def output_type_specifier(
-        k: Union[Codegen, Scaffold], v: A
-) -> Callable[[OutputTypeSpecifier], Optional[A]]:
-    return lambda x: v if x is k else None
+        while i < len(to_parts):
+            parts.append(to_parts[i])
+            i += 1
 
+        return Path("/".join(parts))
 
-OutputSpecifier = Union[Codegen, Scaffold, Supplemental]
+    @property
+    def as_python_module_path(self):
+        if self.is_local:
+            raise ValueError("is_local path cannot be a python module path!")
 
-
-def output_specifier(
-        k: Union[Codegen, Scaffold, Supplemental], v: A
-) -> Callable[[OutputSpecifier], Optional[A]]:
-    return lambda x: v if x is k else None
-
-
-DependencySpecifier = Union[Codegen, Scaffold, Supplemental, Absolute]
-
-
-def dependency_specifier(
-        k: Union[Codegen, Scaffold, Supplemental, Absolute], v: A
-) -> Callable[[DependencySpecifier], Optional[A]]:
-    return lambda x: v if x is k else None
+        if self.path.endswith(".py"):
+            return "." + self.path[:-3].replace("../", ".").replace("/", ".")
+        return self.path
 
 
 class GeneratorParams:
@@ -82,95 +89,86 @@ class GeneratorParams:
         self.options = options
 
 
-class OutputTypeMapping(Generic[T]):
-    codegen: T
-    scaffold: T
+class OutputTypeKind(Enum):
+    CODEGEN = "codegen"
+    SCAFFOLD = "scaffold"
 
-    def __init__(self, codegen: T, scaffold: T):
+
+class OutputKind(OutputTypeKind):
+    SUPPLEMENTAL = "supplemental"
+
+
+class OutputTypeMapping(Generic[A]):
+    codegen: A
+    scaffold: A
+
+    def __init__(self, codegen: A, scaffold: A):
         self.codegen = codegen
         self.scaffold = scaffold
 
-    def join(self, concat: Callable[[T, T], T]) -> T:
-        return concat(self.codegen, self.scaffold)
+    @classmethod
+    def lift(cls, a: A) -> "OutputTypeMapping[A]":
+        return OutputTypeMapping(a, a)
 
-    def zip(self, other: "OutputTypeMapping[R]") -> "OutputTypeMapping[Tuple[T, R]]":
+    def zip(self, other: "OutputTypeMapping[B]") -> "OutputTypeMapping[Tuple[A, B]]":
         return OutputTypeMapping((self.codegen, other.codegen), (self.scaffold, other.scaffold))
 
-    @staticmethod
-    def lift(val: T) -> "OutputTypeMapping[T]":
-        return OutputTypeMapping(val, val)
+    def join(self) -> A:
+        return self.codegen + self.scaffold
+
+    def apply_from(self, f: "OutputTypeMapping[Callable[[A], B]]") -> "OutputTypeMapping[B]":
+        return OutputTypeMapping(f.codegen(self.codegen), f.scaffold(self.scaffold))
+
+    def pick(self, output_type_kind: OutputTypeKind) -> A:
+        if output_type_kind == OutputTypeKind.CODEGEN:
+            return self.codegen
+
+        if output_type_kind == OutputTypeKind.SCAFFOLD:
+            return self.scaffold
+
+        raise ValueError(f"Unexpected OutputTypeKind {output_type_kind}")
+
+    def concat(self, other: "OutputTypeMapping[A]") -> "OutputTypeMapping[A]":
+        return naive_object_concat(self, other)
+
+    __add__ = concat
 
 
-class OutputMapping(Generic[T, R]):
-    type_mapping: OutputTypeMapping[T]
-    supplemental: R
+class OutputMapping(Generic[A, B]):
+    type_mapping: OutputTypeMapping[A]
+    supplemental: B
 
-    def __init__(self, type_mapping: OutputTypeMapping[T], supplemental: R):
+    def __init__(self, type_mapping: OutputTypeMapping[A], supplemental: B):
         self.type_mapping = type_mapping
         self.supplemental = supplemental
 
+    def pick(self, output_kind: OutputKind) -> Union[A, B]:
+        if output_kind == OutputKind.SUPPLEMENTAL:
+            return self.supplemental
 
-class OutputTypeMapper(Generic[T, R]):
-    scaffold: Callable[[T], R]
-    codegen: Callable[[T], R]
+        return self.type_mapping.pick(output_kind)
 
-    def __init__(self, codegen: Callable[[T], R], scaffold: [[T], R]):
-        self.scaffold = scaffold
-        self.codegen = codegen
-
-    def composed(self, other: "OutputTypeMapper[R, A]") -> "OutputTypeMapper[T, A]":
-        return OutputTypeMapper(
-            lambda a: other.codegen(self.codegen(a)), lambda a: other.scaffold(self.scaffold(a))
+    def apply_types_from(self, f: OutputTypeMapping[Callable[[A], C]]) -> "OutputMapping[C, B]":
+        return OutputMapping(
+            self.type_mapping.apply_from(f),
+            self.supplemental
         )
 
-    @classmethod
-    def from_one(cls, handler: Callable[[T], R]) -> "OutputTypeMapper[T, R]":
-        return cls(handler, handler)
+    def apply_from(self,
+                   f: "OutputMapping[Callable[[A], C], Callable[[B], D]]") -> "OutputMapping[C, D]":
+        return OutputMapping(
+            self.type_mapping.apply_from(f.type_mapping),
+            f.supplemental(self.supplemental)
+        )
 
-    @classmethod
-    def lift(cls, mapping: "OutputTypeMapping[Callable[[T], R]]") -> "OutputTypeMapper[T, R]":
-        return cls(mapping.codegen, mapping.scaffold)
+    @staticmethod
+    def lift(a: A) -> "OutputMapping[A, A]":
+        return OutputMapping(OutputTypeMapping.lift(a), a)
 
-    @property
-    def for_mapping(self) -> Callable[[OutputTypeMapping[T]], OutputTypeMapping[R]]:
-        def handler(t: OutputTypeMapping[T]) -> OutputTypeMapping[R]:
-            return OutputTypeMapping(self.codegen(t.codegen), self.scaffold(t.scaffold))
+    def concat(self, other: "OutputMapping[A, B]") -> "OutputMapping[A, B]":
+        return naive_object_concat(self, other)
 
-        return handler
-
-    @property
-    def for_specifier(self) -> Callable[[Callable[[OutputTypeSpecifier], T]], R]:
-        def handler(t: Callable[[OutputTypeSpecifier], T]) -> R:
-            if t(Keys.scaffold) is not None:
-                return self.scaffold(t(Keys.scaffold))
-            elif t(Keys.codegen) is not None:
-                return self.codegen(t(Keys.codegen))
-
-        return handler
-
-
-class OutputMapper(Generic[T, R]):
-    output_type_mapper: OutputTypeMapper[T, R]
-    supplemental_mapper: Callable[[T], R]
-
-    def __init__(
-            self, output_type_mapper: OutputTypeMapper[T, R], supplemental_mapper: Callable[[T], R]
-    ):
-        self.output_type_mapper = output_type_mapper
-        self.supplemental_mapper = supplemental_mapper
-
-    @property
-    def for_specifier(self) -> Callable[[Callable[[OutputSpecifier], T]], R]:
-        def handler(t: Callable[[OutputSpecifier], T]) -> R:
-            if t(Keys.supplemental) is not None:
-                return self.supplemental_mapper(t(Keys.supplemental))
-
-            return self.output_type_mapper.for_specifier(t)
-
-        return handler
-
-
-OutputTypePathConfig = OrderedObj[Conflictable[str]]
+    __add__ = concat
 
 
 class Tags:
@@ -182,182 +180,144 @@ class Tags:
         self.type_tags = type_tags
 
 
-class ScalarHandler(Generic[R]):
-    def __init__(
-            self,
-            alias: Callable[[Reference, Tags], R] = None,
-            primitive: Callable[[PrimitiveType, Tags], R] = None,
-            literal: Callable[[TypeStruct, Any, Tags], R] = None,
-    ):
-        if alias:
-            self.alias = alias
+class Deconstructor:
+    @staticmethod
+    def otherwise(*args, v: A) -> List[Callable[[], A]]:
+        return [lambda: v]
 
-        if primitive:
-            self.primitive = primitive
 
-        if literal:
-            self.literal = literal
+class ScalarDeconstructor:
+    type_struct: TypeStruct
 
-    def alias(self, alias: Reference, tags: Tags = Tags()) -> R:
+    def __init__(self, type_struct: TypeStruct):
+        self.type_struct = type_struct
         pass
 
-    def primitive(self, primitive_type: PrimitiveType, tags: Tags = Tags()) -> R:
-        pass
+    def when_primitive(self, cb: Callable[[PrimitiveType], A]) -> List[Callable[[], A]]:
+        if self.type_struct.is_alias or self.type_struct.is_literal:
+            return []
 
-    def literal(self, primitive_type: PrimitiveType, value, tags: Tags = Tags()) -> R:
-        pass
+        @functools.wraps(cb)
+        def inner() -> A:
+            return cast(A, cb(self.type_struct.primitive_type))
 
-    def map_type_struct(self, type_struct: TypeStruct, tags: Tags = Tags()) -> R:
-        if type_struct.is_alias:
-            return self.alias(type_struct.reference, tags)
-        if type_struct.is_literal:
-            return self.literal(type_struct.primitive_type, type_struct.literal_value, tags)
-        return self.primitive(type_struct.primitive_type, tags)
+        return cast(List[Callable[[], A]], [inner])
 
-    __call__ = map_type_struct
+    def when_literal(self, cb: Callable[[PrimitiveType, Any], A]) -> List[Callable[[], A]]:
+        if self.type_struct.is_alias or self.type_struct.is_literal:
+            return []
 
+        @functools.wraps(cb)
+        def inner() -> A:
+            return cast(A, cb(self.type_struct.primitive_type, self.type_struct.literal_value))
 
-class TypeStructHandler(Generic[R]):
-    def __init__(
-            self,
-            scalar: Callable[[TypeStruct, Tags], R] = None,
-            map: Callable[[R, Tags], R] = None,
-            repeated: Callable[[R, Tags], R] = None,
-    ):
-        if scalar:
-            self.scalar = scalar
+        return cast(List[Callable[[], A]], [inner])
 
-        if map:
-            self.map = map
+    def when_alias(self, cb: Callable[[Reference], A]) -> List[Callable[[], A]]:
+        if not self.type_struct.is_alias:
+            return []
 
-        if repeated:
-            self.repeated = repeated
+        @functools.wraps(cb)
+        def inner() -> A:
+            return cast(A, cb(self.type_struct.reference))
 
-    def scalar(self, type_struct: TypeStruct, tags: Tags = Tags()) -> R:
-        pass
-
-    def map(self, scalar: R, tags: Tags = Tags()) -> R:
-        pass
-
-    def repeated(self, scalar: R, tags: Tags = Tags()) -> R:
-        pass
-
-    def map_type_struct(self, type_struct: TypeStruct, tags: Tags = Tags()) -> R:
-        scalar = self.scalar(type_struct, tags)
-        if type_struct.struct_kind == StructKind.SCALAR:
-            return scalar
-        if type_struct.struct_kind == StructKind.REPEATED:
-            return self.repeated(scalar, tags)
-        return self.map(scalar, tags)
-
-    __call__ = map_type_struct
+        return cast(List[Callable[[], A]], [inner])
 
 
-class TypeHandler(Generic[A, B]):
-    def __init__(
-            self,
-            type_struct: Callable[[Type, TypeStruct, Tags], A] = None,
-            enum: Callable[[Type, List[str]], A] = None,
-            field: Callable[[TypeStruct, Tags], B] = None,
-            struct: Callable[[Type, OrderedObj[B]], A] = None,
-    ):
-        if type_struct:
-            self.type_struct = type_struct
+class TypeStructDeconstructor:
+    type_struct: TypeStruct
 
-        if enum:
-            self.enum = enum
+    def __init__(self, type_struct: TypeStruct):
+        self.type_struct = type_struct
 
-        if field:
-            self.field = field
+    def when_scalar(self, cb: Callable[[ScalarDeconstructor], A]) -> List[Callable[[], A]]:
+        if self.type_struct.struct_kind != StructKind.SCALAR:
+            return []
 
-        if struct:
-            self.struct = struct
+        @functools.wraps(cb)
+        def inner() -> A:
+            return cast(A, cb(ScalarDeconstructor(self.type_struct)))
 
-    def type_struct(self, t: Type, type_struct: TypeStruct, tags: Tags = Tags()) -> A:
-        pass
+        return cast(List[Callable[[], A]], [inner])
 
-    def enum(self, t: Type, options: List[str]) -> A:
-        pass
+    def when_repeated(self, cb: Callable[[ScalarDeconstructor], A]) -> List[Callable[[], A]]:
+        if self.type_struct.struct_kind != StructKind.REPEATED:
+            return []
 
-    def field(self, type_struct: TypeStruct, tags: Tags = Tags()) -> B:
-        pass
+        @functools.wraps(cb)
+        def inner() -> A:
+            return cast(A, cb(ScalarDeconstructor(self.type_struct)))
 
-    def struct(self, t: Type, fields: OrderedObj[B]) -> A:
-        pass
+        return cast(List[Callable[[], A]], [inner])
 
-    def map_type(self, type: Type) -> A:
-        if type.is_a:
-            return self.type_struct(type, type.is_a, Tags(type_tags=type.tags))
+    def when_map(self, cb: Callable[[ScalarDeconstructor], A]) -> List[Callable[[], A]]:
+        if self.type_struct.struct_kind != StructKind.MAP:
+            return []
 
-        if type.is_enum:
-            return self.enum(type, type.options)
+        @functools.wraps(cb)
+        def inner() -> A:
+            return cast(A, cb(ScalarDeconstructor(self.type_struct)))
 
-        fields = OrderedObj(type.fields).map(
-            lambda f, *args: self.field(f.type_struct, Tags(field_tags=f.tags))
-        )
-        return self.struct(type, fields)
+        return cast(List[Callable[[], A]], [inner])
 
 
-class MaterialTypeHandler(Generic[R]):
-    all_types: Dict[str, Type]
-    material_of_scalar_handler: ScalarHandler[Type]
-    material_of_type_struct_handler: TypeStructHandler[Type]
-    type_handler: TypeHandler[R, Any]
+class TypeDeconstructor:
+    t: Type
 
-    def __init__(
-            self,
-            all_types: Dict[str, Type],
-            struct: Callable[[Type], R] = None,
-            enum: Callable[[Type], R] = None,
-            type_struct: Callable[[Type], R] = None,
-    ):
-        self.all_types = all_types
+    def __init__(self, t: Type):
+        self.t = t
 
-        self.material_of_scalar_handler = ScalarHandler(
-            alias=lambda r, *args: self.all_types[r.qualified_name]
-        )
-        self.material_of_type_struct_handler = TypeStructHandler(
-            scalar=lambda ts, *args: self.material_of_scalar_handler.map_type_struct(ts)
-        )
+    def when_type_struct(self, cb: Callable[[TypeStructDeconstructor], A]) -> List[Callable[[], A]]:
+        if not self.t.is_a:
+            return []
 
-        self.type_handler = TypeHandler(
-            enum=lambda t, *args: self.enum(t),
-            type_struct=self.map_material_type_struct,
-            struct=lambda t, *args: self.struct(t),
-        )
+        @functools.wraps(cb)
+        def inner() -> A:
+            return cast(A, cb(TypeStructDeconstructor(self.t.is_a)))
 
-        if struct:
-            self.struct = struct
+        return cast(List[Callable[[], A]], [inner])
 
-        if enum:
-            self.enum = enum
+    def when_enum(self, cb: Callable[[List[str]], A]) -> List[Callable[[], A]]:
+        if self.t.is_a or not self.t.is_enum:
+            return []
 
-        if type_struct:
-            self.type_struct = type_struct
+        @functools.wraps(cb)
+        def inner() -> A:
+            return cast(A, cb(self.t.options))
 
-    def map_material_type_struct(self, t: Type, ts: TypeStruct, tags: Tags = Tags()) -> R:
-        material_of_type_struct = self.material_of_type_struct_handler.map_type_struct(ts)
-        if material_of_type_struct:
-            return self.type_handler.map_type(material_of_type_struct)
+        return cast(List[Callable[[], A]], [inner])
 
-        return self.type_struct(t)
+    def when_struct(self, cb: Callable[[OrderedObj[Field]], A]) -> List[Callable[[], A]]:
+        if self.t.is_a or not self.t.is_enum:
+            return []
 
-    def struct(self, t: Type) -> R:
-        pass
+        @functools.wraps(cb)
+        def inner() -> A:
+            return cast(A, cb(OrderedObj(dict(self.t.fields.items()))))
 
-    def enum(self, t: Type) -> R:
-        pass
+        return cast(List[Callable[[], A]], [inner])
 
-    def type_struct(self, t: Type) -> R:
-        pass
 
-    def map_type(self, t: Type) -> R:
-        return self.type_handler.map_type(t)
+def get_material_type_deconstructor(all_types: OrderedObj[Type], t: Type) -> TypeDeconstructor:
+    def search_type(type_decon: TypeDeconstructor) -> TypeDeconstructor:
+        def search_type_struct(ts_decon: TypeStructDeconstructor) -> Alt[TypeDeconstructor]:
+            def search_scalar(scalar_decon: ScalarDeconstructor) -> Alt[TypeDeconstructor]:
+                def lookup_alias(r: Reference) -> TypeDeconstructor:
+                    return search_type(
+                        TypeDeconstructor(all_types.obj[r.qualified_name]))
+
+                return Alt.mapply(scalar_decon.when_alias(lookup_alias))
+
+            return Alt.unfold(ts_decon.when_scalar(search_scalar))
+
+        return Alt.unfold(type_decon.when_type_struct(search_type_struct)).get_or(type_decon)
+
+    return search_type(TypeDeconstructor(t))
 
 
 class GeneratorConfig:
     codegen_root: str
-    qualified_names_to_path: OutputTypeMapping[OrderedObj[str]]
+    qualified_names_to_path: OutputTypeMapping[OrderedObj[Path]]
     name: str
     params: GeneratorParams
 
@@ -369,17 +329,17 @@ class GeneratorConfig:
 
     @staticmethod
     def one_file_per_type(t: Type) -> str:
-        return as_path(t.named.qualified_name)
+        return t.named.as_qn_path
 
     @staticmethod
     def one_file_per_module(t: Type) -> str:
-        return as_path(t.named.module_name)
+        return t.named.as_module_path
 
     @staticmethod
     def flat_namespace(t: Type) -> str:
-        return as_path(t.named.type_name)
+        return t.named.as_type_path
 
-    def vary_on_scaffold(
+    def vary_by_scaffold_inclusion(
             self, without_scaffold: Callable[[Type], str], with_scaffold: Callable[[Type], str]
     ) -> Callable[[Type], str]:
         def vary(t: Type) -> str:
@@ -389,154 +349,155 @@ class GeneratorConfig:
 
         return vary
 
-    def with_path_config(self, path_of_output_type: OutputTypeMapper[Type, str] = None):
+    def with_path_config(self,
+                         path_of_output_type: OutputTypeMapping[Callable[[Type], str]] = None):
         if path_of_output_type is None:
-            path_of_output_type = OutputTypeMapper(
-                GeneratorConfig.one_file_per_type,
-                self.vary_on_scaffold(
-                    GeneratorConfig.one_file_per_module, GeneratorConfig.one_file_per_type
-                ),
-            )
+            path_of_output_type = OutputTypeMapping.lift(GeneratorConfig.one_file_per_type)
 
-        # Append codegen to all codegen outputs.
-        path_of_output_type = path_of_output_type.composed(
-            OutputTypeMapper(lambda path: f"{self.codegen_root}/" + path, lambda path: path)
-        )
+        # Append codegen_root to all codegen outputs paths and map the path for all names
+        wrap_path_of_output: OutputTypeMapping[Callable[[OrderedObj[Type]], OrderedObj[Path]]] = \
+            path_of_output_type.apply_from(OutputTypeMapping(
+                codegen=lambda f: lambda o: o.map(lambda t: Path(f"{self.codegen_root}/{f(t)}")),
+                scaffold=lambda f: lambda o: o.map(lambda t: Path(f(t))),
+            ))
 
-        self.qualified_names_to_path = OutputTypeMapper.from_one(
-            lambda path_of: self.params.all_types.map(lambda t, *args: path_of(t))
-        ).for_mapping(path_of_output_type)
-
-    def resolve_path(
-            self, f: Callable[[OutputSpecifier], str], t: Callable[[DependencySpecifier], str]
-    ) -> str:
-        if t(Keys.absolute) is not None:
-            return t(Keys.absolute)
-
-        output_type_path_mapper = OutputTypeMapper.lift(
-            OutputTypeMapper.from_one(lambda o: lambda qn: o.obj[qn]).for_mapping(
-                self.qualified_names_to_path
-            )
-        )
-
-        path_mapper = OutputMapper(output_type_path_mapper, lambda supplemental: supplemental)
-
-        from_path = path_mapper.for_specifier(f)
-        to_path = path_mapper.for_specifier(t)
-
-        if from_path is None or to_path is None:
-            raise ValueError(f"Could not find {t} -> {f} in resolve_path")
-
-        # Special case: local import.
-        if from_path == to_path:
-            return ""
-
-        return relative_path_from(from_path, to_path)
+        self.qualified_names_to_path = OutputTypeMapping.lift(self.params.all_types).apply_from(
+            wrap_path_of_output)
 
 
-def import_line(names: set, path: str) -> str:
-    return scripter.from_import(as_python_module_path(path), *sorted(names))
+class OutputContext:
+    kind: OutputKind
+    path: Path
+    config: GeneratorConfig
+
+    def __init__(self,
+                 config: GeneratorConfig,
+                 kind: OutputKind,
+                 path_or_qn: str):
+        self.kind = kind
+
+        if kind == OutputKind.CODEGEN:
+            self.path = config.qualified_names_to_path.codegen.obj[path_or_qn]
+
+        if kind == OutputKind.SCAFFOLD:
+            self.path = config.qualified_names_to_path.scaffold.obj[path_or_qn]
+
+        if kind == OutputKind.SUPPLEMENTAL:
+            self.path = Path(path_or_qn)
+
+        self.config = config
 
 
-def imports_obj_as_code(imports: OrderedObj[set]) -> List[str]:
-    return list(imports.filter(lambda _, p: bool(p)).map(import_line).values())
+class ImportProvider:
+    context: OutputContext
+
+    def __init__(self, context: OutputContext):
+        self.context = context
+
+    @property
+    def path(self) -> Path:
+        return self.context.path
+
+    def import_from_abs(
+            self, abs: Path, ident: str, as_ident: str
+    ) -> OrderedObj[mset]:
+        as_import = ident
+        if ident != as_ident:
+            as_import = f"{ident} as {as_ident}"
+
+        return OrderedObj({abs.path: mset([as_import])})
+
+    def import_from_path(
+            self, path: Path, ident: str, as_ident: str
+    ) -> OrderedObj[mset]:
+        return self.import_from_abs(self.path.relative_path_to(path), ident, as_ident)
+
+    def import_from_codegen(
+            self, reference: Reference, output_type_kind: OutputTypeKind, ident: str, as_ident: str,
+    ) -> OrderedObj[mset]:
+        return self.import_from_path(
+            self.context.config.qualified_names_to_path.pick(output_type_kind).obj[
+                reference.qualified_name],
+            ident, as_ident)
 
 
-class TypedOutputBuilder:
-    imports: OrderedObj[set]
-    comment_header: str
-    body: List[str]
-
-    def __init__(
-            self, body: List = [], imports: OrderedObj[set] = OrderedObj(), comment_header: str = ""
-    ):
-        self.imports = imports
-        self.body = body
-        self.comment_header = comment_header
-
-    def __str__(self):
-        imports = scripter.render(imports_obj_as_code(self.imports))
-        comments = scripter.render(scripter.comment(self.comment_header))
-        body = scripter.render(self.body)
-        return scripter.render((comments, imports, body))
-
-    def concat(self, other: "TypedOutputBuilder") -> "TypedOutputBuilder":
-        return TypedOutputBuilder(
-            self.body + other.body,
-            self.imports + other.imports,
-            other.comment_header if other.comment_header else self.comment_header,
-        )
-
-    __add__ = concat
-
-
-TypedGeneratorOutput = OrderedObj[TypedOutputBuilder]
-RenderedFilesOutput = OrderedObj[Conflictable[str]]
-
-
-class SinglePassGeneratorOutput:
-    codegen: TypedGeneratorOutput
-    scaffold: TypedGeneratorOutput
-    supplemental: RenderedFilesOutput
+class OutputTypeBuilder:
+    imports: OrderedObj[mset]
+    body: List
 
     def __init__(
             self,
-            codegen: TypedGeneratorOutput = OrderedObj(),
-            scaffold: TypedGeneratorOutput = OrderedObj(),
-            supplemental: RenderedFilesOutput = OrderedObj(),
+            body: List = [],
+            imports: OrderedObj[mset] = OrderedObj()
     ):
-        self.codegen = codegen
-        self.scaffold = scaffold
-        self.supplemental = supplemental
+        self.imports = imports
+        self.body = body
 
-    def concat(self, other: "SinglePassGeneratorOutput") -> "SinglePassGeneratorOutput":
-        return SinglePassGeneratorOutput(
-            self.codegen + other.codegen,
-            self.scaffold + other.scaffold,
-            self.supplemental + other.supplemental,
+    def __str__(self):
+        imports = scripter.render(OutputTypeBuilder.imports_obj_as_code(self.imports))
+        body = scripter.render(self.body)
+        return scripter.render((imports, body))
+
+    def concat(self, other: "OutputTypeBuilder") -> "OutputTypeBuilder":
+        return OutputTypeBuilder(
+            self.body + other.body,
+            self.imports + other.imports,
         )
 
     __add__ = concat
 
-    def as_mapping(self) -> OutputMapping[TypedGeneratorOutput, RenderedFilesOutput]:
-        return OutputMapping(OutputTypeMapping(self.codegen, self.scaffold), self.supplemental)
+    @staticmethod
+    def import_line(names: mset, path: str) -> str:
+        return scripter.from_import(Path(path).as_python_module_path, *sorted(names))
+
+    @staticmethod
+    def imports_obj_as_code(imports: OrderedObj[mset]) -> List[str]:
+        return list(imports.filter(Path.is_path_local).map(OutputTypeBuilder.import_line).values())
 
 
-def render(config: GeneratorConfig, output: SinglePassGeneratorOutput) -> RenderedFilesOutput:
-    def lookup_and_render(
-            t: Tuple[RenderedFilesOutput, OrderedObj[str]]
-    ) -> OrderedObj[Conflictable[str]]:
+def render(config: GeneratorConfig,
+           output: OutputMapping[OrderedObj[Iterable], OrderedObj[Iterable]]) -> OrderedObj[
+    Disjoint[str]]:
+    def resolve_paths(
+            t: Tuple[OrderedObj[Iterable], OrderedObj[Path]]
+    ) -> OrderedObj[Iterable]:
         files, path_config = t
-
-        return files.zip_with_keys_from(path_config).map(
-            lambda file, *args: Conflictable([str(file)] if file else [])
+        return OrderedObj.from_iterable(
+            OrderedObj({path_config.obj[k].path: files.obj[k]})
+            for k in files.keys()
         )
 
-    type_outputs = output.as_mapping().type_mapping
+    def render_script(
+            o: OrderedObj[Iterable]
+    ) -> OrderedObj[Disjoint[str]]:
+        return o.map(lambda i: Disjoint([scripter.render(i)]))
 
-    rendered_output_type_files = (
-        OutputTypeMapper.from_one(lookup_and_render)
-            .for_mapping(type_outputs.zip(config.qualified_names_to_path))
-            .join(operator.add)
+    normalized_paths_output: OutputMapping[
+        OrderedObj[Iterable], OrderedObj[Iterable]] = OutputMapping(
+        output.type_mapping.zip(config.qualified_names_to_path) \
+            .apply_from(OutputTypeMapping.lift(resolve_paths)),
+        output.supplemental
     )
 
-    return rendered_output_type_files + output.supplemental
+    rendered = normalized_paths_output.apply_from(
+        OutputMapping.lift(render_script))
+   
+    return rendered.type_mapping.join() + rendered.supplemental
 
 
-def build(config: GeneratorConfig, output: RenderedFilesOutput) -> Callable[[str], None]:
-    all_errors = flatten_to_list(
-        c.unwrap_conflicts(
-            (lambda conflicts: f"Generated {len(conflicts)} separate outputs for path {path}.")
-        )
+def build(config: GeneratorConfig, output: OrderedObj[Disjoint[str]]) -> Callable[[str], None]:
+    all_errors = [
+        f"Generated {len(conflicts)} separate outputs for path {path}."
         for c, path in output
-    )
+        for conflicts in c.unwrap_errors()
+    ]
 
     if all_errors:
         raise Exception("\n".join(all_errors))
 
     build_env = BuildEnv(config.name, config.codegen_root)
     for file, path in output:
-        contents = file.unwrap()
+        contents = file.get_or("")
         if contents:
             build_env.write_build_file(path, contents)
 
