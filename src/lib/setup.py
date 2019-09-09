@@ -9,6 +9,6 @@ setup(
     author_email="zach.collins@lyric.com",
     license="MIT",
     packages=["idol"],
-    install_requires=["black"],
+    install_requires=["black", "cached_property"],
     zip_safe=False,
 )

@@ -48,19 +48,9 @@ class SchemaModule(Struct_):
         self._orig["types_dependency_ordering"] = List_[str].unwrap(v)
 
     _FIELDS = [
-        [
-            "abstract_types_by_name",
-            "abstract_types_by_name",
-            Map_[SchemaType],
-            {"optional": False},
-        ],
+        ["abstract_types_by_name", "abstract_types_by_name", Map_[SchemaType], {"optional": False}],
         ["dependencies", "dependencies", List_[SchemaDependency], {"optional": False}],
         ["module_name", "module_name", str, {"optional": False}],
         ["types_by_name", "types_by_name", Map_[SchemaType], {"optional": False}],
-        [
-            "types_dependency_ordering",
-            "types_dependency_ordering",
-            List_[str],
-            {"optional": False},
-        ],
+        ["types_dependency_ordering", "types_dependency_ordering", List_[str], {"optional": False}],
     ]

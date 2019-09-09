@@ -1,7 +1,4 @@
-from contextlib import contextmanager
-from functools import reduce
-
-from typing import Dict, TypeVar, Generic, Callable, Tuple, List, Iterable, Any
+from typing import Dict, TypeVar, Generic, Callable, Tuple, List, Iterable, Any, Optional, Union
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -62,6 +59,18 @@ class OrderedObj(Generic[T]):
         for k in self.ordering:
             yield self.obj[k]
 
+    def update(self, k: str, v: T) -> "OrderedObj[T]":
+        if k not in self.obj:
+            self.ordering.append(k)
+        self.obj[k] = v
+        return self
+
+    def set_default(self, k: str, v: T) -> T:
+        if k not in self.obj:
+            self.ordering.append(k)
+            self.obj[k] = v
+        return self
+
     def __iter__(self) -> Iterable[Tuple[T, str]]:
         for k in self.ordering:
             yield self.obj[k], k
@@ -96,47 +105,37 @@ class OrderedObj(Generic[T]):
 
 
 class Acc(Generic[A]):
-    result: A
+    state: A
+    update: A
 
-    def __init__(self, initial: A):
-        self.result = initial
+    def __init__(self, state: A, update: A):
+        self.state = state
+        self.update = update
 
-    def __call__(self, other: Tuple[B, A]) -> B:
-        self.result += other[1]
-        return other[0]
+    def concat(self, other: "Union[A, Acc[A]]") -> "Acc[A]":
+        if isinstance(other, Acc):
+            other = other.update
+        return Acc(self.state + other, self.update + other)
 
+    __add__ = concat
 
-@contextmanager
-def acc(initial: A):
-    yield Acc(initial)
+    def __call__(self, other: "Tuple[B, A]") -> Tuple[A, B]:
+        res, update = other
+        self.state += update
+        self.update += update
+        return self.state, res
 
 
 class Alt(Generic[A]):
     v: List[A]
 
-    def __init__(self, v: List[A]):
+    def __init__(self, v: Iterable[A]):
+        if not isinstance(v, list):
+            v = list(v)
         self.v = v
 
     @classmethod
-    def mapply(cls, a: List[Callable[[], A]], *args) -> "Alt[A]":
-        return cls([lambda f: f(*args) for f in a])
-
-    @classmethod
-    def mbind(cls, m: List[A], f: Callable[[A], List[B]]) -> "Alt[B]":
-        return cls([
-            b
-            for a in m
-            for b in f(a)
-        ])
-
-    @classmethod
-    def unfold(cls, m: List[Callable[[], "Alt[A]"]]) -> "Alt[A]":
-        applied: Alt[Alt[A]] = cls.mapply(m)
-        bound: Alt[A] = cls.mbind(applied.v, lambda alt: alt.v)
-        return bound
-
-    @classmethod
-    def with_val(cls, v: A) -> "Alt[A]":
+    def lift(cls, v: A) -> "Alt[A]":
         return cls((v,))
 
     @classmethod
@@ -156,6 +155,15 @@ class Alt(Generic[A]):
             return self.unwrap()
         raise ValueError(msg)
 
+    def __iter__(self):
+        """
+        Yields at most one item
+        :return:
+        """
+        for v in self.v:
+            yield v
+            return
+
     @property
     def has_one(self):
         return len(self.v) > 0
@@ -171,10 +179,6 @@ class Alt(Generic[A]):
         return Alt(self.v + other.v)
 
     __add__ = concat
-
-    def __call__(self, a: List[A]) -> "Alt[A]":
-        cls = self.__class__
-        return self + cls(a)
 
 
 class Disjoint(Alt):

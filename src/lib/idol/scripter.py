@@ -14,7 +14,7 @@ def render(inner, mode=black.FileMode()):
         raise
 
 
-def from_import(module_name: str, *things: List[str]) -> str:
+def from_import(module_name: str, *things) -> str:
     things_str = ", ".join(things)
     return f"from {module_name} import {things_str}"
 
@@ -84,12 +84,12 @@ def class_dec(class_name: str, super_classes: Iterable[str], body: Iterable) -> 
 
 
 def func_dec(
-        func_name: str,
-        args: List[str] = [],
-        body: Iterable = ["pass"],
-        kwds: Dict[str, str] = {},
-        typing: str = "",
-        decorators: Iterable[str] = [],
+    func_name: str,
+    args: List[str] = [],
+    body: Iterable = ["pass"],
+    kwds: Dict[str, str] = {},
+    typing: str = "",
+    decorators: Iterable[str] = [],
 ) -> List:
     if typing:
         typing = f" -> {typing}"

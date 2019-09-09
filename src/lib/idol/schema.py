@@ -100,11 +100,13 @@ class Reference(_Struct):
             first_pass = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
             return re.sub("([a-z0-9])([A-Z])", r"\1_\2", first_pass).lower()
 
-        return Reference({
-            "module_name": snakify(self.module_name),
-            "qualified_name": snakify(self.qualified_name),
-            "type_name": snakify(self.type_name),
-        })
+        return Reference(
+            {
+                "module_name": snakify(self.module_name),
+                "qualified_name": snakify(self.qualified_name),
+                "type_name": snakify(self.type_name),
+            }
+        )
 
 
 class TypeStruct(_Struct):

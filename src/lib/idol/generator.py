@@ -1,13 +1,7 @@
-import functools
-import operator
 import idol.scripter as scripter
-from enum import Enum
-from abc import ABC, abstractmethod
-
-from typing import Dict, List, Union, Generic, TypeVar, Callable, Tuple, Any, cast, Iterable
-
+from typing import Dict, List, Union, TypeVar, Callable, Tuple, Any, Optional
 from .build_env import BuildEnv
-from .functional import OrderedObj, Alt, mset, Disjoint, naive_object_concat
+from .functional import OrderedObj, Alt, mset, Disjoint, naive_object_concat, Acc
 from .schema import Module, Type, Reference, PrimitiveType, TypeStruct, StructKind, Field
 
 A = TypeVar("A")
@@ -16,37 +10,19 @@ C = TypeVar("C")
 D = TypeVar("D")
 
 
-class Identifier(ABC):
-    @property
-    @abstractmethod
-    def as_name(self) -> str:
-        pass
-
-
-Ident = TypeVar("Ident", bound=Identifier)
-
-
 class Path:
     path: str
 
     def __init__(self, path: str):
         self.path = path
 
-    @property
-    def is_local(self):
-        return self.path == ""
-
-    @staticmethod
-    def is_path_local(path: "Path") -> bool:
-        return path.is_local
-
     def __eq__(self, other):
         return self.path == other.path
 
-    def relative_path_to(self, to_path: "Path") -> "Path":
+    def import_path_to(self, to_path: "Path") -> "ImportPath":
         # Special case for relative path to self => is_local
         if self == to_path:
-            return Path("")
+            return ImportPath("")
 
         from_parts = self.path.split("/")
         to_parts = to_path.path.split("/")
@@ -61,16 +37,36 @@ class Path:
             parts.append(to_parts[i])
             i += 1
 
-        return Path("/".join(parts))
+        return ImportPath(to_path, "/".join(parts))
 
-    @property
-    def as_python_module_path(self):
-        if self.is_local:
+    def __str__(self):
+        return self.path
+
+
+class ImportPath:
+    path: Path
+    rel_path: str
+
+    def __init__(self, path: Path, rel_path: str):
+        self.path = path
+        self.rel_path = rel_path
+
+    def __str__(self):
+        return str(self.path)
+
+    @classmethod
+    def module(cls, module: str) -> "ImportPath":
+        return cls(Path(module), module)
+
+    @staticmethod
+    def as_python_module_path(rel_path: str) -> str:
+        if rel_path == "":
             raise ValueError("is_local path cannot be a python module path!")
 
-        if self.path.endswith(".py"):
-            return "." + self.path[:-3].replace("../", ".").replace("/", ".")
-        return self.path
+        if rel_path.endswith(".py"):
+            return "." + rel_path[:-3].replace("../", ".").replace("/", ".")
+
+        return rel_path
 
 
 class GeneratorParams:
@@ -89,88 +85,6 @@ class GeneratorParams:
         self.options = options
 
 
-class OutputTypeKind(Enum):
-    CODEGEN = "codegen"
-    SCAFFOLD = "scaffold"
-
-
-class OutputKind(OutputTypeKind):
-    SUPPLEMENTAL = "supplemental"
-
-
-class OutputTypeMapping(Generic[A]):
-    codegen: A
-    scaffold: A
-
-    def __init__(self, codegen: A, scaffold: A):
-        self.codegen = codegen
-        self.scaffold = scaffold
-
-    @classmethod
-    def lift(cls, a: A) -> "OutputTypeMapping[A]":
-        return OutputTypeMapping(a, a)
-
-    def zip(self, other: "OutputTypeMapping[B]") -> "OutputTypeMapping[Tuple[A, B]]":
-        return OutputTypeMapping((self.codegen, other.codegen), (self.scaffold, other.scaffold))
-
-    def join(self) -> A:
-        return self.codegen + self.scaffold
-
-    def apply_from(self, f: "OutputTypeMapping[Callable[[A], B]]") -> "OutputTypeMapping[B]":
-        return OutputTypeMapping(f.codegen(self.codegen), f.scaffold(self.scaffold))
-
-    def pick(self, output_type_kind: OutputTypeKind) -> A:
-        if output_type_kind == OutputTypeKind.CODEGEN:
-            return self.codegen
-
-        if output_type_kind == OutputTypeKind.SCAFFOLD:
-            return self.scaffold
-
-        raise ValueError(f"Unexpected OutputTypeKind {output_type_kind}")
-
-    def concat(self, other: "OutputTypeMapping[A]") -> "OutputTypeMapping[A]":
-        return naive_object_concat(self, other)
-
-    __add__ = concat
-
-
-class OutputMapping(Generic[A, B]):
-    type_mapping: OutputTypeMapping[A]
-    supplemental: B
-
-    def __init__(self, type_mapping: OutputTypeMapping[A], supplemental: B):
-        self.type_mapping = type_mapping
-        self.supplemental = supplemental
-
-    def pick(self, output_kind: OutputKind) -> Union[A, B]:
-        if output_kind == OutputKind.SUPPLEMENTAL:
-            return self.supplemental
-
-        return self.type_mapping.pick(output_kind)
-
-    def apply_types_from(self, f: OutputTypeMapping[Callable[[A], C]]) -> "OutputMapping[C, B]":
-        return OutputMapping(
-            self.type_mapping.apply_from(f),
-            self.supplemental
-        )
-
-    def apply_from(self,
-                   f: "OutputMapping[Callable[[A], C], Callable[[B], D]]") -> "OutputMapping[C, D]":
-        return OutputMapping(
-            self.type_mapping.apply_from(f.type_mapping),
-            f.supplemental(self.supplemental)
-        )
-
-    @staticmethod
-    def lift(a: A) -> "OutputMapping[A, A]":
-        return OutputMapping(OutputTypeMapping.lift(a), a)
-
-    def concat(self, other: "OutputMapping[A, B]") -> "OutputMapping[A, B]":
-        return naive_object_concat(self, other)
-
-    __add__ = concat
-
-
 class Tags:
     field_tags: List[str]
     type_tags: List[str]
@@ -180,12 +94,6 @@ class Tags:
         self.type_tags = type_tags
 
 
-class Deconstructor:
-    @staticmethod
-    def otherwise(*args, v: A) -> List[Callable[[], A]]:
-        return [lambda: v]
-
-
 class ScalarDeconstructor:
     type_struct: TypeStruct
 
@@ -193,35 +101,23 @@ class ScalarDeconstructor:
         self.type_struct = type_struct
         pass
 
-    def when_primitive(self, cb: Callable[[PrimitiveType], A]) -> List[Callable[[], A]]:
+    def get_primitive(self) -> Alt[PrimitiveType]:
         if self.type_struct.is_alias or self.type_struct.is_literal:
-            return []
+            return Alt.empty()
 
-        @functools.wraps(cb)
-        def inner() -> A:
-            return cast(A, cb(self.type_struct.primitive_type))
+        return Alt.lift(self.type_struct.primitive_type)
 
-        return cast(List[Callable[[], A]], [inner])
-
-    def when_literal(self, cb: Callable[[PrimitiveType, Any], A]) -> List[Callable[[], A]]:
+    def get_literal(self) -> Alt[Tuple[PrimitiveType, Any]]:
         if self.type_struct.is_alias or self.type_struct.is_literal:
-            return []
+            return Alt.empty()
 
-        @functools.wraps(cb)
-        def inner() -> A:
-            return cast(A, cb(self.type_struct.primitive_type, self.type_struct.literal_value))
+        return Alt.lift((self.type_struct.primitive_type, self.type_struct.literal_value))
 
-        return cast(List[Callable[[], A]], [inner])
-
-    def when_alias(self, cb: Callable[[Reference], A]) -> List[Callable[[], A]]:
+    def get_alias(self) -> Alt[Reference]:
         if not self.type_struct.is_alias:
-            return []
+            return Alt.empty()
 
-        @functools.wraps(cb)
-        def inner() -> A:
-            return cast(A, cb(self.type_struct.reference))
-
-        return cast(List[Callable[[], A]], [inner])
+        return Alt.lift(self.type_struct.reference)
 
 
 class TypeStructDeconstructor:
@@ -230,35 +126,23 @@ class TypeStructDeconstructor:
     def __init__(self, type_struct: TypeStruct):
         self.type_struct = type_struct
 
-    def when_scalar(self, cb: Callable[[ScalarDeconstructor], A]) -> List[Callable[[], A]]:
+    def get_scalar(self) -> Alt[ScalarDeconstructor]:
         if self.type_struct.struct_kind != StructKind.SCALAR:
-            return []
+            return Alt.empty()
 
-        @functools.wraps(cb)
-        def inner() -> A:
-            return cast(A, cb(ScalarDeconstructor(self.type_struct)))
+        return Alt.lift(ScalarDeconstructor(self.type_struct))
 
-        return cast(List[Callable[[], A]], [inner])
-
-    def when_repeated(self, cb: Callable[[ScalarDeconstructor], A]) -> List[Callable[[], A]]:
+    def get_repeated(self) -> Alt[ScalarDeconstructor]:
         if self.type_struct.struct_kind != StructKind.REPEATED:
-            return []
+            return Alt.empty()
 
-        @functools.wraps(cb)
-        def inner() -> A:
-            return cast(A, cb(ScalarDeconstructor(self.type_struct)))
+        return Alt.lift(ScalarDeconstructor(self.type_struct))
 
-        return cast(List[Callable[[], A]], [inner])
-
-    def when_map(self, cb: Callable[[ScalarDeconstructor], A]) -> List[Callable[[], A]]:
+    def get_map(self) -> Alt[ScalarDeconstructor]:
         if self.type_struct.struct_kind != StructKind.MAP:
-            return []
+            return Alt.empty()
 
-        @functools.wraps(cb)
-        def inner() -> A:
-            return cast(A, cb(ScalarDeconstructor(self.type_struct)))
-
-        return cast(List[Callable[[], A]], [inner])
+        return Alt.lift(ScalarDeconstructor(self.type_struct))
 
 
 class TypeDeconstructor:
@@ -267,237 +151,291 @@ class TypeDeconstructor:
     def __init__(self, t: Type):
         self.t = t
 
-    def when_type_struct(self, cb: Callable[[TypeStructDeconstructor], A]) -> List[Callable[[], A]]:
+    def get_typestruct(self) -> Alt[TypeStructDeconstructor]:
         if not self.t.is_a:
-            return []
+            return Alt.empty()
 
-        @functools.wraps(cb)
-        def inner() -> A:
-            return cast(A, cb(TypeStructDeconstructor(self.t.is_a)))
+        return Alt.lift(TypeStructDeconstructor(self.t.is_a))
 
-        return cast(List[Callable[[], A]], [inner])
-
-    def when_enum(self, cb: Callable[[List[str]], A]) -> List[Callable[[], A]]:
+    def get_enum(self) -> Alt[List[str]]:
         if self.t.is_a or not self.t.is_enum:
-            return []
+            return Alt.empty()
 
-        @functools.wraps(cb)
-        def inner() -> A:
-            return cast(A, cb(self.t.options))
+        return Alt.lift(self.t.options)
 
-        return cast(List[Callable[[], A]], [inner])
+    def get_struct(self) -> Alt[OrderedObj[Field]]:
+        if self.t.is_a or self.t.is_enum:
+            return Alt.empty()
 
-    def when_struct(self, cb: Callable[[OrderedObj[Field]], A]) -> List[Callable[[], A]]:
-        if self.t.is_a or not self.t.is_enum:
-            return []
-
-        @functools.wraps(cb)
-        def inner() -> A:
-            return cast(A, cb(OrderedObj(dict(self.t.fields.items()))))
-
-        return cast(List[Callable[[], A]], [inner])
+        return Alt.lift(OrderedObj(dict(self.t.fields.items())))
 
 
 def get_material_type_deconstructor(all_types: OrderedObj[Type], t: Type) -> TypeDeconstructor:
     def search_type(type_decon: TypeDeconstructor) -> TypeDeconstructor:
-        def search_type_struct(ts_decon: TypeStructDeconstructor) -> Alt[TypeDeconstructor]:
-            def search_scalar(scalar_decon: ScalarDeconstructor) -> Alt[TypeDeconstructor]:
-                def lookup_alias(r: Reference) -> TypeDeconstructor:
-                    return search_type(
-                        TypeDeconstructor(all_types.obj[r.qualified_name]))
-
-                return Alt.mapply(scalar_decon.when_alias(lookup_alias))
-
-            return Alt.unfold(ts_decon.when_scalar(search_scalar))
-
-        return Alt.unfold(type_decon.when_type_struct(search_type_struct)).get_or(type_decon)
+        return Alt(
+            search_type(TypeDeconstructor(all_types.obj[alias.qualified_name]))
+            for type_struct in type_decon.get_typestruct()
+            for scalar in type_struct.get_scalar()
+            for alias in scalar.get_alias()
+        ).get_or(type_decon)
 
     return search_type(TypeDeconstructor(t))
 
 
 class GeneratorConfig:
     codegen_root: str
-    qualified_names_to_path: OutputTypeMapping[OrderedObj[Path]]
     name: str
+    path_mappings: Dict[str, Callable[[Reference], str]]
     params: GeneratorParams
 
     def __init__(self, params: GeneratorParams):
         self.params = params
         self.codegen_root = "codegen"
         self.name = "idol_py"
-        self.qualified_names_to_path = OutputTypeMapping(OrderedObj(), OrderedObj())
+        self.path_mappings = {}
 
     @staticmethod
-    def one_file_per_type(t: Type) -> str:
-        return t.named.as_qn_path
+    def one_file_per_type(r: Reference) -> str:
+        return r.as_qn_path
 
     @staticmethod
-    def one_file_per_module(t: Type) -> str:
-        return t.named.as_module_path
+    def one_file_per_module(r: Reference) -> str:
+        return r.as_module_path
 
     @staticmethod
-    def flat_namespace(t: Type) -> str:
-        return t.named.as_type_path
+    def flat_namespace(r: Reference) -> str:
+        return r.as_type_path
 
-    def vary_by_scaffold_inclusion(
-            self, without_scaffold: Callable[[Type], str], with_scaffold: Callable[[Type], str]
-    ) -> Callable[[Type], str]:
-        def vary(t: Type) -> str:
-            if t.named.qualified_name in self.params.scaffold_types.obj:
-                return with_scaffold(t)
-            return without_scaffold(t)
+    def in_codegen_dir(self, m: Callable[[Reference], str]) -> Callable[[Reference], str]:
+        def in_codegen_dir(r: Reference):
+            return f"{self.codegen_root}/{m(r)}"
 
-        return vary
+        return in_codegen_dir
 
-    def with_path_config(self,
-                         path_of_output_type: OutputTypeMapping[Callable[[Type], str]] = None):
-        if path_of_output_type is None:
-            path_of_output_type = OutputTypeMapping.lift(GeneratorConfig.one_file_per_type)
-
-        # Append codegen_root to all codegen outputs paths and map the path for all names
-        wrap_path_of_output: OutputTypeMapping[Callable[[OrderedObj[Type]], OrderedObj[Path]]] = \
-            path_of_output_type.apply_from(OutputTypeMapping(
-                codegen=lambda f: lambda o: o.map(lambda t: Path(f"{self.codegen_root}/{f(t)}")),
-                scaffold=lambda f: lambda o: o.map(lambda t: Path(f(t))),
-            ))
-
-        self.qualified_names_to_path = OutputTypeMapping.lift(self.params.all_types).apply_from(
-            wrap_path_of_output)
+    def with_path_mappings(self, path_mappings: Dict[str, Callable[[Reference], str]]):
+        self.path_mappings = path_mappings
 
 
-class OutputContext:
-    kind: OutputKind
-    path: Path
-    config: GeneratorConfig
+class IdentifiersAcc:
+    # path -> IdentityName -> sources mset
+    idents: OrderedObj[OrderedObj[mset]]
 
-    def __init__(self,
-                 config: GeneratorConfig,
-                 kind: OutputKind,
-                 path_or_qn: str):
-        self.kind = kind
+    def __init__(self):
+        self.idents = OrderedObj()
 
-        if kind == OutputKind.CODEGEN:
-            self.path = config.qualified_names_to_path.codegen.obj[path_or_qn]
-
-        if kind == OutputKind.SCAFFOLD:
-            self.path = config.qualified_names_to_path.scaffold.obj[path_or_qn]
-
-        if kind == OutputKind.SUPPLEMENTAL:
-            self.path = Path(path_or_qn)
-
-        self.config = config
-
-
-class ImportProvider:
-    context: OutputContext
-
-    def __init__(self, context: OutputContext):
-        self.context = context
-
-    @property
-    def path(self) -> Path:
-        return self.context.path
-
-    def import_from_abs(
-            self, abs: Path, ident: str, as_ident: str
-    ) -> OrderedObj[mset]:
-        as_import = ident
-        if ident != as_ident:
-            as_import = f"{ident} as {as_ident}"
-
-        return OrderedObj({abs.path: mset([as_import])})
-
-    def import_from_path(
-            self, path: Path, ident: str, as_ident: str
-    ) -> OrderedObj[mset]:
-        return self.import_from_abs(self.path.relative_path_to(path), ident, as_ident)
-
-    def import_from_codegen(
-            self, reference: Reference, output_type_kind: OutputTypeKind, ident: str, as_ident: str,
-    ) -> OrderedObj[mset]:
-        return self.import_from_path(
-            self.context.config.qualified_names_to_path.pick(output_type_kind).obj[
-                reference.qualified_name],
-            ident, as_ident)
-
-
-class OutputTypeBuilder:
-    imports: OrderedObj[mset]
-    body: List
-
-    def __init__(
-            self,
-            body: List = [],
-            imports: OrderedObj[mset] = OrderedObj()
-    ):
-        self.imports = imports
-        self.body = body
-
-    def __str__(self):
-        imports = scripter.render(OutputTypeBuilder.imports_obj_as_code(self.imports))
-        body = scripter.render(self.body)
-        return scripter.render((imports, body))
-
-    def concat(self, other: "OutputTypeBuilder") -> "OutputTypeBuilder":
-        return OutputTypeBuilder(
-            self.body + other.body,
-            self.imports + other.imports,
-        )
+    def concat(self, other: "IdentifiersAcc") -> "IdentifiersAcc":
+        return naive_object_concat(self, other)
 
     __add__ = concat
 
-    @staticmethod
-    def import_line(names: mset, path: str) -> str:
-        return scripter.from_import(Path(path).as_python_module_path, *sorted(names))
+    def add_identifier(self, into_path: Path, ident: str, source: str):
+        self.get_identifier_sources(into_path, ident).add(source)
 
-    @staticmethod
-    def imports_obj_as_code(imports: OrderedObj[mset]) -> List[str]:
-        return list(imports.filter(Path.is_path_local).map(OutputTypeBuilder.import_line).values())
+    def get_identifier_sources(self, path: Path, ident: str) -> mset:
+        return self.idents.set_default(path.path, OrderedObj()).set_default(ident, mset([]))
+
+    def unwrap_conflicts(self) -> List[Tuple[str, str, mset]]:
+        return [
+            err
+            for mod, path in self.idents
+            for err in Disjoint((path, ident, sources) for sources, ident in mod).unwrap_errors()
+        ]
 
 
-def render(config: GeneratorConfig,
-           output: OutputMapping[OrderedObj[Iterable], OrderedObj[Iterable]]) -> OrderedObj[
-    Disjoint[str]]:
-    def resolve_paths(
-            t: Tuple[OrderedObj[Iterable], OrderedObj[Path]]
-    ) -> OrderedObj[Iterable]:
-        files, path_config = t
-        return OrderedObj.from_iterable(
-            OrderedObj({path_config.obj[k].path: files.obj[k]})
-            for k in files.keys()
+class ImportsAcc:
+    # into_path -> from_path -> from_ident -> into_idents
+    imports: OrderedObj[OrderedObj[OrderedObj[mset]]]
+
+    def __init__(self):
+        self.imports = OrderedObj()
+
+    def concat(self, other: "ImportsAcc") -> "ImportsAcc":
+        return naive_object_concat(self, other)
+
+    __add__ = concat
+
+    def add_import(self, into_path: Path, from_path: ImportPath, from_ident: str, into_ident: str):
+        self.get_imported_as_idents(into_path, from_path, from_ident).add(into_ident)
+
+    def get_imported_as_idents(
+            self, into_path: Path, from_path: ImportPath, from_ident: str
+    ) -> mset:
+        return (
+            self.imports.obj.setdefault(into_path.path, OrderedObj())
+                .obj.setdefault(from_path.rel_path, OrderedObj())
+                .obj.setdefault(from_ident, mset([]))
         )
 
-    def render_script(
-            o: OrderedObj[Iterable]
-    ) -> OrderedObj[Disjoint[str]]:
-        return o.map(lambda i: Disjoint([scripter.render(i)]))
-
-    normalized_paths_output: OutputMapping[
-        OrderedObj[Iterable], OrderedObj[Iterable]] = OutputMapping(
-        output.type_mapping.zip(config.qualified_names_to_path) \
-            .apply_from(OutputTypeMapping.lift(resolve_paths)),
-        output.supplemental
-    )
-
-    rendered = normalized_paths_output.apply_from(
-        OutputMapping.lift(render_script))
-   
-    return rendered.type_mapping.join() + rendered.supplemental
+    def render(self, into_path: str) -> List[str]:
+        return [
+            scripter.from_import(
+                ImportPath.as_python_module_path(rel_path),
+                *[
+                    f"{from_ident} as {as_ident}"
+                    for as_idents, from_ident in decons
+                    for as_ident in as_idents
+                ],
+            )
+            for decons, rel_path in self.imports.obj[into_path]
+        ]
 
 
-def build(config: GeneratorConfig, output: OrderedObj[Disjoint[str]]) -> Callable[[str], None]:
-    all_errors = [
-        f"Generated {len(conflicts)} separate outputs for path {path}."
-        for c, path in output
-        for conflicts in c.unwrap_errors()
-    ]
+class GeneratorAcc:
+    idents: IdentifiersAcc
+    imports: ImportsAcc
+    content: OrderedObj[List]
+    group_of_path: OrderedObj[str]
 
-    if all_errors:
-        raise Exception("\n".join(all_errors))
+    def __init__(self, ):
+        self.idents = IdentifiersAcc()
+        self.imports = ImportsAcc()
+        self.content = OrderedObj()
+        self.group_of_path = OrderedObj()
 
+    def concat(self, other: "GeneratorAcc") -> "GeneratorAcc":
+        return naive_object_concat(self, other)
+
+    __add__ = concat
+
+    def acc(self) -> Acc["GeneratorAcc"]:
+        return Acc(self, GeneratorAcc())
+
+    def render(self) -> OrderedObj[str]:
+        return OrderedObj.from_iterable(
+            OrderedObj({path: scripter.render(self.imports.render(path) + self.content.obj[path])})
+            for path in self.group_of_path.keys()
+        )
+
+
+class GeneratorFolds:
+    config: GeneratorConfig
+
+    def __init__(self, config: GeneratorConfig):
+        self.config = config
+
+    def add_content(self, path: Path, content: Union[str, List[str]]) -> Tuple[None, GeneratorAcc]:
+        update = GeneratorAcc()
+
+        if isinstance(content, str):
+            content = [content]
+
+        update.content.update(path.path, content)
+        return update
+
+    def get_path_by_reference(
+            self, state: GeneratorAcc, **lookup: Dict[str, Reference]
+    ) -> Tuple[Path, GeneratorAcc]:
+        group, ref = Disjoint(lookup.items()).get_or_fail("Expected dict with one key!")
+        path = self.config.path_mappings[group](ref)
+        return self.get_path(state, **{group: path})
+
+    def get_path(self, state: GeneratorAcc, **lookup) -> Tuple[Path, GeneratorAcc]:
+        group, path = Disjoint(lookup.items()).get_or_fail("Expected dict with one key!")
+
+        # But don't create path twice if it is ok not to do so.
+
+        if state.group_of_path.obj.get(path, group) != group:
+            raise ValueError(
+                f"Conflict: Both a {state.group_of_path.obj[path]} and a {group} file found for path {path}"
+            )
+
+        update = GeneratorAcc()
+        update.group_of_path.set_default(path, group)
+        return Path(path), update
+
+    def import_ident(
+            self,
+            state: GeneratorAcc,
+            from_path: ImportPath,
+            into_path: Path,
+            ident: str,
+            as_ident: Optional[str] = None,
+    ) -> Tuple[str, GeneratorAcc]:
+        if as_ident is None:
+            as_ident = ident
+
+        if not state.idents.get_identifier_sources(from_path.path, ident):
+            raise ValueError(
+                f"identifier {ident} required by {into_path} does not exist in {from_path}"
+            )
+
+        imported_into = state.imports.get_imported_as_idents(into_path, from_path, ident)
+
+        if imported_into:
+            return sorted(imported_into)[0], GeneratorAcc()
+
+        acc = state.acc()
+        state, as_ident = acc(self.add_ident(state, into_path, as_ident, from_path))
+        state, _ = acc(self.add_imported(into_path, from_path, ident, as_ident))
+
+        return as_ident, acc.update
+
+    def add_imported(
+            self, into_path: Path, from_path: ImportPath, from_ident: str, as_ident: str
+    ) -> Tuple[None, GeneratorAcc]:
+        update = GeneratorAcc()
+        update.imports.add_import(into_path, from_path, from_ident, as_ident)
+        return None, update
+
+    def add_ident(
+            self, state: GeneratorAcc, into_path: Path, as_ident: str, source: ImportPath
+    ) -> Tuple[str, GeneratorAcc]:
+        as_ident = get_safe_ident(as_ident)
+
+        while state.idents.get_identifier_sources(into_path, as_ident):
+            as_ident += "_"
+
+        update = GeneratorAcc()
+        update.idents.get_identifier_sources(into_path, as_ident).add(source.path)
+        return as_ident, update
+
+
+def get_safe_ident(ident):
+    while ident in KEYWORDS:
+        ident += "_"
+    return ident
+
+
+KEYWORDS = {
+    "False",
+    "True",
+    "class",
+    "finally",
+    "is",
+    "return",
+    "None",
+    "continue",
+    "for",
+    "lambda",
+    "try",
+    "def",
+    "from",
+    "nonlocal",
+    "while",
+    "and",
+    "del",
+    "global",
+    "not",
+    "with",
+    "as",
+    "elif",
+    "if",
+    "or",
+    "yield",
+    "assert",
+    "else",
+    "import",
+    "pass",
+    "break",
+    "except",
+    "in",
+    "raise",
+}
+
+
+def build(config: GeneratorConfig, output: OrderedObj[str]) -> Callable[[str], None]:
     build_env = BuildEnv(config.name, config.codegen_root)
-    for file, path in output:
-        contents = file.get_or("")
+    for contents, path in output:
         if contents:
             build_env.write_build_file(path, contents)
 
