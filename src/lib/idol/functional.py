@@ -1,4 +1,4 @@
-from typing import Dict, TypeVar, Generic, Callable, Tuple, List, Iterable, Any, Optional, Union
+from typing import Dict, TypeVar, Generic, Callable, Tuple, List, Iterable, Any, Optional, Iterator
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -69,7 +69,7 @@ class OrderedObj(Generic[T]):
         if k not in self.obj:
             self.ordering.append(k)
             self.obj[k] = v
-        return self
+        return v
 
     def __iter__(self) -> Iterable[Tuple[T, str]]:
         for k in self.ordering:
@@ -104,29 +104,7 @@ class OrderedObj(Generic[T]):
         return OrderedObj(obj, new_ordering)
 
 
-class Acc(Generic[A]):
-    state: A
-    update: A
-
-    def __init__(self, state: A, update: A):
-        self.state = state
-        self.update = update
-
-    def concat(self, other: "Union[A, Acc[A]]") -> "Acc[A]":
-        if isinstance(other, Acc):
-            other = other.update
-        return Acc(self.state + other, self.update + other)
-
-    __add__ = concat
-
-    def __call__(self, other: "Tuple[B, A]") -> Tuple[A, B]:
-        res, update = other
-        self.state += update
-        self.update += update
-        return self.state, res
-
-
-class Alt(Generic[A]):
+class Conjunct(Generic[A]):
     v: List[A]
 
     def __init__(self, v: Iterable[A]):
@@ -135,8 +113,47 @@ class Alt(Generic[A]):
         self.v = v
 
     @classmethod
+    def lift(cls, v: A) -> "Conjunct[A]":
+        return cls((v,))
+
+    @classmethod
+    def empty(cls) -> "Conjunct[Any]":
+        return cls([])
+
+    def __iter__(self) -> Iterable[List[T]]:
+        if self:
+            yield self.v
+
+    def __bool__(self):
+        return len(self.v)
+
+    def __concat__(self, other: "Conjunct[A]") -> "Conjunct[A]":
+        return Conjunct(self.v + other.v)
+
+
+class Alt(Generic[A]):
+    v: List[A]
+
+    def __init__(self, v: Iterable[A]):
+        if not isinstance(v, list):
+
+            def takeone():
+                for i in v:
+                    yield i
+                    break
+
+            v = list(takeone())
+        self.v = v
+
+    @classmethod
     def lift(cls, v: A) -> "Alt[A]":
         return cls((v,))
+
+    @classmethod
+    def lift_optional(cls, v: Optional[A]) -> "Alt[A]":
+        if v is None:
+            return cls.empty()
+        return cls.lift(v)
 
     @classmethod
     def empty(cls) -> "Alt[Any]":
@@ -146,63 +163,96 @@ class Alt(Generic[A]):
         return self.v[0]
 
     def get_or(self, d: A) -> A:
-        if not self.has_one:
+        if not self:
             return d
         return self.unwrap()
 
     def get_or_fail(self, msg: str) -> A:
-        if self.has_one:
+        if self:
             return self.unwrap()
         raise ValueError(msg)
 
-    def __iter__(self):
-        """
-        Yields at most one item
-        :return:
-        """
-        for v in self.v:
-            yield v
-            return
-
-    @property
-    def has_one(self):
-        return len(self.v) > 0
-
-    @property
-    def has_many(self):
-        return len(self.v) > 1
-
-    def map(self, f: Callable[[A], B]) -> "Alt[B]":
-        return Alt([f(i) for i in self.v])
+    def __iter__(self) -> Iterable[A]:
+        if self:
+            yield self.unwrap()
 
     def concat(self, other: "Alt[A]") -> "Alt[A]":
-        return Alt(self.v + other.v)
+        if self:
+            return self
+        return other
 
     __add__ = concat
 
+    def __bool__(self):
+        return len(self.v) > 0
 
-class Disjoint(Alt):
+
+class Disjoint(Generic[A]):
+    v: List[A]
+
+    def __init__(self, v: Iterable[A]):
+        if not isinstance(v, list):
+            v = list(v)
+        self.v = v
+
+    @classmethod
+    def lift(cls, v: A) -> "Disjoint[A]":
+        return cls((v,))
+
+    @classmethod
+    def lift_optional(cls, v: Optional[A]) -> "Disjoint[A]":
+        if v is None:
+            return cls.empty()
+        return cls.lift(v)
+
+    @classmethod
+    def empty(cls) -> "Disjoint[Any]":
+        return cls([])
+
+    def get_or(self, d: A) -> A:
+        if not self:
+            return d
+        return self.unwrap()
+
+    def get_or_fail(self, msg: str) -> A:
+        if self:
+            return self.unwrap()
+        raise ValueError(msg)
+
     def unwrap(self) -> A:
-        if self.has_many:
+        if len(self.v) > 1:
             raise ValueError(f"Unexpected conflict found!")
 
-        return super(Disjoint, self).unwrap()
+        return self.v[0]
 
-    def unwrap_errors(self) -> List[A]:
-        if self.has_many:
-            return self.v
+    def unwrap_errors(self) -> Iterator[List[A]]:
+        if len(self.v) > 1:
+            yield self.v
 
-        return []
+    def __iter__(self) -> Iterable[A]:
+        if len(self.v) > 0:
+            yield self.unwrap()
+
+    def concat(self, other: "Disjoint[A]") -> "Disjoint[A]":
+        return Disjoint(self.v + other.v)
+
+    __add__ = concat
+
+    def __bool__(self):
+        return len(self.v) > 0
 
 
-def naive_object_concat(self, other: object):
-    new_dict = dict(**self.__dict__)
+def naive_object_update(self, other: object) -> None:
+    self_dict = self.__dict__
     for k, v in other.__dict__.items():
-        if k in new_dict:
-            new_dict[k] += v
+        if k in self_dict:
+            self_dict[k] += v
         else:
-            new_dict[k] = v
+            self_dict[k] = v
 
+
+def naive_object_concat(self: A, other: A) -> A:
     result = self.__class__.__new__()
-    result.__dict__ = new_dict
+    result.__dict__ = dict(**self.__dict__)
+    naive_object_update(result, other)
     return result

@@ -95,6 +95,23 @@ class Reference(_Struct):
     def as_module_path(self):
         return "/".join(self.snakify().module_name.split(".")) + ".py"
 
+    @property
+    def as_qualified_ident(self) -> str:
+        cameled = self.camelify()
+        return cameled.module_name[0].upper() + cameled.module_name[1:] + cameled.type_name
+
+    def camelify(self) -> "Reference":
+        def camelify(name):
+            return "".join(p[0].upper() + p[1:] for p in re.split("[._]", name) if p)
+
+        return Reference(
+            {
+                "module_name": camelify(self.module_name),
+                "qualified_name": camelify(self.qualified_name),
+                "type_name": camelify(self.type_name),
+            }
+        )
+
     def snakify(self) -> "Reference":
         def snakify(name):
             first_pass = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
