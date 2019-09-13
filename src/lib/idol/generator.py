@@ -1,13 +1,10 @@
 import idol.scripter as scripter
-from typing import Dict, List, Union, TypeVar, Callable, Tuple, Any, Optional, cast, Generic
+from typing import Dict, List, Union, TypeVar, Callable, Tuple, Any, Optional
 from .build_env import BuildEnv
-from .functional import OrderedObj, Alt, mset, Disjoint, naive_object_concat, Acc, Conjunct
-from .schema import Module, Type, Reference, PrimitiveType, TypeStruct, StructKind, Field
+from .functional import OrderedObj, Alt, mset, Disjoint, naive_object_concat, Conjunct
+from .schema import Module, Type, Reference, PrimitiveType, TypeStruct, StructKind
 
 A = TypeVar("A")
-B = TypeVar("B")
-C = TypeVar("C")
-D = TypeVar("D")
 
 
 class Path:
@@ -105,25 +102,46 @@ class GeneratorParams:
         self.options = options
 
 
-class Tags:
+class TypeStructContext:
     field_tags: List[str]
     type_tags: List[str]
+    is_type_bound: bool
 
-    def __init__(self, field_tags=[], type_tags=[]):
-        self.field_tags = field_tags
-        self.type_tags = type_tags
+    @property
+    def is_declarable(self):
+        return self.is_type_bound
+
+    def __init__(self, field_tags: Optional[List[str]] = None,
+                 type_tags: Optional[List[str]] = None):
+        self.field_tags = field_tags or []
+        self.type_tags = type_tags or []
+        self.is_type_bound = type_tags is not None and field_tags is None
+
+
+class ScalarContext:
+    is_contained: bool
+    typestruct_context: TypeStructContext
+
+    def __init__(self, typestruct_context: TypeStructContext, is_contained: bool):
+        self.typestruct_context = typestruct_context
+        self.is_contained = is_contained
+
+    @property
+    def is_type_bound(self):
+        return self.typestruct_context.is_type_bound
+
+    @property
+    def is_declarable(self):
+        return not self.is_contained and self.is_type_bound
 
 
 class ScalarDeconstructor:
     type_struct: TypeStruct
-    tags: Tags
+    context: ScalarContext
 
-    def __init__(self, type_struct: TypeStruct, tags: Tags = None):
-        if tags is None:
-            tags = Tags()
-
+    def __init__(self, type_struct: TypeStruct, context: ScalarContext):
         self.type_struct = type_struct
-        self.tags = tags
+        self.context = context
 
     def get_primitive(self) -> Alt[PrimitiveType]:
         if self.type_struct.is_alias or self.type_struct.is_literal:
@@ -146,30 +164,29 @@ class ScalarDeconstructor:
 
 class TypeStructDeconstructor:
     type_struct: TypeStruct
-    tags: Tags
+    context: TypeStructContext
 
-    def __init__(self, type_struct: TypeStruct, tags: Tags = None):
-        if tags is None:
-            tags = Tags()
+    def __init__(self, type_struct: TypeStruct, context: TypeStructContext):
         self.type_struct = type_struct
+        self.context = context
 
     def get_scalar(self) -> Alt[ScalarDeconstructor]:
         if self.type_struct.struct_kind != StructKind.SCALAR:
             return Alt.empty()
 
-        return Alt.lift(ScalarDeconstructor(self.type_struct, self.tags))
+        return Alt.lift(ScalarDeconstructor(self.type_struct, ScalarContext(self.context, False)))
 
     def get_repeated(self) -> Alt[ScalarDeconstructor]:
         if self.type_struct.struct_kind != StructKind.REPEATED:
             return Alt.empty()
 
-        return Alt.lift(ScalarDeconstructor(self.type_struct, self.tags))
+        return Alt.lift(ScalarDeconstructor(self.type_struct, ScalarContext(self.context, False)))
 
     def get_map(self) -> Alt[ScalarDeconstructor]:
         if self.type_struct.struct_kind != StructKind.MAP:
             return Alt.empty()
 
-        return Alt.lift(ScalarDeconstructor(self.type_struct, self.tags))
+        return Alt.lift(ScalarDeconstructor(self.type_struct, ScalarContext(self.context, False)))
 
 
 class TypeDeconstructor:
@@ -182,7 +199,8 @@ class TypeDeconstructor:
         if not self.t.is_a:
             return Alt.empty()
 
-        return Alt.lift(TypeStructDeconstructor(self.t.is_a, Tags(type_tags=self.t.tags)))
+        return Alt.lift(
+            TypeStructDeconstructor(self.t.is_a, TypeStructContext(type_tags=self.t.tags)))
 
     def get_enum(self) -> Alt[List[str]]:
         if self.t.is_a or not self.t.is_enum:
@@ -197,7 +215,7 @@ class TypeDeconstructor:
         return Alt.lift(
             OrderedObj(
                 {
-                    k: TypeStructDeconstructor(v.type_struct, Tags(field_tags=v.tags))
+                    k: TypeStructDeconstructor(v.type_struct, TypeStructContext(field_tags=v.tags))
                     for k, v in self.t.fields.items()
                 }
             )

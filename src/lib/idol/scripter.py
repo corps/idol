@@ -52,8 +52,8 @@ def invocation(callable: str, *args, **kwds):
     return f"{callable}({args})"
 
 
-def index_access(value: str, key: str):
-    return f"{value}[{key}]"
+def index_access(value: str, *keys):
+    return f"{value}[{', '.join(keys)}]"
 
 
 def prop_access(value: str, *props):
