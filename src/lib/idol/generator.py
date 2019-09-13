@@ -1,7 +1,7 @@
 import idol.scripter as scripter
 from typing import Dict, List, Union, TypeVar, Callable, Tuple, Any, Optional
 from .build_env import BuildEnv
-from .functional import OrderedObj, Alt, mset, Disjoint, naive_object_concat, Conjunct
+from .functional import OrderedObj, Alt, StringSet, Disjoint, naive_object_concat, Conjunct
 from .schema import Module, Type, Reference, PrimitiveType, TypeStruct, StructKind
 
 A = TypeVar("A")
@@ -111,8 +111,9 @@ class TypeStructContext:
     def is_declarable(self):
         return self.is_type_bound
 
-    def __init__(self, field_tags: Optional[List[str]] = None,
-                 type_tags: Optional[List[str]] = None):
+    def __init__(
+            self, field_tags: Optional[List[str]] = None, type_tags: Optional[List[str]] = None
+    ):
         self.field_tags = field_tags or []
         self.type_tags = type_tags or []
         self.is_type_bound = type_tags is not None and field_tags is None
@@ -200,7 +201,8 @@ class TypeDeconstructor:
             return Alt.empty()
 
         return Alt.lift(
-            TypeStructDeconstructor(self.t.is_a, TypeStructContext(type_tags=self.t.tags)))
+            TypeStructDeconstructor(self.t.is_a, TypeStructContext(type_tags=self.t.tags))
+        )
 
     def get_enum(self) -> Alt[List[str]]:
         if self.t.is_a or not self.t.is_enum:
@@ -246,6 +248,9 @@ class GeneratorConfig:
         self.name = "idol_py"
         self.path_mappings = {}
 
+    def paths_of(self, **k: Dict[str, Reference]) -> Dict[str, str]:
+        return {group: self.path_mappings[group](ref) for group, ref in k.items()}
+
     @staticmethod
     def one_file_per_type(r: Reference) -> str:
         return r.as_qn_path
@@ -270,7 +275,7 @@ class GeneratorConfig:
 
 class IdentifiersAcc:
     # path -> IdentityName -> sources mset
-    idents: OrderedObj[OrderedObj[mset]]
+    idents: OrderedObj[OrderedObj[StringSet]]
 
     def __init__(self):
         self.idents = OrderedObj()
@@ -281,24 +286,24 @@ class IdentifiersAcc:
     __add__ = concat
 
     def add_identifier(self, into_path: Path, ident: str, source: str):
-        self.idents.set_default(into_path.path, OrderedObj()).set_default(ident, mset([])).add(
-            source
+        self.idents += OrderedObj({into_path.path: OrderedObj({ident: StringSet([source])})})
+
+    def get_identifier_sources(self, path: Path, ident: str) -> Alt[StringSet]:
+        return Alt(
+            idents
+            for path_idents in self.idents.get(path.path)
+            for idents in path_idents.get(ident)
         )
 
-    def get_identifier_sources(
-            self, path: Path, ident: str, default: Optional[mset] = None
-    ) -> mset:
-        return self.idents.obj.get(path.path, OrderedObj()).obj.get(ident, default or mset([]))
-
-    def unwrap_conflicts(self) -> Disjoint[Tuple[str, str, mset]]:
+    def unwrap_conflicts(self) -> Disjoint[Tuple[str, str, StringSet]]:
         return Disjoint(
-            (path, ident, sources) for mod, path in self.idents for sources, ident in mod
+            (path, ident, sources) for path, mod in self.idents for ident, sources in mod
         )
 
 
 class ImportsAcc:
     # into_path -> from_path -> from_ident -> into_idents
-    imports: OrderedObj[OrderedObj[OrderedObj[mset]]]
+    imports: OrderedObj[OrderedObj[OrderedObj[StringSet]]]
 
     def __init__(self):
         self.imports = OrderedObj()
@@ -309,42 +314,54 @@ class ImportsAcc:
     __add__ = concat
 
     def add_import(self, into_path: Path, from_path: ImportPath, from_ident: str, into_ident: str):
-        self.get_imported_as_idents(into_path, from_path, from_ident).add(into_ident)
+        self.imports += OrderedObj(
+            {
+                into_path.path: OrderedObj(
+                    {from_path.rel_path: OrderedObj({from_ident: StringSet([into_ident])})}
+                )
+            }
+        )
 
     def get_imported_as_idents(
             self, into_path: Path, from_path: ImportPath, from_ident: str
-    ) -> mset:
-        return (
-            self.imports.obj.setdefault(into_path.path, OrderedObj())
-                .obj.setdefault(from_path.rel_path, OrderedObj())
-                .obj.setdefault(from_ident, mset([]))
+    ) -> Alt[StringSet]:
+        return Alt(
+            into_idents
+            for imported_from in self.imports.get(into_path.path)
+            for from_idents in imported_from.get(from_path.path.path)
+            for into_idents in from_idents.get(from_ident)
         )
 
     def render(self, into_path: str) -> List[str]:
-        return [
-            scripter.from_import(
-                ImportPath.as_python_module_path(rel_path),
-                *[
-                    f"{from_ident} as {as_ident}"
-                    for as_idents, from_ident in decons
-                    for as_ident in as_idents
-                ],
-            )
-            for decons, rel_path in self.imports.obj[into_path]
-        ]
+        return Alt(
+            [
+                scripter.from_import(
+                    ImportPath.as_python_module_path(rel_path),
+                    *[
+                        f"{from_ident} as {as_ident}" if from_ident != as_idents else from_ident
+                        for as_idents, from_ident in decons
+                        for as_ident in as_idents
+                    ],
+                )
+                for rel_path, decons in imports
+            ]
+            for imports in self.imports.get(into_path)
+        ).get_or([])
 
 
 class GeneratorAcc:
     idents: IdentifiersAcc
     imports: ImportsAcc
     content: OrderedObj[List]
-    group_of_path: OrderedObj[mset]
+    group_of_path: OrderedObj[StringSet]
+    uniq: int
 
     def __init__(self, ):
         self.idents = IdentifiersAcc()
         self.imports = ImportsAcc()
         self.content = OrderedObj()
         self.group_of_path = OrderedObj()
+        self.uniq = 0
 
     def concat(self, other: "GeneratorAcc") -> "GeneratorAcc":
         return naive_object_concat(self, other)
@@ -370,154 +387,100 @@ class GeneratorAcc:
 
         return self
 
-    def apply(self, other: Tuple[A, "GeneratorAcc"]) -> "A":
-        res, update = other
-        naive_object_concat(self, update)
-        return res
-
-    def update(self, other: "GeneratorAcc"):
-        naive_object_concat(self, other)
-
-    def render(self) -> OrderedObj[str]:
+    def render(self, comment_headers=Dict[str, List]) -> OrderedObj[str]:
         return OrderedObj.from_iterable(
-            OrderedObj({path: scripter.render(self.imports.render(path) + self.content.obj[path])})
-            for path in self.group_of_path.keys()
+            OrderedObj(
+                {
+                    path: scripter.render(
+                        scripter.comments(line
+                                          for group in groups
+                                          if group in comment_headers
+                                          for lines in comment_headers[group]
+                                          for line in lines
+                                          ) +
+                        self.imports.render(path) + self.content.get(path).get_or([])
+                    )
+                }
+            )
+            for path, groups in self.group_of_path
         )
 
-
-class GeneratorFolds:
-    config: GeneratorConfig
-
-    def __init__(self, config: GeneratorConfig):
-        self.config = config
-
-    def add_content(self, path: Path, content: Union[str, List[str]]) -> Tuple[None, GeneratorAcc]:
-        update = GeneratorAcc()
-
+    def add_content(self, path: Path, content: Union[str, List[str]]):
         if isinstance(content, str):
             content = [content]
 
-        update.content.update(path.path, content)
-        return None, update
+        self.content += OrderedObj({path.path: content})
 
-    def get_path_by_reference(
-            self, state: GeneratorAcc, **lookup: Dict[str, Reference]
-    ) -> Tuple[Path, GeneratorAcc]:
-        group, ref = Disjoint(lookup.items()).get_or_fail("Expected dict with one key!")
-        path = self.config.path_mappings[group](ref)
-        return self.get_path(state, **{group: path})
-
-    def get_path(self, state: GeneratorAcc, **lookup) -> Tuple[Path, GeneratorAcc]:
-        group, path = Disjoint(lookup.items()).get_or_fail("Expected dict with one key!")
-        groups = state.group_of_path.obj.get(path, mset([group]))
+    def reserve_path(self, **lookup) -> Path:
+        group, path = Disjoint(lookup.items()).get_or_fail("reserve_path requires one kwd!")
+        groups = self.group_of_path.get(path).get_or(StringSet([group]))
 
         if group in groups:
-            update = GeneratorAcc()
-            update.group_of_path.set_default(path, mset([group]))
-            return Path(path), update
+            self.group_of_path += OrderedObj({path: StringSet([group])})
+            return Path(path)
 
         raise ValueError(
             f"Conflict:  cannot create file {path} for group {group}, already exists for {' '.join(groups)}"
         )
 
     def import_ident(
-            self,
-            state: GeneratorAcc,
-            into_path: Path,
-            exported: Exported,
-            as_ident: Optional[str] = None,
-    ) -> Tuple[str, GeneratorAcc]:
+            self, into_path: Path, exported: Exported, as_ident: Optional[str] = None
+    ) -> str:
         ident = exported.ident
         if as_ident is None:
             as_ident = ident
 
         from_path = into_path.import_path_to(exported.path)
 
-        if not from_path.is_module and not state.idents.get_identifier_sources(
+        if not from_path.is_module and not self.idents.get_identifier_sources(
                 from_path.path, ident
         ):
             raise ValueError(
                 f"identifier {ident} required by {into_path} does not exist in {from_path}"
             )
 
-        imported_into = state.imports.get_imported_as_idents(into_path, from_path, ident)
+        imported_as = self.imports.get_imported_as_idents(into_path, from_path, ident)
 
-        if imported_into:
-            return sorted(imported_into)[0], GeneratorAcc()
+        if imported_as:
+            return sorted(imported_as.unwrap())[0]
 
-        update = GeneratorAcc()
-        as_ident = update.apply(self.add_ident(state, into_path, as_ident, from_path))
-        update.apply(self.add_imported(into_path, from_path, ident, as_ident))
+        as_ident = self.create_ident(into_path, as_ident, from_path)
+        self.imports.add_import(into_path, from_path, ident, as_ident)
 
-        return as_ident, update
+        return as_ident
 
-    def add_imported(
-            self, into_path: Path, from_path: ImportPath, from_ident: str, as_ident: str
-    ) -> Tuple[None, GeneratorAcc]:
-        update = GeneratorAcc()
-        update.imports.add_import(into_path, from_path, from_ident, as_ident)
-        return None, update
-
-    def add_ident(
-            self, state: GeneratorAcc, into_path: Path, as_ident: str, source: ImportPath = None
-    ) -> Tuple[str, GeneratorAcc]:
+    def create_ident(self, into_path: Path, as_ident: str, source: ImportPath = None) -> str:
         if source is None:
             source = into_path.import_path_to(into_path)
 
         as_ident = get_safe_ident(as_ident)
 
-        while source not in state.idents.get_identifier_sources(
-                into_path, as_ident, mset([source])
+        while source not in self.idents.get_identifier_sources(into_path, as_ident).get_or(
+                StringSet([source or ""])
         ):
             as_ident += "_"
 
-        update = GeneratorAcc()
-        update.idents.add_identifier(into_path, as_ident, source.path.path)
-        return as_ident, update
+        self.idents.add_identifier(into_path, as_ident, source.path.path)
+        return as_ident
 
-    def declare_ident(
-            self, state: GeneratorAcc, path: Path, as_ident: str, assigned_expr: str
-    ) -> Tuple[str, GeneratorAcc]:
-        update = GeneratorAcc()
-        as_ident = update.apply(self.add_ident(state, path, as_ident))
+    def add_content_with_ident(
+            self, path: Path, ident: str, scriptable: Callable[[str], Union[str, List]]
+    ) -> str:
+        self.idents.add_identifier(path, scriptable(ident), self.get_unique_source(path))
+        self.add_content(path, ident)
+        return ident
 
-        update.apply(self.add_content(path, [scripter.assignment(as_ident, assigned_expr)]))
-
-        return as_ident, update
-
-    def declare_and_shadow_ident(
-            self, state: GeneratorAcc, path: Path, as_ident: str, assigned_expr: str,
-            shadow_expr: str
-    ) -> Tuple[str, GeneratorAcc]:
-        update = GeneratorAcc()
-        as_ident = update.apply(self.add_ident(state, path, as_ident))
-
-        update.apply(
-            self.add_content(
-                path,
-                [
-                    scripter.assignment(as_ident, assigned_expr),
-                    scripter.assignment(
-                        scripter.index_access(
-                            scripter.invocation("locals"), scripter.literal(as_ident)
-                        ),
-                        shadow_expr,
-                    ),
-                ],
-            )
-        )
-
-        return as_ident, update
+    def get_unique_source(self, path: Path) -> str:
+        self.uniq += 1
+        return path.path + "." + str(self.uniq)
 
 
 class GeneratorContext:
     state: GeneratorAcc
-    folds: GeneratorFolds
     config: GeneratorConfig
 
     def __init__(self, state: GeneratorAcc, config: GeneratorConfig):
         self.state = state
-        self.folds = GeneratorFolds(config)
         self.config = config
 
 
@@ -532,10 +495,6 @@ class GeneratorFileContext:
     @property
     def state(self) -> GeneratorAcc:
         return self.parent.state
-
-    @property
-    def folds(self) -> GeneratorFolds:
-        return self.parent.folds
 
     @property
     def config(self) -> GeneratorConfig:

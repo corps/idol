@@ -1,4 +1,4 @@
-from typing import Iterable, List, Dict
+from typing import Iterable, List, Dict, Optional, Callable
 
 import black
 
@@ -35,14 +35,37 @@ def flatten_inner(inner, indent=0):
     yield str(inner)
 
 
-def comment(s: str):
-    s = s.replace("#", "\\#")
-    return f"# {s}"
+def comments(comments: Iterable[str]) -> List:
+    return [
+        f"# {s}"
+        for s in comments
+        for s in [s.replace("#", "\\#")]
+    ]
 
 
-def assignment(target: str, value: str, typing=None) -> str:
+def assignment(ident: str, expr: str, typing=None) -> str:
     typing = f": {typing}" if typing else ""
-    return f"{target}{typing} = {value}"
+    return f"{ident}{typing} = {expr}"
+
+
+def assignable(expr: str, typing=None) -> Callable[[str], str]:
+    return lambda ident: assignment(ident, expr, typing)
+
+
+def shadow_assignment(ident: str, expr: str) -> List:
+    return [
+        assignment(ident, expr),
+        assignment(index_access(invocation("locals"), literal(ident)), expr),
+    ]
+
+
+def declare_and_shadow(
+        declaration: str, shadow_expr: str, dec_typing: Optional[str] = None
+) -> Callable[[str], List]:
+    def scriptable(ident: str):
+        return [assignment(ident, declaration, dec_typing)] + shadow_assignment(ident, shadow_expr)
+
+    return scriptable
 
 
 def invocation(callable: str, *args, **kwds):
@@ -52,8 +75,8 @@ def invocation(callable: str, *args, **kwds):
     return f"{callable}({args})"
 
 
-def index_access(value: str, *keys):
-    return f"{value}[{', '.join(keys)}]"
+def index_access(expr: str, *keys):
+    return f"{expr}[{', '.join(keys)}]"
 
 
 def prop_access(value: str, *props):
@@ -84,12 +107,12 @@ def class_dec(class_name: str, super_classes: Iterable[str], body: Iterable) -> 
 
 
 def func_dec(
-    func_name: str,
-    args: List[str] = [],
-    body: Iterable = ["pass"],
-    kwds: Dict[str, str] = {},
-    typing: str = "",
-    decorators: Iterable[str] = [],
+        func_name: str,
+        args: List[str] = [],
+        body: Iterable = ["pass"],
+        kwds: Dict[str, str] = {},
+        typing: str = "",
+        decorators: Iterable[str] = [],
 ) -> List:
     if typing:
         typing = f" -> {typing}"

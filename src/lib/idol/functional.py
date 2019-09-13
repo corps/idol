@@ -1,4 +1,4 @@
-from typing import Dict, TypeVar, Generic, Callable, Tuple, List, Iterable, Any, Optional, Iterator
+from typing import TypeVar, Generic, Tuple, List, Iterable, Any, Optional, Iterator, Mapping, Dict
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -8,16 +8,22 @@ T = TypeVar("T")
 R = TypeVar("R")
 
 
-class mset(set):
+class StringSet(set):
+    def add(self, element: str):
+        super(StringSet, self).add(element)
+
+    def __init__(self, items: Iterable[str] = None):
+        super(StringSet, self).__init__(items or [])
+
     __add__ = set.union
     concat = __add__
 
 
 class OrderedObj(Generic[T]):
-    obj: Dict[str, T]
+    obj: Mapping[str, T]
     ordering: List[str]
 
-    def __init__(self, obj: Dict[str, T] = None, ordering: List[str] = None):
+    def __init__(self, obj: Mapping[str, T] = None, ordering: List[str] = None):
         self.obj = obj or {}
         self.ordering = ordering or sorted(self.obj.keys())
 
@@ -59,49 +65,14 @@ class OrderedObj(Generic[T]):
         for k in self.ordering:
             yield self.obj[k]
 
-    def update(self, k: str, v: T) -> "OrderedObj[T]":
-        if k not in self.obj:
-            self.ordering.append(k)
-        self.obj[k] = v
-        return self
-
-    def set_default(self, k: str, v: T) -> T:
-        if k not in self.obj:
-            self.ordering.append(k)
-            self.obj[k] = v
-        return v
-
-    def __iter__(self) -> Iterable[Tuple[T, str]]:
+    def __iter__(self) -> Iterable[Tuple[str, T]]:
         for k in self.ordering:
-            yield self.obj[k], k
+            yield k, self.obj[k]
 
-    def map(self, f: Callable[[T, str], R]) -> "OrderedObj[R]":
-        obj: Dict[str, R] = {}
-        for k in self.ordering:
-            obj[k] = f(self.obj[k], k)
-        return OrderedObj(obj, self.ordering)
-
-    def filter(self, f: Callable[[T], bool]) -> "OrderedObj[T]":
-        obj: Dict[str, T] = {}
-        ordering: List[str] = []
-        for k in self.ordering:
-            if f(self.obj[k]):
-                obj[k] = self.obj[k]
-                ordering.append(k)
-        return OrderedObj(obj, ordering)
-
-    def bimap(self, f: Callable[[T, str], Tuple[str, R]]) -> "OrderedObj[R]":
-        obj: Dict[str, R] = {}
-        new_ordering = []
-        for old_k in self.ordering:
-            new_k, r = f(self.obj[old_k], old_k)
-            if new_k in obj:
-                raise ValueError(f"bimap invariant broken: Key {new_k} was not a unique output.")
-
-            obj[new_k] = r
-            new_ordering.append(new_k)
-
-        return OrderedObj(obj, new_ordering)
+    def get(self, k: str) -> "Alt[T]":
+        if k in self.obj:
+            return Alt.lift(self.obj[k])
+        return Alt.empty()
 
 
 class Conjunct(Generic[A]):

@@ -226,6 +226,8 @@ class Module(_Struct):
     )
 
     def types_as_ordered_obj(self) -> OrderedObj[Type]:
-        return OrderedObj(self.types_by_name, self.types_dependency_ordering).bimap(
-            lambda t, _: (t.named.qualified_name, t)
+        return OrderedObj.from_iterable(
+            OrderedObj({t.named.qualified_name: t})
+            for n in self.types_dependency_ordering
+            for t in [self.types_by_name[n]]
         )
