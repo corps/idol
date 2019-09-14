@@ -341,7 +341,7 @@ class ImportsAcc:
         return Alt(
             into_idents
             for imported_from in self.imports.get(into_path.path)
-            for from_idents in imported_from.get(from_path.path.path)
+            for from_idents in imported_from.get(from_path.rel_path)
             for into_idents in from_idents.get(from_ident)
         )
 
@@ -454,10 +454,11 @@ class GeneratorAcc:
                 f"identifier {ident} required by {into_path} does not exist in {from_path}"
             )
 
-        imported_as = self.imports.get_imported_as_idents(into_path, from_path, ident)
+        imported_as = self.imports.get_imported_as_idents(into_path, from_path, ident).get_or(StringSet([]))
+        print(f"import {into_path.path} {exported.path.path} {from_path.path.path} {ident} {imported_as}")
 
         if imported_as:
-            return sorted(imported_as.unwrap())[0]
+            return sorted(imported_as)[0]
 
         as_ident = self.create_ident(into_path, as_ident, from_path)
         self.imports.add_import(into_path, from_path, ident, as_ident)

@@ -361,7 +361,7 @@ class IdolPyCodegenScalar(GeneratorFileContext):
             self.state.import_ident(
                 self.path,
                 codegen_type,
-                self.typestruct.codegen_file.default_type_name + "Codegen",
+                "Codegen" + codegen_type.ident,
             )
             for codegen_file in alias_codegen_file
             for codegen_type in codegen_file.declared_type_ident
@@ -372,7 +372,7 @@ class IdolPyCodegenScalar(GeneratorFileContext):
             self.state.import_ident(
                 self.path,
                 scaffold_type,
-                self.typestruct.codegen_file.default_type_name + "Scaffold",
+                "Scaffold" + scaffold_type.ident,
             )
             for scaffold_file in alias_scaffold_file
             for scaffold_type in scaffold_file.declared_type_ident
