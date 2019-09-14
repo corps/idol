@@ -564,7 +564,7 @@ KEYWORDS = {
 
 def build(config: GeneratorConfig, output: OrderedObj[str]) -> Callable[[str], None]:
     build_env = BuildEnv(config.name, config.codegen_root)
-    for contents, path in output:
+    for path, contents in output:
         if contents:
             build_env.write_build_file(path, contents)
 
