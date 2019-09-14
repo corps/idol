@@ -292,10 +292,11 @@ class IdentifiersAcc:
 
     __add__ = concat
 
-    def add_identifier(self, into_path: Path, ident: str, source: str = None):
+    def add_identifier(self, into_path: Path, ident: str, source: str = None) -> str:
         if source is None:
             source = into_path.path
         self.idents += OrderedObj({into_path.path: OrderedObj({ident: StringSet([source])})})
+        return ident
 
     def get_identifier_sources(self, path: Path, ident: str) -> Alt[StringSet]:
         return Alt(
