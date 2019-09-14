@@ -309,7 +309,7 @@ class IdolPyCodegenTypeStruct(GeneratorFileContext):
         )
 
         return Alt(
-            scripter.invocation(scripter.prop_access(con, "of"), scalar_con)
+            scripter.invocation(scripter.prop_access(con, "of"), scalar_con(self.state, self.path))
             for con in container_con
             for scalar in self.inner_scalar
             for scalar_con in scalar.constructor_expr

@@ -15,7 +15,9 @@ class StringSet(set):
     def __init__(self, items: Iterable[str] = None):
         super(StringSet, self).__init__(items or [])
 
-    __add__ = set.union
+    def __add__(self, other):
+        return StringSet(self.union(other))
+
     concat = __add__
 
 
