@@ -151,7 +151,7 @@ class ScalarDeconstructor:
         return Alt.lift(self.type_struct.primitive_type)
 
     def get_literal(self) -> Alt[Tuple[PrimitiveType, Any]]:
-        if self.type_struct.is_alias or self.type_struct.is_literal:
+        if self.type_struct.is_alias or not self.type_struct.is_literal:
             return Alt.empty()
 
         return Alt.lift((self.type_struct.primitive_type, self.type_struct.literal_value))
