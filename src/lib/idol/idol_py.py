@@ -21,7 +21,7 @@ from idol.generator import (
     GeneratorContext,
     GeneratorFileContext,
     Exported,
-    Expression, import_expr)
+    Expression, import_expr, get_safe_ident)
 from idol.schema import *
 
 ExportedAny: Exported = Exported(Path("typing"), "Any")
@@ -164,7 +164,7 @@ class IdolPyCodegenStruct(GeneratorFileContext):
                             )
                         ],
                         [
-                            scripter.typing(field_name, typing_expr(self.state, self.path))
+                            scripter.typing(get_safe_ident(field_name), typing_expr(self.state, self.path))
                             for field_name, field in self.fields
                             for typing_expr in field.typing_expr
                         ]
@@ -174,6 +174,7 @@ class IdolPyCodegenStruct(GeneratorFileContext):
                                 scripter.array(
                                     scripter.tuple(
                                         scripter.literal(field_name),
+                                        scripter.literal(get_safe_ident(field_name)),
                                         self.state.import_ident(self.path, field_exported),
                                     )
                                     for field_name, field in self.fields
