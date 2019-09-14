@@ -357,6 +357,7 @@ class ImportsAcc:
                     ],
                 )
                 for rel_path, decons in imports
+                if rel_path
             ]
             for imports in self.imports.get(into_path)
         ).get_or([])
