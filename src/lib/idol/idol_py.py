@@ -105,8 +105,8 @@ class IdolPyCodegenFile(GeneratorFileContext):
         return Alt(type_ident)
 
     @property
-    def default_type_ident(self) -> str:
-        return self.t.named.qualified_name
+    def default_type_name(self) -> str:
+        return self.t.named.as_qualified_ident
 
     @cached_property
     def typestruct(self) -> "Alt[IdolPyCodegenTypeStruct]":
@@ -150,7 +150,7 @@ class IdolPyCodegenStruct(GeneratorFileContext):
                 self.path,
                 self.state.add_content_with_ident(
                     self.path,
-                    self.codegen_file.default_type_ident,
+                    self.codegen_file.default_type_name,
                     scripter.nameable_class_dec(
                         [
                             self.state.import_ident(
@@ -197,7 +197,7 @@ class IdolPyCodegenEnum(GeneratorFileContext):
                 self.path,
                 self.state.add_content_with_ident(
                     self.path,
-                    self.codegen_file.default_type_ident,
+                    self.codegen_file.default_type_name,
                     scripter.nameable_class_dec(
                         [
                             self.state.import_ident(self.path, Exported(Path("enum"), "Enum")),
@@ -245,7 +245,7 @@ class IdolPyCodegenTypeStruct(GeneratorFileContext):
                     self.path,
                     self.state.add_content_with_ident(
                         self.path,
-                        self.codegen_file.default_type_ident,
+                        self.codegen_file.default_type_name,
                         scripter.declare_and_shadow(typing_expr(self.state, self.path),
                                                     constructor_expr),
                     ),
@@ -354,7 +354,7 @@ class IdolPyCodegenScalar(GeneratorFileContext):
             self.state.import_ident(
                 self.path,
                 codegen_type,
-                self.typestruct.codegen_file.default_type_ident + "Codegen",
+                self.typestruct.codegen_file.default_type_name + "Codegen",
             )
             for codegen_file in alias_codegen_file
             for codegen_type in codegen_file.declared_type_ident
@@ -365,7 +365,7 @@ class IdolPyCodegenScalar(GeneratorFileContext):
             self.state.import_ident(
                 self.path,
                 scaffold_type,
-                self.typestruct.codegen_file.default_type_ident + "Scaffold",
+                self.typestruct.codegen_file.default_type_name + "Scaffold",
             )
             for scaffold_file in alias_scaffold_file
             for scaffold_type in scaffold_file.declared_type_ident
@@ -374,7 +374,7 @@ class IdolPyCodegenScalar(GeneratorFileContext):
         return Alt(
             Exported(self.path, self.state.add_content_with_ident(
                 self.path,
-                self.typestruct.codegen_file.default_type_ident,
+                self.typestruct.codegen_file.default_type_name,
                 scripter.assignable(
                     ident
                 ),
@@ -447,7 +447,7 @@ class IdolPyCodegenScalar(GeneratorFileContext):
                 self.path,
                 self.state.add_content_with_ident(
                     self.path,
-                    self.typestruct.codegen_file.default_type_ident,
+                    self.typestruct.codegen_file.default_type_name,
                     scripter.declare_and_shadow(prim_expr(self.state, self.path),
                                                 prim_con_expr(self.state, self.path)),
                 ),

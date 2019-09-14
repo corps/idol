@@ -349,7 +349,8 @@ class ImportsAcc:
                     ImportPath.as_python_module_path(rel_path),
                     *[
                         f"{from_ident} as {as_ident}" if from_ident != as_ident else from_ident
-                        for as_ident, from_ident in decons
+                        for from_ident, as_idents in decons
+                        for as_ident in as_idents
                     ],
                 )
                 for rel_path, decons in imports
@@ -402,11 +403,10 @@ class GeneratorAcc:
                 {
                     path: scripter.render(
                         scripter.comments(
-                            line
+                            lines
                             for group in groups
                             if group in comment_headers
                             for lines in comment_headers[group]
-                            for line in lines
                         )
                         + self.imports.render(path)
                         + self.content.get(path).get_or([])
