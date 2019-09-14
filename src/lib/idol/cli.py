@@ -6,7 +6,7 @@ from typing import Dict, List, Union
 import sys
 
 from idol.generator import GeneratorParams
-from idol.functional import OrderedObj, flatten_to_ordered_obj
+from idol.functional import OrderedObj
 from idol.__idol__ import Map
 from idol.schema import Module
 

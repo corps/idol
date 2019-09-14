@@ -47,13 +47,13 @@ class IdolPy(GeneratorContext):
 
     def scaffold_file(self, ref: Reference) -> "IdolPyScaffoldFile":
         path = self.state.reserve_path(**self.config.paths_of(scaffold=ref))
-        t = self.config.params.all_types[ref.qualified_name]
+        t = self.config.params.all_types.obj[ref.qualified_name]
         scaffold_file = self.scaffold_impl(self, t, path)
         return self.scaffolds.setdefault(ref.qualified_name, scaffold_file)
 
     def codegen_file(self, ref: Reference) -> "IdolPyCodegenFile":
         path = self.state.reserve_path(**self.config.paths_of(codegen=ref))
-        t = self.config.params.all_types[ref.qualified_name]
+        t = self.config.params.all_types.obj[ref.qualified_name]
         codegen_file = self.codegen_impl(self, t, path)
         return self.codegens.setdefault(ref.qualified_name, codegen_file)
 
@@ -63,7 +63,7 @@ class IdolPy(GeneratorContext):
         return IdolPyFile(self, path)
 
     def render(self) -> OrderedObj[str]:
-        for i, t in enumerate(self.config.params.scaffold_types):
+        for i, t in enumerate(self.config.params.scaffold_types.values()):
             print(
                 f"Rendered {self.scaffold_file(t.named).declared_type_ident} ({i} / {len(self.config.params.scaffold_types)})"
             )
@@ -576,13 +576,16 @@ def main():
 
     config = GeneratorConfig(params)
     config.with_path_mappings(
-        dict(codegen=config.one_file_per_type, scaffold=config.one_file_per_type)
+        dict(codegen=config.in_codegen_dir(config.one_file_per_type),
+             scaffold=config.one_file_per_type)
     )
 
     idol_py = IdolPy(config)
     move_to = build(config, idol_py.render())
     move_to(params.output_dir)
 
+
+# TODO: SUpport atleast_one and optional types!!
 
 if __name__ == "__main__":
     main()
