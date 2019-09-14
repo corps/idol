@@ -3,7 +3,7 @@
 import os.path
 
 from cached_property import cached_property
-from typing import Callable, Any, List, Dict
+from typing import Callable, List, Dict, Any
 
 from idol import scripter
 from idol.cli import start, CliConfig
@@ -21,7 +21,7 @@ from idol.generator import (
     GeneratorContext,
     GeneratorFileContext,
     Exported,
-)
+    Expression, import_expr)
 from idol.schema import *
 
 ExportedAny: Exported = Exported(Path("typing"), "Any")
@@ -34,10 +34,10 @@ class IdolPy(GeneratorContext):
     codegen_impl: "Callable[[IdolPy, Type, Path], IdolPyCodegenFile]"
 
     def __init__(
-        self,
-        config: GeneratorConfig,
-        scaffold_impl: "Callable[[IdolPy, Type, Path], IdolPyScaffoldFile]" = None,
-        codegen_impl: "Callable[[IdolPy, Type, Path], IdolPyCodegenFile]" = None,
+            self,
+            config: GeneratorConfig,
+            scaffold_impl: "Callable[[IdolPy, Type, Path], IdolPyScaffoldFile]" = None,
+            codegen_impl: "Callable[[IdolPy, Type, Path], IdolPyCodegenFile]" = None,
     ):
         super(IdolPy, self).__init__(GeneratorAcc(), config)
         self.scaffolds = {}
@@ -100,6 +100,7 @@ class IdolPyCodegenFile(GeneratorFileContext):
         )
 
         type_ident += Disjoint(v for enum in self.enum for v in enum.declared_ident)
+        type_ident += Disjoint(v for struct in self.struct for v in struct.declared_ident)
 
         return Alt(type_ident)
 
@@ -136,7 +137,7 @@ class IdolPyCodegenStruct(GeneratorFileContext):
     fields: OrderedObj["IdolPyCodegenTypeStruct"]
 
     def __init__(
-        self, codegen_file: IdolPyCodegenFile, fields: "OrderedObj[IdolPyCodegenTypeStruct]"
+            self, codegen_file: IdolPyCodegenFile, fields: "OrderedObj[IdolPyCodegenTypeStruct]"
     ):
         self.fields = fields
         self.codegen_file = codegen_file
@@ -157,7 +158,7 @@ class IdolPyCodegenStruct(GeneratorFileContext):
                             )
                         ],
                         [
-                            scripter.typing(field_name, typing_expr)
+                            scripter.typing(field_name, typing_expr(self.state, self.path))
                             for field_name, field in self.fields
                             for typing_expr in field.typing_expr
                         ]
@@ -245,7 +246,8 @@ class IdolPyCodegenTypeStruct(GeneratorFileContext):
                     self.state.add_content_with_ident(
                         self.path,
                         self.codegen_file.default_type_ident,
-                        scripter.declare_and_shadow(typing_expr, constructor_expr),
+                        scripter.declare_and_shadow(typing_expr(self.state, self.path),
+                                                    constructor_expr),
                     ),
                 )
                 for typing_expr in self.typing_expr
@@ -258,23 +260,35 @@ class IdolPyCodegenTypeStruct(GeneratorFileContext):
         )
 
     @cached_property
-    def typing_expr(self) -> Alt[str]:
-        typing: Disjoint[str] = Disjoint(
-            scripter.index_access(
-                self.state.import_ident(self.path, Exported(Path("typing"), "List")),
-                scalar_typing_expr,
-            )
+    def typing_expr(self) -> Alt[Expression]:
+        def repeated_expr(scalar_typing_expr: Expression) -> Expression:
+            def inner(state: GeneratorAcc, path: Path) -> str:
+                return scripter.index_access(
+                    state.import_ident(path, Exported(Path("typing"), "List")),
+                    scalar_typing_expr(state, path),
+                )
+
+            return inner
+
+        def map_expr(scalar_typing_expr: Expression):
+            def inner(state: GeneratorAcc, path: Path) -> str:
+                return scripter.index_access(
+                    state.import_ident(path, Exported(Path("typing"), "Dict")),
+                    "str",
+                    scalar_typing_expr(state, path),
+                )
+
+            return inner
+
+        typing: Disjoint[Expression] = Disjoint(
+            repeated_expr(scalar_typing_expr)
             for scalar in self.inner_scalar
             for scalar_typing_expr in scalar.typing_expr
             if self.ts_decon.get_repeated()
         )
 
         typing += Disjoint(
-            scripter.index_access(
-                self.state.import_ident(self.path, Exported(Path("typing"), "Dict")),
-                "str",
-                scalar_typing_expr,
-            )
+            map_expr(scalar_typing_expr)
             for scalar in self.inner_scalar
             for scalar_typing_expr in scalar.typing_expr
             if self.ts_decon.get_map()
@@ -315,70 +329,111 @@ class IdolPyCodegenScalar(GeneratorFileContext):
         return self.typestruct.idol_py
 
     @cached_property
-    def typing_expr(self) -> Alt[str]:
-        return Alt(Disjoint(self.imported_alias_ident) + Disjoint(self.prim_typing_expr))
+    def typing_expr(self) -> Alt[Expression]:
+        return Alt(Disjoint(import_expr(alias) for alias in self.declared_alias_ident) + Disjoint(
+            self.prim_typing_expr))
 
     @cached_property
-    def constructor_expr(self) -> Alt[str]:
-        return Alt(Disjoint(self.imported_alias_ident) + Disjoint(self.prim_constructor_expr))
+    def constructor_expr(self) -> Alt[Expression]:
+        return Alt(Disjoint(import_expr(alias) for alias in self.declared_alias_ident) + Disjoint(
+            self.prim_constructor_expr))
 
     @cached_property
-    def imported_alias_ident(self) -> Alt[str]:
-        # TODO: Import the scaffolded version if possible.
-        1 / 0
+    def declared_alias_ident(self) -> Alt[Exported]:
         alias_codegen_file = Alt(
             self.idol_py.codegen_file(ref) for ref in self.scalar_dec.get_alias()
         )
 
-        return Alt(
-            self.state.add_content_with_ident(
+        alias_scaffold_file = Alt(
+            self.idol_py.scaffold_file(ref) for ref in self.scalar_dec.get_alias()
+            if ref.qualified_name in self.config.params.scaffold_types.obj
+        )
+
+        imported_alias_ident: Disjoint[str] = Disjoint(
+            self.state.import_ident(
                 self.path,
-                self.typestruct.codegen_file.default_type_ident,
-                scripter.assignable(
-                    self.state.import_ident(
-                        self.path,
-                        codegen_type,
-                        self.typestruct.codegen_file.default_type_ident + "Codegen",
-                    )
-                ),
+                codegen_type,
+                self.typestruct.codegen_file.default_type_ident + "Codegen",
             )
             for codegen_file in alias_codegen_file
             for codegen_type in codegen_file.declared_type_ident
+            if not alias_scaffold_file
+        )
+
+        imported_alias_ident += Disjoint(
+            self.state.import_ident(
+                self.path,
+                scaffold_type,
+                self.typestruct.codegen_file.default_type_ident + "Scaffold",
+            )
+            for scaffold_file in alias_scaffold_file
+            for scaffold_type in scaffold_file.declared_type_ident
+        )
+
+        return Alt(
+            Exported(self.path, self.state.add_content_with_ident(
+                self.path,
+                self.typestruct.codegen_file.default_type_ident,
+                scripter.assignable(
+                    ident
+                ),
+            ))
+            for ident in imported_alias_ident
         )
 
     @cached_property
-    def prim_constructor_expr(self) -> Alt[str]:
-        constructor_expr: Disjoint[str] = Disjoint(
-            scripter.invocation(
-                self.state.import_ident(self.path, self.idol_py.idol_py_file.primitive), prim_expr
-            )
+    def prim_constructor_expr(self) -> Alt[Expression]:
+        def prim_con_expr(prim_expr: Expression) -> Expression:
+            def inner(state: GeneratorAcc, path: Path) -> str:
+                return scripter.invocation(
+                    state.import_ident(path, self.idol_py.idol_py_file.primitive),
+                    prim_expr(state, path))
+
+            return inner
+
+        def literal_con_expr(value: Any) -> Expression:
+            def inner(state: GeneratorAcc, path: Path) -> str:
+                return scripter.invocation(
+                    state.import_ident(path, self.idol_py.idol_py_file.literal),
+                    scripter.literal(value))
+
+            return inner
+
+        constructor_expr: Disjoint[Expression] = Disjoint(
+            prim_con_expr(prim_expr)
             for _ in self.scalar_dec.get_primitive()
             for prim_expr in self.prim_typing_expr
         )
 
         constructor_expr += Disjoint(
-            scripter.invocation(
-                self.state.import_ident(self.path, self.idol_py.idol_py_file.literal),
-                scripter.literal(value),
-            )
+            literal_con_expr(value)
             for _, value in self.scalar_dec.get_literal()
         )
 
         return Alt(constructor_expr)
 
     @cached_property
-    def prim_typing_expr(self) -> Alt[str]:
+    def prim_typing_expr(self) -> Alt[Expression]:
         scalar_prim = Disjoint(prim_type for prim_type in self.scalar_dec.get_primitive())
         scalar_prim += Disjoint(prim_type for prim_type, _ in self.scalar_dec.get_literal())
 
+        def any_expr(state: GeneratorAcc, path: Path) -> str:
+            return state.import_ident(path, Exported(Path("typing"), "Any"))
+
+        def scalar_expr(prim_type: PrimitiveType) -> Expression:
+            def inner(state: GeneratorAcc, path: Path) -> str:
+                return self.scalar_type_name_mappings[prim_type]
+
+            return inner
+
         return Alt(
             Disjoint(
-                self.scalar_type_name_mappings[prim_type]
+                scalar_expr(prim_type)
                 for prim_type in scalar_prim
                 if prim_type in self.scalar_type_name_mappings
             )
             + Disjoint(
-                self.state.import_ident(self.path, Exported(Path("typing"), "Any"))
+                any_expr
                 for prim_type in scalar_prim
                 if prim_type == PrimitiveType.ANY
             )
@@ -392,7 +447,8 @@ class IdolPyCodegenScalar(GeneratorFileContext):
                 self.state.add_content_with_ident(
                     self.path,
                     self.typestruct.codegen_file.default_type_ident,
-                    scripter.declare_and_shadow(prim_expr, prim_con_expr),
+                    scripter.declare_and_shadow(prim_expr(self.state, self.path),
+                                                prim_con_expr(self.state, self.path)),
                 ),
             )
             for prim_expr in self.prim_typing_expr
@@ -407,9 +463,7 @@ class IdolPyCodegenScalar(GeneratorFileContext):
 
         return Alt(
             Disjoint(self.declared_prim_ident)
-            + Disjoint(
-                Exported(self.path, alias_ident) for alias_ident in self.imported_alias_ident
-            )
+            + Disjoint(self.declared_alias_ident)
         )
 
     scalar_type_name_mappings = {

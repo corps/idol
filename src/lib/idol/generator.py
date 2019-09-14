@@ -88,12 +88,12 @@ class Exported:
 
 class GeneratorParams:
     def __init__(
-        self,
-        all_modules: OrderedObj[Module],
-        all_types: OrderedObj[Type],
-        scaffold_types: OrderedObj[Type],
-        output_dir: str,
-        options: Dict[str, Union[List[str], bool]],
+            self,
+            all_modules: OrderedObj[Module],
+            all_types: OrderedObj[Type],
+            scaffold_types: OrderedObj[Type],
+            output_dir: str,
+            options: Dict[str, Union[List[str], bool]],
     ):
         self.all_modules = all_modules
         self.all_types = all_types
@@ -112,7 +112,7 @@ class TypeStructContext:
         return self.is_type_bound
 
     def __init__(
-        self, field_tags: Optional[List[str]] = None, type_tags: Optional[List[str]] = None
+            self, field_tags: Optional[List[str]] = None, type_tags: Optional[List[str]] = None
     ):
         self.field_tags = field_tags or []
         self.type_tags = type_tags or []
@@ -224,6 +224,13 @@ class TypeDeconstructor:
         )
 
 
+def import_expr(exported: Exported, as_ident: str = None) -> "Expression":
+    def inner(state: GeneratorAcc, path: Path) -> str:
+        return state.import_ident(path, exported, as_ident)
+
+    return inner
+
+
 def get_material_type_deconstructor(all_types: OrderedObj[Type], t: Type) -> TypeDeconstructor:
     def search_type(type_decon: TypeDeconstructor) -> TypeDeconstructor:
         return Alt(
@@ -323,7 +330,7 @@ class ImportsAcc:
         )
 
     def get_imported_as_idents(
-        self, into_path: Path, from_path: ImportPath, from_ident: str
+            self, into_path: Path, from_path: ImportPath, from_ident: str
     ) -> Alt[StringSet]:
         return Alt(
             into_idents
@@ -356,7 +363,7 @@ class GeneratorAcc:
     group_of_path: OrderedObj[StringSet]
     uniq: int
 
-    def __init__(self,):
+    def __init__(self, ):
         self.idents = IdentifiersAcc()
         self.imports = ImportsAcc()
         self.content = OrderedObj()
@@ -370,9 +377,9 @@ class GeneratorAcc:
 
     def validate(self) -> "GeneratorAcc":
         for path_errors in Conjunct(
-            f"Conflict in paths: Multiple ({' '.join(conflicts)}) types of {path} found"
-            for path_groups, path in self.group_of_path
-            for conflicts in Disjoint(path_groups).unwrap_errors()
+                f"Conflict in paths: Multiple ({' '.join(conflicts)}) types of {path} found"
+                for path_groups, path in self.group_of_path
+                for conflicts in Disjoint(path_groups).unwrap_errors()
         ):
             raise ValueError("\n".join(path_errors))
 
@@ -426,7 +433,7 @@ class GeneratorAcc:
         )
 
     def import_ident(
-        self, into_path: Path, exported: Exported, as_ident: Optional[str] = None
+            self, into_path: Path, exported: Exported, as_ident: Optional[str] = None
     ) -> str:
         ident = exported.ident
         if as_ident is None:
@@ -435,7 +442,7 @@ class GeneratorAcc:
         from_path = into_path.import_path_to(exported.path)
 
         if not from_path.is_module and not self.idents.get_identifier_sources(
-            from_path.path, ident
+                from_path.path, ident
         ):
             raise ValueError(
                 f"identifier {ident} required by {into_path} does not exist in {from_path}"
@@ -458,7 +465,7 @@ class GeneratorAcc:
         as_ident = get_safe_ident(as_ident)
 
         while source not in self.idents.get_identifier_sources(into_path, as_ident).get_or(
-            StringSet([source or ""])
+                StringSet([source or ""])
         ):
             as_ident += "_"
 
@@ -466,7 +473,7 @@ class GeneratorAcc:
         return as_ident
 
     def add_content_with_ident(
-        self, path: Path, ident: str, scriptable: Callable[[str], Union[str, List]]
+            self, path: Path, ident: str, scriptable: Callable[[str], Union[str, List]]
     ) -> str:
         self.idents.add_identifier(path, ident, self.get_unique_source(path))
         self.add_content(path, scriptable(ident))
@@ -475,6 +482,9 @@ class GeneratorAcc:
     def get_unique_source(self, path: Path) -> str:
         self.uniq += 1
         return path.path + "." + str(self.uniq)
+
+
+Expression = Callable[[GeneratorAcc, Path], str]
 
 
 class GeneratorContext:
