@@ -25,8 +25,11 @@ class Path:
         if self == to_path:
             return ImportPath(to_path, "")
 
-        if self.is_module:
+        if to_path.is_module:
             return ImportPath.module(self.path)
+
+        if self.is_module:
+            raise ValueError("Absolute modules cannot express relative import paths!")
 
         from_parts = self.path.split("/")
         to_parts = to_path.path.split("/")

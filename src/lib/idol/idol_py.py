@@ -64,9 +64,15 @@ class IdolPy(GeneratorContext):
 
     def render(self) -> OrderedObj[str]:
         for i, t in enumerate(self.config.params.scaffold_types.values()):
-            print(
-                f"Rendered {self.scaffold_file(t.named).declared_type_ident} ({i} / {len(self.config.params.scaffold_types)})"
-            )
+            for export in self.scaffold_file(t.named).declared_type_ident:
+                print(
+                    f"Rendered {export.ident} to {export.path.path} ({i} / {len(self.config.params.scaffold_types)})"
+                )
+                break
+            else:
+                print(
+                    f"Skipped {t.named.as_qualified_ident} ({i} / {len(self.config.params.scaffold_types)})"
+                )
 
         return self.state.render(
             dict(
@@ -454,7 +460,7 @@ class IdolPyCodegenScalar(GeneratorFileContext):
             )
             for prim_expr in self.prim_typing_expr
             for prim_con_expr in self.prim_constructor_expr
-            if not self.scalar_dec.context.is_declarable
+            if not self.scalar_dec.conqualified_namitext.is_declarable
         )
 
     @cached_property
