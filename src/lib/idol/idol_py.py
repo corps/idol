@@ -541,27 +541,27 @@ class IdolPyFile(GeneratorFileContext):
 
     @cached_property
     def list(self) -> Exported:
-        return Exported(self.dumped_file, "List")
+        return Exported(self.dumped_file, self.state.idents.add_identifier(self.path, "List"))
 
     @cached_property
     def map(self) -> Exported:
-        return Exported(self.dumped_file, "Map")
+        return Exported(self.dumped_file, self.state.idents.add_identifier(self.path, "Map"))
 
     @cached_property
     def primitive(self) -> Exported:
-        return Exported(self.dumped_file, "Primitive")
+        return Exported(self.dumped_file, self.state.idents.add_identifier(self.path, "Primitive"))
 
     @cached_property
     def literal(self) -> Exported:
-        return Exported(self.dumped_file, "Literal")
+        return Exported(self.dumped_file, self.state.idents.add_identifier(self.path, "Literal"))
 
     @cached_property
     def enum(self) -> Exported:
-        return Exported(self.dumped_file, "Enum")
+        return Exported(self.dumped_file, self.state.idents.add_identifier(self.path, "Enum"))
 
     @cached_property
     def struct(self) -> Exported:
-        return Exported(self.dumped_file, "Struct")
+        return Exported(self.dumped_file, self.state.idents.add_identifier(self.path, "Struct"))
 
 
 def main():
