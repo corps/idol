@@ -348,9 +348,8 @@ class ImportsAcc:
                 scripter.from_import(
                     ImportPath.as_python_module_path(rel_path),
                     *[
-                        f"{from_ident} as {as_ident}" if from_ident != as_idents else from_ident
-                        for as_idents, from_ident in decons
-                        for as_ident in as_idents
+                        f"{from_ident} as {as_ident}" if from_ident != as_ident else from_ident
+                        for as_ident, from_ident in decons
                     ],
                 )
                 for rel_path, decons in imports

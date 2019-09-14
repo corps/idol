@@ -114,7 +114,7 @@ class Reference(_Struct):
 
     def snakify(self) -> "Reference":
         def snakify(name):
-            first_pass = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+            first_pass = re.sub("([^.])([A-Z][a-z]+)", r"\1_\2", name)
             return re.sub("([a-z0-9])([A-Z])", r"\1_\2", first_pass).lower()
 
         return Reference(
