@@ -323,6 +323,7 @@ class IdolPyCodegenScalar(GeneratorFileContext):
     def __init__(self, parent: IdolPyCodegenTypeStruct, scalar_decon: ScalarDeconstructor):
         super(IdolPyCodegenScalar, self).__init__(parent.parent, parent.path)
         self.scalar_dec = scalar_decon
+        self.typestruct = parent
 
     @property
     def idol_py(self):
