@@ -26,7 +26,7 @@ class Path:
             return ImportPath(to_path, "")
 
         if to_path.is_module:
-            return ImportPath.module(self.path)
+            return ImportPath.module(to_path.path)
 
         if self.is_module:
             raise ValueError("Absolute modules cannot express relative import paths!")
