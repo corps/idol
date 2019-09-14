@@ -36,11 +36,7 @@ def flatten_inner(inner, indent=0):
 
 
 def comments(comments: Iterable[str]) -> List:
-    return [
-        f"# {s}"
-        for s in comments
-        for s in [s.replace("#", "\\#")]
-    ]
+    return [f"# {s}" for s in comments for s in [s.replace("#", "\\#")]]
 
 
 def assignment(ident: str, expr: str, typing=None) -> str:
@@ -52,6 +48,10 @@ def assignable(expr: str, typing=None) -> Callable[[str], str]:
     return lambda ident: assignment(ident, expr, typing)
 
 
+def typing(ident: str, typing: str) -> str:
+    return f"{ident}: {typing}"
+
+
 def shadow_assignment(ident: str, expr: str) -> List:
     return [
         assignment(ident, expr),
@@ -60,7 +60,7 @@ def shadow_assignment(ident: str, expr: str) -> List:
 
 
 def declare_and_shadow(
-        declaration: str, shadow_expr: str, dec_typing: Optional[str] = None
+    declaration: str, shadow_expr: str, dec_typing: Optional[str] = None
 ) -> Callable[[str], List]:
     def scriptable(ident: str):
         return [assignment(ident, declaration, dec_typing)] + shadow_assignment(ident, shadow_expr)
@@ -106,13 +106,20 @@ def class_dec(class_name: str, super_classes: Iterable[str], body: Iterable) -> 
     return [f"class {class_name}({super_str}):", list(body) or ["pass"]]
 
 
+def nameable_class_dec(super_classes: Iterable[str], body: Iterable) -> Callable[[str], List]:
+    def nameable(ident: str) -> List:
+        return class_dec(ident, super_classes, body)
+
+    return nameable
+
+
 def func_dec(
-        func_name: str,
-        args: List[str] = [],
-        body: Iterable = ["pass"],
-        kwds: Dict[str, str] = {},
-        typing: str = "",
-        decorators: Iterable[str] = [],
+    func_name: str,
+    args: List[str] = [],
+    body: Iterable = ["pass"],
+    kwds: Dict[str, str] = {},
+    typing: str = "",
+    decorators: Iterable[str] = [],
 ) -> List:
     if typing:
         typing = f" -> {typing}"
