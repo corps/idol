@@ -65,8 +65,7 @@ class Primitive(IdolConstructor):
     @staticmethod
     def of(type_constructor: Type) -> Type["Primitive"]:
         cls = cast(
-            Type["Primitive"],
-            new_class(type_constructor.__name__, (Primitive,)),
+            Type["Primitive"], new_class(type_constructor.__name__, (Primitive,))
         )
 
         cls.type_constructor = type_constructor
@@ -104,8 +103,7 @@ class Literal(IdolConstructor):
     @staticmethod
     def of(value: Union[str, int, float, bool]) -> Type["Literal"]:
         cls = cast(
-            Type["Literal"],
-            new_class(type(value).__name__, (Literal, type(value))),
+            Type["Literal"], new_class(type(value).__name__, (Literal, type(value)))
         )
         cls.value = value
         return cls
@@ -164,13 +162,11 @@ class List(IdolConstructor, MutableSequence):
     options: Dict[str, Any]
 
     @staticmethod
-    def of(inner_constructor: Type[IdolConstructor], options: Dict[str, Any]) -> Type["List"]:
+    def of(
+        inner_constructor: Type[IdolConstructor], options: Dict[str, Any]
+    ) -> Type["List"]:
         cls = cast(
-            Type["List"],
-            new_class(
-                f"List[{inner_constructor.__name__}]",
-                (List,),
-            ),
+            Type["List"], new_class(f"List[{inner_constructor.__name__}]", (List,))
         )
         cls.inner_constructor = inner_constructor
         cls.options = options
@@ -183,7 +179,9 @@ class List(IdolConstructor, MutableSequence):
 
         if cls.options.get("atleast_one"):
             if not len(json):
-                raise ValueError(f"{'.'.join(path)} Expected at least one item, but it was empty")
+                raise ValueError(
+                    f"{'.'.join(path)} Expected at least one item, but it was empty"
+                )
 
         for i, val in enumerate(json):
             cls.inner_constructor.validate(val, path + [str(i)])
@@ -248,14 +246,10 @@ class Map(IdolConstructor, MutableMapping):
     options: Dict[str, Any]
 
     @staticmethod
-    def of(inner_constructor: Type[IdolConstructor], options: Dict[str, Any]) -> Type["Map"]:
-        cls = cast(
-            Type["Map"],
-            new_class(
-                f"Map[{inner_constructor.__name__}]",
-                (Map,),
-            ),
-        )
+    def of(
+        inner_constructor: Type[IdolConstructor], options: Dict[str, Any]
+    ) -> Type["Map"]:
+        cls = cast(Type["Map"], new_class(f"Map[{inner_constructor.__name__}]", (Map,)))
         cls.inner_constructor = inner_constructor
         cls.options = options
 
@@ -344,7 +338,9 @@ def create_struct_prop(attr, type: Type[IdolConstructor]):
 class StructMeta(type):
     def __new__(mcs: Type["Struct"], name, bases, dct):
         mcs = super().__new__(mcs, name, bases, dct)
-        for field_name, prop_name, constructor, _ in getattr(mcs, '__field_constructors__', []):
+        for field_name, prop_name, constructor, _ in getattr(
+            mcs, "__field_constructors__", []
+        ):
             setattr(mcs, prop_name, create_struct_prop(field_name, constructor))
 
         return mcs
@@ -352,7 +348,9 @@ class StructMeta(type):
 
 class Struct(with_metaclass(StructMeta, IdolConstructor)):
     orig_data: Dict[str, Any]
-    __field_constructors__: typingList[Tuple[str, str, Type[IdolConstructor], Dict[str, Any]]] = []
+    __field_constructors__: typingList[
+        Tuple[str, str, Type[IdolConstructor], Dict[str, Any]]
+    ] = []
 
     def __init__(self, orig_data: Dict[str, Any]):
         self.orig_data = orig_data
@@ -370,13 +368,15 @@ class Struct(with_metaclass(StructMeta, IdolConstructor)):
 
         for field_name, prop_name, constructor, options in cls.__field_constructors__:
             val = json.get(field_name, None)
-            optional = options.get('optional')
+            optional = options.get("optional")
 
             if val is None:
                 if optional:
                     continue
                 else:
-                    raise KeyError(f"{'.'.join(path)} Missing required key {repr(field_name)}")
+                    raise KeyError(
+                        f"{'.'.join(path)} Missing required key {repr(field_name)}"
+                    )
 
             constructor.validate(val, path + [field_name])
 
@@ -392,7 +392,7 @@ class Struct(with_metaclass(StructMeta, IdolConstructor)):
 
         for field_name, prop_name, constructor, options in cls.__field_constructors__:
             val = json.get(field_name, None)
-            optional = options.get('optional')
+            optional = options.get("optional")
 
             if val is None:
                 if optional:
