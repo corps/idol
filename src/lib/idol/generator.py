@@ -295,9 +295,7 @@ class IdentifiersAcc:
 
     __add__ = concat
 
-    def add_identifier(self, into_path: Path, ident: str, source: str = None) -> str:
-        if source is None:
-            source = into_path.path
+    def add_identifier(self, into_path: Path, ident: str, source: str) -> str:
         self.idents += OrderedObj({into_path.path: OrderedObj({ident: StringSet([source])})})
         return ident
 
@@ -454,21 +452,20 @@ class GeneratorAcc:
                 f"identifier {ident} required by {into_path} does not exist in {from_path}"
             )
 
-        imported_as = self.imports.get_imported_as_idents(into_path, from_path, ident).get_or(StringSet([]))
-        print(f"import {into_path.path} {exported.path.path} {from_path.path.path} {ident} {imported_as}")
+        imported_as = self.imports.get_imported_as_idents(into_path, from_path, ident).get_or(
+            StringSet([]))
+        print(
+            f"import {into_path.path} {exported.path.path} {from_path.path.path} {ident} {imported_as}")
 
         if imported_as:
             return sorted(imported_as)[0]
 
-        as_ident = self.create_ident(into_path, as_ident, from_path)
+        as_ident = self.create_ident(into_path, as_ident, from_path.path.path)
         self.imports.add_import(into_path, from_path, ident, as_ident)
 
         return as_ident
 
-    def create_ident(self, into_path: Path, as_ident: str, source: ImportPath = None) -> str:
-        if source is None:
-            source = into_path.import_path_to(into_path)
-
+    def create_ident(self, into_path: Path, as_ident: str, source: str) -> str:
         as_ident = get_safe_ident(as_ident)
 
         while source not in self.idents.get_identifier_sources(into_path, as_ident).get_or(
@@ -476,7 +473,7 @@ class GeneratorAcc:
         ):
             as_ident += "_"
 
-        self.idents.add_identifier(into_path, as_ident, source.path.path)
+        self.idents.add_identifier(into_path, as_ident, source)
         return as_ident
 
     def add_content_with_ident(

@@ -164,7 +164,8 @@ class IdolPyCodegenStruct(GeneratorFileContext):
                             )
                         ],
                         [
-                            scripter.typing(get_safe_ident(field_name), typing_expr(self.state, self.path))
+                            scripter.typing(get_safe_ident(field_name),
+                                            typing_expr(self.state, self.path))
                             for field_name, field in self.fields
                             for typing_expr in field.typing_expr
                         ]
@@ -338,16 +339,14 @@ class IdolPyCodegenScalar(GeneratorFileContext):
 
     @cached_property
     def typing_expr(self) -> Alt[Expression]:
-        return Alt(Disjoint(import_expr(alias) for alias in self.declared_alias_ident) + Disjoint(
-            self.prim_typing_expr))
+        return Alt(Disjoint(self.reference_import_expr) + Disjoint(self.prim_typing_expr))
 
     @cached_property
     def constructor_expr(self) -> Alt[Expression]:
-        return Alt(Disjoint(import_expr(alias) for alias in self.declared_alias_ident) + Disjoint(
-            self.prim_constructor_expr))
+        return Alt(Disjoint(self.reference_import_expr) + Disjoint(self.prim_constructor_expr))
 
     @cached_property
-    def declared_alias_ident(self) -> Alt[Exported]:
+    def reference_import_expr(self) -> Alt[Expression]:
         alias_codegen_file = Alt(
             self.idol_py.codegen_file(ref) for ref in self.scalar_dec.get_alias()
         )
@@ -357,9 +356,8 @@ class IdolPyCodegenScalar(GeneratorFileContext):
             if ref.qualified_name in self.config.params.scaffold_types.obj
         )
 
-        imported_alias_ident: Disjoint[str] = Disjoint(
-            self.state.import_ident(
-                self.path,
+        imported_alias_ident: Disjoint[Expression] = Disjoint(
+            import_expr(
                 codegen_type,
                 "Codegen" + codegen_type.ident,
             )
@@ -369,8 +367,7 @@ class IdolPyCodegenScalar(GeneratorFileContext):
         )
 
         imported_alias_ident += Disjoint(
-            self.state.import_ident(
-                self.path,
+            import_expr(
                 scaffold_type,
                 "Scaffold" + scaffold_type.ident,
             )
@@ -378,15 +375,19 @@ class IdolPyCodegenScalar(GeneratorFileContext):
             for scaffold_type in scaffold_file.declared_type_ident
         )
 
+        return Alt(imported_alias_ident)
+
+    @cached_property
+    def declared_alias_ident(self) -> Alt[Exported]:
         return Alt(
             Exported(self.path, self.state.add_content_with_ident(
                 self.path,
                 self.typestruct.codegen_file.default_type_name,
                 scripter.assignable(
-                    ident
+                    ref_import(self.state, self.path)
                 ),
             ))
-            for ident in imported_alias_ident
+            for ref_import in self.reference_import_expr
         )
 
     @cached_property
@@ -461,7 +462,7 @@ class IdolPyCodegenScalar(GeneratorFileContext):
             )
             for prim_expr in self.prim_typing_expr
             for prim_con_expr in self.prim_constructor_expr
-            if not self.scalar_dec.conqualified_namitext.is_declarable
+            if not self.scalar_dec.context.is_declarable
         )
 
     @cached_property
@@ -549,27 +550,33 @@ class IdolPyFile(GeneratorFileContext):
 
     @cached_property
     def list(self) -> Exported:
-        return Exported(self.dumped_file, self.state.idents.add_identifier(self.path, "List"))
+        return Exported(self.dumped_file,
+                        self.state.idents.add_identifier(self.path, "List", "list()"))
 
     @cached_property
     def map(self) -> Exported:
-        return Exported(self.dumped_file, self.state.idents.add_identifier(self.path, "Map"))
+        return Exported(self.dumped_file,
+                        self.state.idents.add_identifier(self.path, "Map", "map()"))
 
     @cached_property
     def primitive(self) -> Exported:
-        return Exported(self.dumped_file, self.state.idents.add_identifier(self.path, "Primitive"))
+        return Exported(self.dumped_file,
+                        self.state.idents.add_identifier(self.path, "Primitive", "primitive()"))
 
     @cached_property
     def literal(self) -> Exported:
-        return Exported(self.dumped_file, self.state.idents.add_identifier(self.path, "Literal"))
+        return Exported(self.dumped_file,
+                        self.state.idents.add_identifier(self.path, "Literal", "literal()"))
 
     @cached_property
     def enum(self) -> Exported:
-        return Exported(self.dumped_file, self.state.idents.add_identifier(self.path, "Enum"))
+        return Exported(self.dumped_file,
+                        self.state.idents.add_identifier(self.path, "Enum", "enum()"))
 
     @cached_property
     def struct(self) -> Exported:
-        return Exported(self.dumped_file, self.state.idents.add_identifier(self.path, "Struct"))
+        return Exported(self.dumped_file,
+                        self.state.idents.add_identifier(self.path, "Struct", "struct()"))
 
 
 def main():
