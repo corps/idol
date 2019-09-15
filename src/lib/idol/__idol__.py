@@ -327,7 +327,7 @@ class Map(IdolConstructor, MutableMapping):
 def create_struct_prop(attr, type: Type[IdolConstructor]):
     @property
     def prop(self):
-        if self.orig_data is None:
+        if self.orig_data.get(attr, None) is None:
             return None
         return type.wrap(self.orig_data.get(attr, None))
 
