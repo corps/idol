@@ -340,7 +340,7 @@ class StructMeta(type):
 
 class Struct(with_metaclass(StructMeta, IdolConstructor)):
     orig_data: Dict[str, Any]
-    __field_constructors__: List[Tuple[str, str, Type[IdolConstructor], Dict[str, Any]]]
+    __field_constructors__: List[Tuple[str, str, Type[IdolConstructor], Dict[str, Any]]] = []
 
     def __init__(self, orig_data: Dict[str, Any]):
         self.orig_data = orig_data
