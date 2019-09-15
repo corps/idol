@@ -307,7 +307,7 @@ class Map(IdolConstructor, MutableMapping):
 
     def items(self):
         for item in self.orig_map:
-            yield (item, self.inner_constructor.wrap(self[item]))
+            yield (item, self[item])
 
     def values(self):
         for item in self.orig_map:
