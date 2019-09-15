@@ -327,8 +327,6 @@ class Map(IdolConstructor, MutableMapping):
 def create_struct_prop(attr, type: Type[IdolConstructor]):
     @property
     def prop(self):
-        if self.orig_data.get(attr, None) is None:
-            return None
         return type.wrap(self.orig_data.get(attr, None))
 
     @prop.setter
@@ -367,9 +365,9 @@ class Struct(with_metaclass(StructMeta, IdolConstructor)):
         if not isinstance(json, dict):
             raise TypeError(f"{'.'.join(path)} Expected a dict, found {type(json)}")
 
-        for field_name, prop_name, constructor in cls.__field_constructors__:
+        for field_name, prop_name, constructor, options in cls.__field_constructors__:
             val = json.get(field_name, None)
-            optional = False
+            optional = options.get('optional')
 
             if val is None:
                 if optional:
@@ -389,9 +387,9 @@ class Struct(with_metaclass(StructMeta, IdolConstructor)):
         if not isinstance(json, dict):
             return json
 
-        for field_name, prop_name, constructor in cls.__field_constructors__:
+        for field_name, prop_name, constructor, options in cls.__field_constructors__:
             val = json.get(field_name, None)
-            optional = False
+            optional = options.get('optional')
 
             if val is None:
                 if optional:
