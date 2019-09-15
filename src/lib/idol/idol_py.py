@@ -253,7 +253,7 @@ class IdolPyCodegenTypeStruct(GeneratorContext):
 
             return inner
 
-        def map_expr(scalar_typing_expr: Expression):
+        def map_expr(scalar_typing_expr: Expression) -> Expression:
             def inner(state: GeneratorAcc, path: Path) -> str:
                 return scripter.index_access(
                     state.import_ident(path, Exported(Path("typing"), "Dict")),
@@ -263,24 +263,34 @@ class IdolPyCodegenTypeStruct(GeneratorContext):
 
             return inner
 
-        typing: Disjoint[Expression] = Disjoint(
+        def optional_expr(inner_expr: Expression) -> Expression:
+            def inner(state: GeneratorAcc, path: Path) -> str:
+                return scripter.index_access(
+                    state.import_ident(path, Exported(Path("typing"), "Optional")),
+                    inner_expr(state, path)
+                )
+
+        container_typing: Disjoint[Expression] = Disjoint(
             repeated_expr(scalar_typing_expr)
             for scalar in self.inner_scalar
             for scalar_typing_expr in scalar.typing_expr
             if self.ts_decon.get_repeated()
         )
 
-        typing += Disjoint(
+        container_typing += Disjoint(
             map_expr(scalar_typing_expr)
             for scalar in self.inner_scalar
             for scalar_typing_expr in scalar.typing_expr
             if self.ts_decon.get_map()
         )
 
-        if typing:
-            return Alt(typing)
+        typing = Alt(container_typing) + Alt(
+            expr for scalar in self.inner_scalar for expr in scalar.typing_expr)
 
-        return Alt(expr for scalar in self.inner_scalar for expr in scalar.typing_expr)
+        if self.ts_decon.context.includes_tag(field_tag="optional"):
+            return Alt(optional_expr(typing_expr) for typing_expr in typing)
+
+        return typing
 
     @cached_property
     def constructor_expr(self) -> Alt[Expression]:
@@ -306,7 +316,10 @@ class IdolPyCodegenTypeStruct(GeneratorContext):
                                  scalar_expression: Expression) -> Expression:
             def inner(state: GeneratorAcc, path: Path):
                 return scripter.invocation(scripter.prop_access(container_expr(state, path), "of"),
-                                           scalar_expression(state, path))
+                                           scalar_expression(state, path),
+                                           scripter.invocation("dict", atleast_one=scripter.literal(
+                                               self.ts_decon.context.includes_tag(
+                                                   type_tag="atleast_one"))))
 
             return inner
 
