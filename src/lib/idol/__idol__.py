@@ -122,7 +122,7 @@ class Literal(IdolConstructor):
         return json
 
 
-class Enum(enumEnum, IdolConstructor):
+class Enum(IdolConstructor, enumEnum):
     @classmethod
     def validate(cls, json, path=[]):
         if not isinstance(json, str):

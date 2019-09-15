@@ -578,7 +578,7 @@ class IdolPyScaffoldFile(GeneratorFileContext):
                     ),
                 )
                 for codegen_ident in codegen_type_ident
-                if type_decon.get_typestruct()
+                if type_decon.get_typestruct() or type_decon.get_enum()
             )
             + Disjoint(
                 Exported(
@@ -590,7 +590,7 @@ class IdolPyScaffoldFile(GeneratorFileContext):
                     ),
                 )
                 for codegen_ident in codegen_type_ident
-                if type_decon.get_enum() or type_decon.get_struct()
+                if type_decon.get_struct()
             )
         )
 
