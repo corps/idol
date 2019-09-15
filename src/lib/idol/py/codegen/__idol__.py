@@ -253,9 +253,7 @@ def inner_kind(cls):
             args = get_args(cls)
         result = cls.__args__[0]
         if type(result) is TypeVar:
-            raise TypeError(
-                "Logic bug!  inner kind was a TypeVar instead of a concrete type"
-            )
+            raise TypeError("Logic bug!  inner kind was a TypeVar instead of a concrete type")
         return result
 
 
@@ -361,9 +359,7 @@ class List(Generic[T], MutableSequence[T], WrapsValue):
 
         if "atleast_one" in metadata["tags"]:
             if not len(json):
-                raise ValueError(
-                    f"{'.'.join(path)} Expected atleast one item, but it was empty"
-                )
+                raise ValueError(f"{'.'.join(path)} Expected atleast one item, but it was empty")
 
         for i, val in enumerate(json):
             validate(inner_kind(cls), val, path + [str(i)])
@@ -522,9 +518,7 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
         orig_data = unwrap_value(orig_data)
 
         if not isinstance(orig_data, dict):
-            raise TypeError(
-                f"Expected to receive a dict, found a {type(orig_data).__name__}"
-            )
+            raise TypeError(f"Expected to receive a dict, found a {type(orig_data).__name__}")
         self.orig_data = orig_data
 
     def unwrap(self):
@@ -558,20 +552,14 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
                 if optional:
                     continue
                 else:
-                    raise KeyError(
-                        f"{'.'.join(path)} Missing required key {repr(field_name)}"
-                    )
+                    raise KeyError(f"{'.'.join(path)} Missing required key {repr(field_name)}")
 
             annotation_name = field_name
             if field_name in KEYWORDS:
                 annotation_name += "_"
 
             if optional:
-                validate(
-                    cls.__annotations__[annotation_name].__args__[0],
-                    val,
-                    path + [field_name],
-                )
+                validate(cls.__annotations__[annotation_name].__args__[0], val, path + [field_name])
             else:
                 validate(cls.__annotations__[annotation_name], val, path + [field_name])
 

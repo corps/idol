@@ -17,9 +17,5 @@ class SchemaModule(Struct):
         ("dependencies", "dependencies", List_.of(ScaffoldDependency)),
         ("module_name", "module_name", Primitive(str)),
         ("types_by_name", "types_by_name", Map.of(ScaffoldType)),
-        (
-            "types_dependency_ordering",
-            "types_dependency_ordering",
-            List_.of(Primitive(str)),
-        ),
+        ("types_dependency_ordering", "types_dependency_ordering", List_.of(Primitive(str))),
     ]
