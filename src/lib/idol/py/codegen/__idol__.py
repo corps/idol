@@ -351,7 +351,7 @@ class Struct(with_metaclass(StructMeta, IdolConstructor)):
 
     def __init__(self, orig_data: Dict[str, Any]):
         if not isinstance(orig_data, dict):
-            raise ValueError("WHAT")
+            raise ValueError(f"WHAT {orig_data}")
         self.orig_data = orig_data
 
     def __str__(self):
