@@ -1,8 +1,14 @@
 import idol.scripter as scripter
 from typing import Dict, List, Union, TypeVar, Callable, Tuple, Any, Optional
+
+from idol.py.schema.primitive_type import PrimitiveType
+from idol.py.schema.reference import Reference
+from idol.py.schema.struct_kind import StructKind
+from idol.py.schema.type import Type
 from .build_env import BuildEnv
 from .functional import OrderedObj, Alt, StringSet, Disjoint, naive_object_concat, Conjunct
-from .schema import Module, Type, Reference, PrimitiveType, TypeStruct, StructKind
+from idol.py.schema.module import Module
+from idol.py.schema.type_struct import TypeStruct
 
 A = TypeVar("A")
 

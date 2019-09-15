@@ -2,13 +2,13 @@ from os import getcwd
 
 import argparse
 import json
-from typing import Dict, List, Union
+from typing import Dict, List, Union, MutableMapping
 import sys
 
 from idol.generator import GeneratorParams
 from idol.functional import OrderedObj
 from idol.__idol__ import Map
-from idol.schema import Module
+from idol.py.schema.module import Module
 
 
 class CliConfig:
@@ -52,8 +52,8 @@ def prepare_generator_params(
     options: Dict[str, Union[List[str], bool]], data: str
 ) -> GeneratorParams:
     modules = json.loads(data)
-    Map[Module].validate(modules)
-    modules: Map[Module] = Map[Module](modules)
+    Map.of(Module, {}).validate(modules)
+    modules: MutableMapping[Module] = Map.of(Module, {}).wrap(modules)
 
     all_modules: OrderedObj[Module] = OrderedObj(modules)
     all_types = OrderedObj.from_iterable(m.types_as_ordered_obj() for m in all_modules.values())

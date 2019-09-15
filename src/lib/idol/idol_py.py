@@ -25,7 +25,9 @@ from idol.generator import (
     import_expr,
     get_safe_ident,
 )
-from idol.schema import *
+from idol.py.schema.primitive_type import PrimitiveType
+from idol.py.schema.reference import Reference
+from idol.py.schema.type import Type
 
 ExportedAny: Exported = Exported(Path("typing"), "Any")
 
@@ -37,10 +39,10 @@ class IdolPy(GeneratorContext):
     codegen_impl: "Callable[[IdolPy, Type, Path], IdolPyCodegenFile]"
 
     def __init__(
-        self,
-        config: GeneratorConfig,
-        scaffold_impl: "Callable[[IdolPy, Type, Path], IdolPyScaffoldFile]" = None,
-        codegen_impl: "Callable[[IdolPy, Type, Path], IdolPyCodegenFile]" = None,
+            self,
+            config: GeneratorConfig,
+            scaffold_impl: "Callable[[IdolPy, Type, Path], IdolPyScaffoldFile]" = None,
+            codegen_impl: "Callable[[IdolPy, Type, Path], IdolPyCodegenFile]" = None,
     ):
         super(IdolPy, self).__init__(GeneratorAcc(), config)
         self.scaffolds = {}
@@ -147,7 +149,7 @@ class IdolPyCodegenStruct(GeneratorFileContext):
     fields: OrderedObj["IdolPyCodegenTypeStruct"]
 
     def __init__(
-        self, codegen_file: IdolPyCodegenFile, fields: "OrderedObj[IdolPyCodegenTypeStruct]"
+            self, codegen_file: IdolPyCodegenFile, fields: "OrderedObj[IdolPyCodegenTypeStruct]"
     ):
         self.fields = fields
         self.codegen_file = codegen_file
@@ -329,7 +331,7 @@ class IdolPyCodegenTypeStruct(GeneratorContext):
         )
 
         def container_expression(
-            container_expr: Expression, scalar_expression: Expression
+                container_expr: Expression, scalar_expression: Expression
         ) -> Expression:
             def inner(state: GeneratorAcc, path: Path):
                 return scripter.invocation(
