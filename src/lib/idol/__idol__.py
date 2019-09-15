@@ -339,7 +339,6 @@ def create_struct_prop(attr, type: Type[IdolConstructor]):
 class StructMeta(type):
     def __new__(mcs: Type["Struct"], name, bases, dct):
         mcs = super().__new__(mcs, name, bases, dct)
-
         for field_name, prop_name, constructor in getattr(mcs, '__field_constructors__', []):
             setattr(mcs, prop_name, create_struct_prop(field_name, constructor))
 
