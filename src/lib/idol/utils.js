@@ -23,7 +23,7 @@ function getTagValue(tags, tag, d) {
       var pre = _tag.indexOf(_tag + ":");
 
       if (pre === 0) {
-        return _tag.slice(_tag.length + 1);
+        return _tag.slice(pre);
       }
     }
   }

@@ -159,7 +159,7 @@ function () {
       };
       this.qualifiedNamesToPaths = OutputTypeMappers.fromOne(function (pathOfType) {
         var typeToPathObj = function typeToPathObj(type) {
-          return new _functional.OrderedObj(_defineProperty({}, type.named.qualifiedName, new _functional.Conflictable([pathOfType(type)])));
+          return new _functional.OrderedObj(_defineProperty({}, type.named.qualifiedName, pathOfType(type)));
         };
 
         return (0, _functional.concatMap)(_this2.params.allTypes.items(), typeToPathObj, new _functional.OrderedObj());
@@ -458,9 +458,7 @@ function render(config, output) {
         output = _ref10[0],
         pathConfig = _ref10[1];
 
-    return output.zipWithKeysFrom(pathConfig.map(function (v) {
-      return v.expectOne();
-    })).map(function (file) {
+    return output.zipWithKeysFrom(pathConfig).map(function (file) {
       return new _functional.Conflictable(file.isEmpty() ? [] : [file.render()]);
     });
   };

@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 import json
-from idol.all.optional import Assembled
+from .idol.py.all.optional import Assembled
 import sys
 
 data = sys.stdin.read()
