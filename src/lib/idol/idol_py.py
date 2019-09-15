@@ -223,7 +223,6 @@ class IdolPyCodegenEnum(GeneratorFileContext):
                     self.codegen_file.default_type_name,
                     scripter.nameable_class_dec(
                         [
-                            self.state.import_ident(self.path, Exported(Path("enum"), "Enum")),
                             self.state.import_ident(
                                 self.path, self.codegen_file.idol_py.idol_py_file.enum
                             ),
