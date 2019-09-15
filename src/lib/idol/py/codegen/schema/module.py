@@ -12,4 +12,14 @@ class SchemaModule(Struct):
     module_name: str
     types_by_name: Dict[str, ScaffoldType]
     types_dependency_ordering: List[str]
-    __field_constructors__ = []
+    __field_constructors__ = [
+        ("abstract_types_by_name", "abstract_types_by_name", Map.of(ScaffoldType)),
+        ("dependencies", "dependencies", List_.of(ScaffoldDependency)),
+        ("module_name", "module_name", Primitive(str)),
+        ("types_by_name", "types_by_name", Map.of(ScaffoldType)),
+        (
+            "types_dependency_ordering",
+            "types_dependency_ordering",
+            List_.of(Primitive(str)),
+        ),
+    ]

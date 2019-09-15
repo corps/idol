@@ -16,4 +16,12 @@ class SchemaType(Struct):
     options: List[str]
     tags: List[str]
     type_vars: List[str]
-    __field_constructors__ = []
+    __field_constructors__ = [
+        ("dependencies", "dependencies", List_.of(ScaffoldDependency)),
+        ("fields", "fields", Map.of(ScaffoldField)),
+        ("is_a", "is_a", ScaffoldTypeStruct),
+        ("named", "named", ScaffoldReference),
+        ("options", "options", List_.of(Primitive(str))),
+        ("tags", "tags", List_.of(Primitive(str))),
+        ("type_vars", "type_vars", List_.of(Primitive(str))),
+    ]

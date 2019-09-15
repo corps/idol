@@ -14,4 +14,10 @@ class SchemaTypeStruct(Struct):
     primitive_type: ScaffoldPrimitiveType
     reference: ScaffoldReference
     struct_kind: ScaffoldStructKind
-    __field_constructors__ = []
+    __field_constructors__ = [
+        ("literal", "literal", ScaffoldLiteral),
+        ("parameters", "parameters", List_.of(ScaffoldReference)),
+        ("primitive_type", "primitive_type", ScaffoldPrimitiveType),
+        ("reference", "reference", ScaffoldReference),
+        ("struct_kind", "struct_kind", ScaffoldStructKind),
+    ]
