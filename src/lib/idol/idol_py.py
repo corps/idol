@@ -115,9 +115,10 @@ class IdolPyCodegenFile(GeneratorFileContext):
         return self.t.named.as_qualified_ident
 
     @cached_property
-    def typestruct(self) -> "Alt[IdolPyCodegenTypeStruct]":
+    def typestruct(self) -> "Alt[IdolPyCodegenTypeStructDeclaration]":
         return Alt(
-            IdolPyCodegenTypeStruct(self, ts_decon) for ts_decon in self.t_decon.get_typestruct()
+            IdolPyCodegenTypeStructDeclaration(self, ts_decon) for ts_decon in
+            self.t_decon.get_typestruct()
         )
 
     @cached_property
@@ -130,7 +131,7 @@ class IdolPyCodegenFile(GeneratorFileContext):
             IdolPyCodegenStruct(
                 self,
                 OrderedObj.from_iterable(
-                    OrderedObj({k: IdolPyCodegenTypeStruct(self, ts_decon)})
+                    OrderedObj({k: IdolPyCodegenTypeStruct(self.idol_py, ts_decon)})
                     for k, ts_decon in fields
                 ),
             )
@@ -176,10 +177,10 @@ class IdolPyCodegenStruct(GeneratorFileContext):
                                     scripter.tuple(
                                         scripter.literal(field_name),
                                         scripter.literal(get_safe_ident(field_name)),
-                                        self.state.import_ident(self.path, field_exported),
+                                        field_expr(self.state, self.path),
                                     )
                                     for field_name, field in self.fields
-                                    for field_exported in field.declared_ident
+                                    for field_expr in field.constructor_expr
                                 ),
                             )
                         ],
@@ -223,47 +224,21 @@ class IdolPyCodegenEnum(GeneratorFileContext):
         )
 
 
-class IdolPyCodegenTypeStruct(GeneratorFileContext):
-    codegen_file: IdolPyCodegenFile
+class IdolPyCodegenTypeStruct(GeneratorContext):
     ts_decon: TypeStructDeconstructor
+    idol_py: IdolPy
 
-    @property
-    def idol_py(self):
-        return self.codegen_file.idol_py
-
-    def __init__(self, parent: IdolPyCodegenFile, ts_decon: TypeStructDeconstructor):
-        super(IdolPyCodegenTypeStruct, self).__init__(parent.parent, parent.path)
+    def __init__(self, parent: IdolPy, ts_decon: TypeStructDeconstructor):
+        super(IdolPyCodegenTypeStruct, self).__init__(parent.state, parent.config)
         self.ts_decon = ts_decon
-        self.codegen_file = parent
+        self.idol_py = parent
 
     @cached_property
     def inner_scalar(self) -> "Alt[IdolPyCodegenScalar]":
         return Alt(
-            IdolPyCodegenScalar(self, scalar_decon)
+            IdolPyCodegenScalar(self.idol_py, scalar_decon)
             for scalar_decon in Disjoint(
                 self.ts_decon.get_scalar() + self.ts_decon.get_map() + self.ts_decon.get_repeated()
-            )
-        )
-
-    @cached_property
-    def declared_ident(self) -> Alt[Exported]:
-        return Alt(
-            Disjoint(
-                Exported(
-                    self.path,
-                    self.state.add_content_with_ident(
-                        self.path,
-                        self.codegen_file.default_type_name,
-                        scripter.declare_and_shadow(typing_expr(self.state, self.path),
-                                                    constructor_expr),
-                    ),
-                )
-                for typing_expr in self.typing_expr
-                for constructor_expr in self.container_constructor_expr
-                if self.ts_decon.context.is_declarable
-            )
-            + Disjoint(
-                declaration for scalar in self.inner_scalar for declaration in scalar.declared_ident
             )
         )
 
@@ -308,34 +283,88 @@ class IdolPyCodegenTypeStruct(GeneratorFileContext):
         return Alt(expr for scalar in self.inner_scalar for expr in scalar.typing_expr)
 
     @cached_property
-    def container_constructor_expr(self) -> Alt[str]:
-        container_con: Disjoint[str] = self.ts_decon.get_repeated() and Disjoint.lift(
-            self.state.import_ident(self.path, self.idol_py.idol_py_file.list)
+    def constructor_expr(self) -> Alt[Expression]:
+        return Alt(
+            Disjoint(self.container_constructor_expr) + Disjoint(
+                expr
+                for inner_scalar in self.inner_scalar
+                for expr in inner_scalar.constructor_expr
+                if self.ts_decon.get_scalar()
+            )
+        )
+
+    @cached_property
+    def container_constructor_expr(self) -> Alt[Expression]:
+        container_con: Disjoint[Expression] = self.ts_decon.get_repeated() and Disjoint.lift(
+            import_expr(self.idol_py.idol_py_file.list)
         )
         container_con += self.ts_decon.get_map() and Disjoint.lift(
-            self.state.import_ident(self.path, self.idol_py.idol_py_file.map)
+            import_expr(self.idol_py.idol_py_file.map)
         )
+
+        def container_expression(container_expr: Expression,
+                                 scalar_expression: Expression) -> Expression:
+            def inner(state: GeneratorAcc, path: Path):
+                return scripter.invocation(scripter.prop_access(container_expr(state, path), "of"),
+                                           scalar_expression(state, path))
+
+            return inner
 
         return Alt(
-            scripter.invocation(scripter.prop_access(con, "of"), scalar_con(self.state, self.path))
-            for con in container_con
+            container_expression(container_con_expr, scalar_con_expr)
+            for container_con_expr in container_con
             for scalar in self.inner_scalar
-            for scalar_con in scalar.constructor_expr
+            for scalar_con_expr in scalar.constructor_expr
         )
 
 
-class IdolPyCodegenScalar(GeneratorFileContext):
-    typestruct: IdolPyCodegenTypeStruct
+class IdolPyCodegenTypeStructDeclaration(IdolPyCodegenTypeStruct):
+    path: Path
+    codegen_file: IdolPyCodegenFile
+
+    def __init__(self, parent: IdolPyCodegenFile, ts_decon: TypeStructDeconstructor):
+        super(IdolPyCodegenTypeStructDeclaration, self).__init__(parent.idol_py, ts_decon)
+        self.codegen_file = parent
+        self.path = parent.path
+
+    @cached_property
+    def declarable_scalar(self) -> "Alt[IdolPyCodegenScalarDeclaration]":
+        return Alt(
+            IdolPyCodegenScalarDeclaration(self.codegen_file, scalar_decon)
+            for scalar_decon in self.ts_decon.get_scalar()
+        )
+
+    @cached_property
+    def declared_ident(self) -> Alt[Exported]:
+        return Alt(
+            Disjoint(
+                Exported(
+                    self.path,
+                    self.state.add_content_with_ident(
+                        self.path,
+                        self.codegen_file.default_type_name,
+                        scripter.declare_and_shadow(typing_expr(self.state, self.path),
+                                                    constructor_expr(self.state, self.path)),
+                    ),
+                )
+                for typing_expr in self.typing_expr
+                for constructor_expr in self.container_constructor_expr
+            )
+            + Disjoint(
+                declaration for scalar in self.declarable_scalar for declaration in
+                scalar.declared_ident
+            )
+        )
+
+
+class IdolPyCodegenScalar(GeneratorContext):
+    idol_py: IdolPy
     scalar_dec: ScalarDeconstructor
 
-    def __init__(self, parent: IdolPyCodegenTypeStruct, scalar_decon: ScalarDeconstructor):
-        super(IdolPyCodegenScalar, self).__init__(parent.parent, parent.path)
+    def __init__(self, parent: IdolPy, scalar_decon: ScalarDeconstructor):
+        super(IdolPyCodegenScalar, self).__init__(parent.state, parent.config)
         self.scalar_dec = scalar_decon
-        self.typestruct = parent
-
-    @property
-    def idol_py(self):
-        return self.typestruct.idol_py
+        self.idol_py = parent
 
     @cached_property
     def typing_expr(self) -> Alt[Expression]:
@@ -376,19 +405,6 @@ class IdolPyCodegenScalar(GeneratorFileContext):
         )
 
         return Alt(imported_alias_ident)
-
-    @cached_property
-    def declared_alias_ident(self) -> Alt[Exported]:
-        return Alt(
-            Exported(self.path, self.state.add_content_with_ident(
-                self.path,
-                self.typestruct.codegen_file.default_type_name,
-                scripter.assignable(
-                    ref_import(self.state, self.path)
-                ),
-            ))
-            for ref_import in self.reference_import_expr
-        )
 
     @cached_property
     def prim_constructor_expr(self) -> Alt[Expression]:
@@ -448,6 +464,23 @@ class IdolPyCodegenScalar(GeneratorFileContext):
             )
         )
 
+    scalar_type_name_mappings = {
+        PrimitiveType.BOOL: "bool",
+        PrimitiveType.INT: "int",
+        PrimitiveType.STRING: "str",
+        PrimitiveType.DOUBLE: "float",
+    }
+
+
+class IdolPyCodegenScalarDeclaration(IdolPyCodegenScalar):
+    path: Path
+    codegen_file: IdolPyCodegenFile
+
+    def __init__(self, parent: IdolPyCodegenFile, scalar_decon: ScalarDeconstructor):
+        super(IdolPyCodegenScalarDeclaration, self).__init__(parent.idol_py, scalar_decon)
+        self.codegen_file = parent
+        self.path = parent.path
+
     @cached_property
     def declared_prim_ident(self) -> Alt[Exported]:
         return Alt(
@@ -455,32 +488,34 @@ class IdolPyCodegenScalar(GeneratorFileContext):
                 self.path,
                 self.state.add_content_with_ident(
                     self.path,
-                    self.typestruct.codegen_file.default_type_name,
+                    self.codegen_file.default_type_name,
                     scripter.declare_and_shadow(prim_expr(self.state, self.path),
                                                 prim_con_expr(self.state, self.path)),
                 ),
             )
             for prim_expr in self.prim_typing_expr
             for prim_con_expr in self.prim_constructor_expr
-            if not self.scalar_dec.context.is_declarable
         )
 
     @cached_property
     def declared_ident(self) -> Alt[Exported]:
-        if not self.scalar_dec.context.is_declarable:
-            return Alt.empty()
-
         return Alt(
             Disjoint(self.declared_prim_ident)
             + Disjoint(self.declared_alias_ident)
         )
 
-    scalar_type_name_mappings = {
-        PrimitiveType.BOOL: "bool",
-        PrimitiveType.INT: "int",
-        PrimitiveType.STRING: "str",
-        PrimitiveType.DOUBLE: "float",
-    }
+    @cached_property
+    def declared_alias_ident(self) -> Alt[Exported]:
+        return Alt(
+            Exported(self.path, self.state.add_content_with_ident(
+                self.path,
+                self.codegen_file.default_type_name,
+                scripter.assignable(
+                    ref_import(self.state, self.path)
+                ),
+            ))
+            for ref_import in self.reference_import_expr
+        )
 
 
 class IdolPyScaffoldFile(GeneratorFileContext):

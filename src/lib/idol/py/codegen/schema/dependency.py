@@ -3,13 +3,10 @@
 from ..__idol__ import Struct
 from ...schema.reference import Reference as ScaffoldReference
 
-SchemaDependency = ScaffoldReference
-SchemaDependency = ScaffoldReference
-
 
 class SchemaDependency(Struct):
-    from_: SchemaDependency_
+    from_: ScaffoldReference
     is_abstraction: bool
     is_local: bool
-    to: SchemaDependency_
+    to: ScaffoldReference
     __field_constructors__ = []

@@ -4,11 +4,9 @@ from ..__idol__ import Struct, List as List_, Primitive
 from typing import List
 from ...schema.type_struct import TypeStruct as ScaffoldTypeStruct
 
-SchemaField = ScaffoldTypeStruct
-
 
 class SchemaField(Struct):
     field_name: str
     tags: List[str]
-    type_struct: SchemaField_
+    type_struct: ScaffoldTypeStruct
     __field_constructors__ = []

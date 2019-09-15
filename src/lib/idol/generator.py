@@ -454,8 +454,6 @@ class GeneratorAcc:
 
         imported_as = self.imports.get_imported_as_idents(into_path, from_path, ident).get_or(
             StringSet([]))
-        print(
-            f"import {into_path.path} {exported.path.path} {from_path.path.path} {ident} {imported_as}")
 
         if imported_as:
             return sorted(imported_as)[0]
