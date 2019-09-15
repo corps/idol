@@ -64,12 +64,13 @@ class Primitive(IdolConstructor):
 
     @staticmethod
     def of(type_constructor: Type) -> Type["Primitive"]:
-        return cast(
+        cls = cast(
             Type["Primitive"],
-            new_class(
-                type_constructor.__name__, (Primitive,), dict(type_constructor=type_constructor)
-            ),
+            new_class(type_constructor.__name__, (Primitive,)),
         )
+
+        cls.type_constructor = type_constructor
+        return cls
 
     @classmethod
     def expand(cls, json) -> Union[str, float, bool, int]:
@@ -102,10 +103,12 @@ class Literal(IdolConstructor):
 
     @staticmethod
     def of(value: Union[str, int, float, bool]) -> Type["Literal"]:
-        return cast(
+        cls = cast(
             Type["Literal"],
-            new_class(type(value).__name__, (Literal, type(value)), dict(value=value)),
+            new_class(type(value).__name__, (Literal, type(value))),
         )
+        cls.value = value
+        return cls
 
     @classmethod
     def validate(cls, json, path=[]):
@@ -162,14 +165,16 @@ class List(IdolConstructor, MutableSequence):
 
     @staticmethod
     def of(inner_constructor: Type[IdolConstructor], options: Dict[str, Any]) -> Type["List"]:
-        return cast(
+        cls = cast(
             Type["List"],
             new_class(
                 f"List[{inner_constructor.__name__}]",
                 (List,),
-                dict(inner_constructor=inner_constructor, options=options),
             ),
         )
+        cls.inner_constructor = inner_constructor
+        cls.options = options
+        return cls
 
     @classmethod
     def validate(cls, json, path=[]):
@@ -244,14 +249,17 @@ class Map(IdolConstructor, MutableMapping):
 
     @staticmethod
     def of(inner_constructor: Type[IdolConstructor], options: Dict[str, Any]) -> Type["Map"]:
-        return cast(
+        cls = cast(
             Type["Map"],
             new_class(
                 f"Map[{inner_constructor.__name__}]",
                 (Map,),
-                dict(inner_constructor=inner_constructor, options=options),
             ),
         )
+        cls.inner_constructor = inner_constructor
+        cls.options = options
+
+        return cls
 
     @classmethod
     def validate(cls, json, path=[]):
