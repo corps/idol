@@ -446,7 +446,8 @@ class IdolPyCodegenScalar(GeneratorContext):
         def prim_con_expr(prim_expr: Expression) -> Expression:
             def inner(state: GeneratorAcc, path: Path) -> str:
                 return scripter.invocation(
-                    state.import_ident(path, self.idol_py.idol_py_file.primitive),
+                    scripter.prop_access(
+                        state.import_ident(path, self.idol_py.idol_py_file.primitive), "of"),
                     prim_expr(state, path),
                 )
 
@@ -454,8 +455,8 @@ class IdolPyCodegenScalar(GeneratorContext):
 
         def literal_con_expr(value: Any) -> Expression:
             def inner(state: GeneratorAcc, path: Path) -> str:
-                return scripter.invocation(
-                    state.import_ident(path, self.idol_py.idol_py_file.literal),
+                return scripter.invocation(scripter.prop_access(
+                    state.import_ident(path, self.idol_py.idol_py_file.literal), "of"),
                     scripter.literal(value),
                 )
 
