@@ -327,6 +327,8 @@ class Map(IdolConstructor, MutableMapping):
 def create_struct_prop(attr, type: Type[IdolConstructor]):
     @property
     def prop(self):
+        if self.orig_data is None:
+            return None
         return type.wrap(self.orig_data.get(attr, None))
 
     @prop.setter
@@ -350,6 +352,8 @@ class Struct(with_metaclass(StructMeta, IdolConstructor)):
     __field_constructors__: typingList[Tuple[str, str, Type[IdolConstructor], Dict[str, Any]]] = []
 
     def __init__(self, orig_data: Dict[str, Any]):
+        if not isinstance(orig_data, dict):
+            raise ValueError("WHAT")
         self.orig_data = orig_data
 
     def __str__(self):
