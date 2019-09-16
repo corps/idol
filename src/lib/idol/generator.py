@@ -97,12 +97,12 @@ class Exported:
 
 class GeneratorParams:
     def __init__(
-        self,
-        all_modules: OrderedObj[Module],
-        all_types: OrderedObj[Type],
-        scaffold_types: OrderedObj[Type],
-        output_dir: str,
-        options: Dict[str, Union[List[str], bool]],
+            self,
+            all_modules: OrderedObj[Module],
+            all_types: OrderedObj[Type],
+            scaffold_types: OrderedObj[Type],
+            output_dir: str,
+            options: Dict[str, Union[List[str], bool]],
     ):
         self.all_modules = all_modules
         self.all_types = all_types
@@ -121,7 +121,7 @@ class TypeStructContext:
         return self.is_type_bound
 
     def __init__(
-        self, field_tags: Optional[List[str]] = None, type_tags: Optional[List[str]] = None
+            self, field_tags: Optional[List[str]] = None, type_tags: Optional[List[str]] = None
     ):
         self.field_tags = field_tags or []
         self.type_tags = type_tags or []
@@ -131,7 +131,7 @@ class TypeStructContext:
         return field_tag in self.field_tags or type_tag in self.type_tags
 
     def get_tag_value(
-        self, d: str, field_tag: Optional[str] = None, type_tag: Optional[str] = None
+            self, d: str, field_tag: Optional[str] = None, type_tag: Optional[str] = None
     ) -> str:
         for tag, tags in ((field_tag, self.field_tags), (type_tag, self.type_tags)):
             if not tag:
@@ -243,7 +243,8 @@ class TypeDeconstructor:
         return Alt.lift(
             OrderedObj(
                 {
-                    k: TypeStructDeconstructor(v.type_struct, TypeStructContext(field_tags=list(v.tags)))
+                    k: TypeStructDeconstructor(v.type_struct,
+                                               TypeStructContext(field_tags=list(v.tags)))
                     for k, v in self.t.fields.items()
                 }
             )
@@ -329,10 +330,11 @@ class IdentifiersAcc:
             for idents in path_idents.get(ident)
         )
 
-    def unwrap_conflicts(self) -> Disjoint[Tuple[str, str, StringSet]]:
-        return Disjoint(
+    def unwrap_conflicts(self) -> List[Tuple[str, str, StringSet]]:
+        return [
             (path, ident, sources) for path, mod in self.idents for ident, sources in mod
-        )
+            if len(sources) > 1
+        ]
 
 
 class ImportsAcc:
@@ -357,7 +359,7 @@ class ImportsAcc:
         )
 
     def get_imported_as_idents(
-        self, into_path: Path, from_path: ImportPath, from_ident: str
+            self, into_path: Path, from_path: ImportPath, from_ident: str
     ) -> Alt[StringSet]:
         return Alt(
             into_idents
@@ -391,7 +393,7 @@ class GeneratorAcc:
     group_of_path: OrderedObj[StringSet]
     uniq: int
 
-    def __init__(self,):
+    def __init__(self):
         self.idents = IdentifiersAcc()
         self.imports = ImportsAcc()
         self.content = OrderedObj()
@@ -406,14 +408,15 @@ class GeneratorAcc:
     def validate(self) -> "GeneratorAcc":
         path_errors = [
             f"Conflict in paths: Multiple ({' '.join(conflicts)}) types of {path} found"
-            for path_groups, path in self.group_of_path
+            for path, path_groups in self.group_of_path
             for conflicts in Disjoint(path_groups).unwrap_errors()
         ]
 
         if path_errors:
             raise ValueError("\n".join(path_errors))
 
-        for conflicts in self.idents.unwrap_conflicts().unwrap_errors():
+        conflicts = self.idents.unwrap_conflicts()
+        if conflicts:
             raise ValueError(
                 "Found conflicting identifiers:\n"
                 + "  \n".join(
@@ -425,6 +428,8 @@ class GeneratorAcc:
         return self
 
     def render(self, comment_headers=Dict[str, List]) -> OrderedObj[str]:
+        self.validate()
+
         return OrderedObj.from_iterable(
             OrderedObj(
                 {
@@ -462,7 +467,7 @@ class GeneratorAcc:
         )
 
     def import_ident(
-        self, into_path: Path, exported: Exported, as_ident: Optional[str] = None
+            self, into_path: Path, exported: Exported, as_ident: Optional[str] = None
     ) -> str:
         ident = exported.ident
         if as_ident is None:
@@ -471,7 +476,7 @@ class GeneratorAcc:
         from_path = into_path.import_path_to(exported.path)
 
         if not from_path.is_module and not self.idents.get_identifier_sources(
-            from_path.path, ident
+                from_path.path, ident
         ):
             raise ValueError(
                 f"identifier {ident} required by {into_path} does not exist in {from_path}"
@@ -493,7 +498,7 @@ class GeneratorAcc:
         as_ident = get_safe_ident(as_ident)
 
         while source not in self.idents.get_identifier_sources(into_path, as_ident).get_or(
-            StringSet([source or ""])
+                StringSet([source or ""])
         ):
             as_ident += "_"
 
@@ -501,7 +506,7 @@ class GeneratorAcc:
         return as_ident
 
     def add_content_with_ident(
-        self, path: Path, ident: str, scriptable: Callable[[str], Union[str, List]]
+            self, path: Path, ident: str, scriptable: Callable[[str], Union[str, List]]
     ) -> str:
         self.idents.add_identifier(path, ident, self.get_unique_source(path))
         self.add_content(path, scriptable(ident))

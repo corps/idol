@@ -9,7 +9,7 @@ class Reference(SchemaReference):
 
     @property
     def as_type_path(self):
-        return "/".join(self.snakify().qualified_name.split(".")) + ".py"
+        return "/".join(self.snakify().type_name.split(".")) + ".py"
 
     @property
     def as_module_path(self):

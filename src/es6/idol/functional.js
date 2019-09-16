@@ -153,6 +153,11 @@ export class Alt<T> {
         })();
     }
 
+    bind<R>(f: (v: T) => Alt<R>): Alt<R> {
+        if (this.isEmpty()) return (this: any);
+        return f(this.unwrap());
+    }
+
     isEmpty(): boolean {
         return !this.value.length;
     }
