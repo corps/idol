@@ -52,7 +52,7 @@ def prepare_generator_params(
     options: Dict[str, Union[List[str], bool]], data: str
 ) -> GeneratorParams:
     modules = json.loads(data)
-    # Map.of(Module, {}).validate(modules)
+    Map.of(Module, {}).validate(modules)
     modules: MutableMapping[Module] = Map.of(Module, {}).wrap(modules)
 
     all_modules: OrderedObj[Module] = OrderedObj(modules)

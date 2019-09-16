@@ -13,7 +13,7 @@ from typing import (
     List as typingList,
     Dict,
     Iterator,
-)
+    Optional)
 from enum import Enum as enumEnum
 
 
@@ -164,7 +164,7 @@ class List(IdolConstructor, MutableSequence):
     options: Dict[str, Any]
 
     @staticmethod
-    def of(inner_constructor: Type[IdolConstructor], options: Dict[str, Any]) -> Type["List"]:
+    def of(inner_constructor: Type[IdolConstructor], options: Optional[Dict[str, Any]] = None) -> Type["List"]:
         cls = cast(
             Type["List"],
             new_class(
@@ -248,7 +248,7 @@ class Map(IdolConstructor, MutableMapping):
     options: Dict[str, Any]
 
     @staticmethod
-    def of(inner_constructor: Type[IdolConstructor], options: Dict[str, Any]) -> Type["Map"]:
+    def of(inner_constructor: Type[IdolConstructor], options: Optional[Dict[str, Any]] = {}) -> Type["Map"]:
         cls = cast(
             Type["Map"],
             new_class(

@@ -6,7 +6,7 @@ from idol.py.schema.reference import Reference
 from idol.py.schema.struct_kind import StructKind
 from idol.py.schema.type import Type
 from .build_env import BuildEnv
-from .functional import OrderedObj, Alt, StringSet, Disjoint, naive_object_concat, Conjunct
+from .functional import OrderedObj, Alt, StringSet, Disjoint, naive_object_concat
 from idol.py.schema.module import Module
 from idol.py.schema.type_struct import TypeStruct
 
@@ -140,7 +140,7 @@ class TypeStructContext:
             for t in tags:
                 pre = t.index(tag + ":")
                 if pre == 0:
-                    return t[len(tag) + 1 :]
+                    return t[len(tag) + 1:]
 
         return d
 
@@ -227,7 +227,7 @@ class TypeDeconstructor:
             return Alt.empty()
 
         return Alt.lift(
-            TypeStructDeconstructor(self.t.is_a, TypeStructContext(type_tags=self.t.tags))
+            TypeStructDeconstructor(self.t.is_a, TypeStructContext(type_tags=list(self.t.tags)))
         )
 
     def get_enum(self) -> Alt[List[str]]:
@@ -243,7 +243,7 @@ class TypeDeconstructor:
         return Alt.lift(
             OrderedObj(
                 {
-                    k: TypeStructDeconstructor(v.type_struct, TypeStructContext(field_tags=v.tags))
+                    k: TypeStructDeconstructor(v.type_struct, TypeStructContext(field_tags=list(v.tags)))
                     for k, v in self.t.fields.items()
                 }
             )
@@ -404,11 +404,13 @@ class GeneratorAcc:
     __add__ = concat
 
     def validate(self) -> "GeneratorAcc":
-        for path_errors in Conjunct(
+        path_errors = [
             f"Conflict in paths: Multiple ({' '.join(conflicts)}) types of {path} found"
             for path_groups, path in self.group_of_path
             for conflicts in Disjoint(path_groups).unwrap_errors()
-        ):
+        ]
+
+        if path_errors:
             raise ValueError("\n".join(path_errors))
 
         for conflicts in self.idents.unwrap_conflicts().unwrap_errors():

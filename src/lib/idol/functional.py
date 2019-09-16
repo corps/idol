@@ -1,4 +1,4 @@
-from typing import TypeVar, Generic, Tuple, List, Iterable, Any, Optional, Iterator, Mapping, Dict
+from typing import TypeVar, Generic, Tuple, List, Iterable, Any, Iterator, Mapping, Dict
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -77,33 +77,6 @@ class OrderedObj(Generic[T]):
         return Alt.empty()
 
 
-class Conjunct(Generic[A]):
-    v: List[A]
-
-    def __init__(self, v: Iterable[A]):
-        if not isinstance(v, list):
-            v = list(v)
-        self.v = v
-
-    @classmethod
-    def lift(cls, v: A) -> "Conjunct[A]":
-        return cls((v,))
-
-    @classmethod
-    def empty(cls) -> "Conjunct[Any]":
-        return cls([])
-
-    def __iter__(self) -> Iterable[List[T]]:
-        if self:
-            yield self.v
-
-    def __bool__(self):
-        return len(self.v)
-
-    def __concat__(self, other: "Conjunct[A]") -> "Conjunct[A]":
-        return Conjunct(self.v + other.v)
-
-
 class Alt(Generic[A]):
     v: List[A]
 
@@ -123,12 +96,6 @@ class Alt(Generic[A]):
         return cls((v,))
 
     @classmethod
-    def lift_optional(cls, v: Optional[A]) -> "Alt[A]":
-        if v is None:
-            return cls.empty()
-        return cls.lift(v)
-
-    @classmethod
     def empty(cls) -> "Alt[Any]":
         return cls([])
 
@@ -139,11 +106,6 @@ class Alt(Generic[A]):
         if not self:
             return d
         return self.unwrap()
-
-    def get_or_fail(self, msg: str) -> A:
-        if self:
-            return self.unwrap()
-        raise ValueError(msg)
 
     def __iter__(self) -> Iterable[A]:
         if self:
@@ -171,12 +133,6 @@ class Disjoint(Generic[A]):
     @classmethod
     def lift(cls, v: A) -> "Disjoint[A]":
         return cls((v,))
-
-    @classmethod
-    def lift_optional(cls, v: Optional[A]) -> "Disjoint[A]":
-        if v is None:
-            return cls.empty()
-        return cls.lift(v)
 
     @classmethod
     def empty(cls) -> "Disjoint[Any]":

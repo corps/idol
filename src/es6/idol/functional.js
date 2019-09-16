@@ -1,32 +1,5 @@
 // @flow
 
-export interface MethodSemigroup<T> {
-    concat(other: T): T;
-}
-
-export interface Semigroup<T> {
-    concat(a: T, b: T): T;
-}
-
-export interface Foldable<I> {
-    reduce<R>(f: (result: R, next: I) => R, d: R): R;
-}
-
-export function getSemigroup<T, D: MethodSemigroup<T>>(source: D): Semigroup<T> {
-    return {
-        concat: (a: T, b: T) => ((a: any): D).concat(b)
-    };
-}
-
-export function compose<A, B, C>(f: A => B, g: B => C): A => C {
-    return (a: A) => g(f(a));
-}
-
-export function compose3<A, B, C, D>(f: A => B, g: B => C, h: C => D): A => D {
-    return (a: A) => h(g(f(a)));
-}
-
-
 export class OrderedObj<I> {
     obj: { [k: string]: I };
     ordering: Array<string>;
@@ -44,66 +17,65 @@ export class OrderedObj<I> {
         return false;
     }
 
-    concat<T: I & MethodSemigroup<I>>(other: OrderedObj<T>): OrderedObj<I> {
+    get length(): number {
+        return Object.keys(this.obj).length;
+    }
+
+    concat(other: OrderedObj<I>): OrderedObj<I> {
         const ordering = this.ordering.concat(other.ordering.filter(k => !(k in this.obj)));
         const result = {};
         ordering.forEach(k => {
             const left = this.obj[k];
             const right = other.obj[k];
-            const { concat } = getSemigroup<I, T>(right);
 
             if (!left) result[k] = right;
             else if (!right) result[k] = left;
-            else result[k] = concat(left, right);
+            else result[k] = (left: any).concat(right);
         });
 
         return new OrderedObj<I>(result, ordering);
     }
 
-    withKV(k: string, v: I): OrderedObj<I> {
-        const ordering = this.ordering.concat(k in this.obj ? [] : [k]);
-        return new OrderedObj<I>({ ...this.obj, [k]: v }, ordering);
+    static fromIterable<A>(iter: Iterable<OrderedObj<A>>): OrderedObj<A> {
+        let result: OrderedObj<A> = new OrderedObj<A>();
+        for (let o of iter) {
+            result = result.concat(o)
+        }
+        return result;
     }
 
-    zipWithKeysFrom(other: OrderedObj<string>): OrderedObj<I> {
-        return this.reduce<OrderedObj<I>>((result: OrderedObj<I>, [next, k]: [any, string]) => {
-            if (k in other.obj) {
-                return result.concat(new OrderedObj<any>({ [other.obj[k]]: next }));
-            }
 
-            return result;
-        }, new OrderedObj<I>());
+    keys(): Array<string> {
+        return Object.keys(this.obj);
     }
 
-    map<R>(f: (obj: I, k: string) => R): OrderedObj<R> {
-        const result = {};
-        this.ordering.forEach(k => result[k] = f(this.obj[k], k));
-        return new OrderedObj(result, this.ordering);
-    }
-
-    bimap<R>(f: (obj: I, k: string) => [string, R]): OrderedObj<R> {
-        const result = {};
-        const newOrdering = this.ordering.map(k => {
-            const [k2, v] = f(this.obj[k], k);
-            if (k2 in result) {
-                throw new Error('bimap invariant broke: not all keys unique');
-            }
-            result[k2] = v;
-            return k2;
-        });
-        return new OrderedObj(result, newOrdering);
-    }
-
-    forEach(f: (obj: I, k: string) => void) {
-        this.ordering.forEach(k => f(this.obj[k], k));
-    }
-
-    reduce<R>(f: (result: R, next: [I, string]) => R, d: R): R {
-        return this.ordering.reduce((p: R, n: string) => (f(p, [this.obj[n], n]): R), d);
-    }
-
-    items(): I[] {
+    values(): I[] {
         return this.ordering.map(k => this.obj[k]);
+    }
+
+    iter(): Iterator<[string, I]> {
+        let i = 0;
+        const obj = this.obj;
+        const keys = this.keys();
+
+        return ({
+            [Symbol.iterator]() { return this; },
+            next(): IteratorResult<[string, I], null> {
+                if (i < keys.length) {
+                    const key = keys[i];
+                    return { done: false, value: [key, obj[key]] }
+                }
+                return { done: true }
+            }
+        }: any);
+    }
+
+    get(k: string): Alt<I> {
+        if (k in this.obj) {
+            return Alt.lift(this.obj[k])
+        }
+
+        return Alt.empty();
     }
 }
 
@@ -121,64 +93,168 @@ export class StringSet {
         });
     }
 
-    reduce<R>(f: (result: R, next: string) => R, d: R): R {
-        return this.items.reduce(f, d);
-    }
-
-    map(f: (v: string) => string): StringSet {
-        return new StringSet(this.items.map(f));
-    }
-
     concat(other: StringSet) {
         return new StringSet(this.items.concat(other.items));
     }
 }
 
-export class Conflictable<T> {
-    values: Array<T>;
+export type AltBinding<T> = Generator<boolean, T, null>;
 
-    constructor(values: Array<T>) {
-        this.values = values;
+export class Alt<T> {
+    value: Array<T>;
+
+    constructor(value: Array<T>) {
+        this.value = value.slice(0, 1);
     }
 
-    concat(other: Conflictable<T>): Conflictable<T> {
-        return new Conflictable(this.values.concat(other.values));
-    }
+    static from<T>(f: AltBinding<T>): Alt<T> {
+        let result: IteratorResult<boolean, T>;
 
-    unwrap(errorMessage: string = "Unexpected conflict found."): ?T {
-        if (this.values.length > 1) {
-            throw new Error(errorMessage);
+        while (!(result = f.next()).done) {
+            if (!result.value) {
+                return new Alt([]);
+            }
         }
 
-        return this.values[0];
+        return new Alt([(result.value: any)]);
     }
 
-    expectOne(emptyMessage: string = "No value was found.", conflictMessage: string = "Unexpected conflict found"): T {
-        if (this.values.length === 0) {
-            throw new Error(emptyMessage);
-        }
-
-        return (this.unwrap(conflictMessage): any);
+    static lift<T>(v: T): Alt<T> {
+        return new Alt([v]);
     }
 
-    unwrapConflicts<R>(mapConflict: (Array<T>) => R): R[] {
-        if (this.values.length > 1) {
-            return [mapConflict(this.values)];
+    static empty<T>(): Alt<T> {
+        return new Alt<T>([]);
+    }
+
+    unwrap(): T {
+        if (this.value.length) {
+            return this.value[0];
         }
 
-        return [];
+        throw new Error("Unwrapped empty value!");
+    }
+
+    getOr(d: T): T {
+        if (this.value.length) {
+            return this.value[0];
+        }
+
+        return d;
+    }
+
+    binding(): AltBinding<T> {
+        const value = this.value;
+        return (function* () {
+            if (!value.length) {
+                yield false;
+            }
+            return value[0];
+        })();
+    }
+
+    isEmpty(): boolean {
+        return !this.value.length;
+    }
+
+    concat(other: Alt<T>): Alt<T> {
+        if (this.isEmpty()) return other;
+        return this;
+    }
+
+    map<A>(f: (v: T) => A): Alt<A> {
+        if (this.isEmpty()) return Alt.empty();
+        return Alt.lift(f(this.unwrap()));
+    }
+
+    either(other: Alt<T>): Alt<T> {
+        if (!this.isEmpty()) {
+            throw new Error("Unexpected conflict!")
+        }
+
+        return other;
     }
 }
 
-export function concatMap<T, R, D: MethodSemigroup<R>>(container: Foldable<T>, f: (val: T) => R, d: D): R {
-    const { concat } = getSemigroup(d);
-    return container.reduce((p: R, n) => concat(p, f(n)), (d: any));
+export class Disjoint<T> {
+    value: Array<T>;
+
+    constructor(value: Array<T>) {
+        this.value = value.slice();
+    }
+
+    static from<T>(from: Iterable<T>): Disjoint<T> {
+        const value: Array<T> = [];
+
+        for (let i of from) {
+            value.push(i);
+        }
+
+        return new Disjoint(value);
+    }
+
+    static lift<T>(v: T): Disjoint<T> {
+        return new Disjoint([v]);
+    }
+
+    static empty<T>(): Disjoint<T> {
+        return new Disjoint<T>([]);
+    }
+
+    unwrap(): T {
+        if (this.value.length === 1) {
+            return this.value[0];
+        }
+
+        if (this.value.length > 1) {
+            throw new Error("Unexpected conflict!")
+        }
+
+        throw new Error("Unwrapped empty value!");
+    }
+
+    getOr(d: T): T {
+        if (this.value.length) {
+            return this.unwrap();
+        }
+
+        return d;
+    }
+
+    binding(): AltBinding<T> {
+        const self = this;
+        return (function* () {
+            if (!self.value.length) {
+                yield false;
+            }
+            return self.unwrap();
+        })();
+    }
+
+    isEmpty(): boolean {
+        return !this.value.length;
+    }
+
+    concat(other: Disjoint<T>): Disjoint<T> {
+        return new Disjoint(this.value.concat(other.value));
+    }
+
+    map<A>(f: (v: T) => A): Disjoint<A> {
+        if (this.isEmpty()) return Disjoint.empty();
+        return Disjoint.lift(f(this.unwrap()));
+    }
 }
 
-export function flatten<T, D: MethodSemigroup<T>>(container: Foldable<T>, d: D): T {
-    return concatMap<T, T, D>(container, i => i, d);
+export function naiveObjUpdate(one: any, other: any) {
+    for (let k in other) {
+        if (k in one) one[k] = one[k].concat(other[k]);
+        else one[k] = other[k];
+    }
 }
 
-export function flattenOrderedObj<T, D: MethodSemigroup<T>>(container: OrderedObj<T>, d: D): T {
-    return concatMap<[T, string], T, D>(container, ([i, _]) => i, d);
+export function naiveObjectConcat(one: any, other: any) {
+    const result = { ...one };
+    naiveObjUpdate(result, other);
+    result.constructor = one.constructor;
+    return result;
 }
