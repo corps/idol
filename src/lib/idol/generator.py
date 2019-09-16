@@ -419,7 +419,7 @@ class GeneratorAcc:
         if conflicts:
             raise ValueError(
                 "Found conflicting identifiers:\n"
-                + "  \n".join(
+                + "\n  ".join(
                     f"ident {ident} was defined or imported into {path} by {len(sources)} different sources"
                     for path, ident, sources in conflicts
                 )

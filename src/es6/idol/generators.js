@@ -314,7 +314,7 @@ export class IdentifiersAcc {
         return this.idents.get(path.path).bind(idents => idents.get(ident));
     }
 
-    unwrapConflicts(): Array<[string, string, StringSet]> {
+    unwrapConflicts(): Array<string> {
         const self = this;
         const result: Array<[string, string, StringSet]> = [];
 
@@ -328,7 +328,7 @@ export class IdentifiersAcc {
             }
         }
 
-        return result;
+        return result.map(([path, ident, sources]) => `ident ${ident} was defined or imported into ${path} by ${sources.items.length} different sources`);
     }
 }
 
@@ -400,7 +400,7 @@ export class GeneratorAcc {
 
         const identConflicts = this.idents.unwrapConflicts();
         if (identConflicts.length) {
-            
+           throw new Error(`Found conflicting identifiers\n${identConflicts.join('\n  ')}`);
         }
     }
 }
