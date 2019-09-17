@@ -2,47 +2,15 @@
 import fs from "fs";
 import path from "path";
 import * as scripter from "./scripter";
-import {
-  compose,
-  concatMap,
-  Conflictable,
-  flattenOrderedObj,
-  OrderedObj,
-  StringSet
-} from "./functional";
-import {
-  asCodegenOutput,
-  build,
-  GeneratorConfig as BaseGeneratorConfig,
-  SinglePassGeneratorOutput,
-  scalarMapper,
-  TypedOutputBuilder,
-  asTypedGeneratorOutput,
-  typeMapper,
-  typeStructMapper,
-  withCommentHeader,
-  asScaffoldOutput,
-  materialTypeMapper,
-  render
-} from "./generators";
-import type {
-  OutputTypeSpecifier,
-  GeneratorParams,
-  ScalarMapper,
-  TypeStructMapper,
-  TypeMapper,
-  ScalarHandler,
-  TypeStructHandler,
-  TypeHandler,
-  Tags,
-  MaterialTypeHandler
-} from "./generators";
 import { start } from "./cli";
-import { asQualifiedIdent, camelCase } from "./utils";
-import type { Stringable } from "./scripter";
 import { Reference } from "./schema/Reference";
 import { Type } from "./schema/Type";
+import { GeneratorAcc, GeneratorConfig, GeneratorFileContext, importExpr, Path, ScalarDeconstructor, TypeDeconstructor, TypeStructDeconstructor } from "./generators";
+import type { Exported, Expression, GeneratorContext } from "./generators";
+import { Alt, cachedProperty, Disjoint } from "./functional";
+import { TypeStruct } from "./schema/TypeStruct";
 
+/*
 export class GeneratorConfig extends BaseGeneratorConfig {
   idolJsPath: string;
 
@@ -432,25 +400,233 @@ function runGenerator(
 
   return output;
 }
+*/
+
+export class IdolJs implements GeneratorContext {
+    config: GeneratorConfig;
+    state: GeneratorAcc;
+    codegenImpl: (IdolJs, Path, Type) => IdolJsCodegenFile;
+    scaffoldImpl: (IdolJs, Path, Type) => IdolJsScaffoldFile;
+
+    constructor(config: GeneratorConfig, codegenImpl: (IdolJs, Path, Type) => IdolJsCodegenFile = (idolJs, path, type) => new IdolJsCodegenFile(idolJs, path, type),
+                scaffoldImpl: (IdolJs, Path, Type) => IdolJsScaffoldFile = (idolJs, path, type) => new IdolJsScaffoldFile(idolJs, path, type)) {
+        this.state = new GeneratorAcc();
+        this.config = config;
+        this.codegenImpl = codegenImpl;
+        this.scaffoldImpl = scaffoldImpl;
+    }
+
+    get idolJsFile(): IdolJsFile {
+        return cachedProperty(this, "idolJsFile", () => new IdolJsFile(this, this.state.reservePath({ runtime: this.config.codegenRoot + "/__idol__.js" })));
+    }
+
+    codegenFile(ref: Reference): IdolJsCodegenFile {
+        const path = this.state.reservePath(this.config.pathsOf({ codegen: ref }));
+        const type = this.config.params.allTypes.obj[ref.qualified_name];
+        return cachedProperty(this, `codegenFile${path.path}`, () => this.codegenImpl(this, path, type));
+    }
+
+    scaffoldFile(ref: Reference): IdolJsScaffoldFile {
+        const path = this.state.reservePath(this.config.pathsOf({ codegen: ref }));
+        const type = this.config.params.allTypes.obj[ref.qualified_name];
+        return cachedProperty(this, `scaffoldFile${path.path}`, () => this.scaffoldImpl(this, path, type));
+    }
+}
+
+export class IdolJsCodegenFile extends GeneratorFileContext<IdolJs> {
+    typeDecon: TypeDeconstructor;
+
+    constructor(idolJs: IdolJs, path: Path, type: Type) {
+        super(idolJs, path);
+        this.typeDecon = new TypeDeconstructor(type);
+    }
+
+    get type(): Type {
+        return this.typeDecon.t;
+    }
+
+    get defaultTypeName(): string {
+        return this.type.named.asQualifiedIdent;
+    }
+
+    get declaredTypeIdent(): Alt<Exported> {
+        return Alt.empty();
+    }
+}
+
+export class IdolJsScaffoldFile extends GeneratorFileContext<IdolJs> {
+    typeDecon: TypeDeconstructor;
+
+    constructor(idolJs: IdolJs, path: Path, type: Type) {
+        super(idolJs, path);
+        this.typeDecon = new TypeDeconstructor(type);
+    }
+
+    get type(): Type {
+        return this.typeDecon.t;
+    }
+
+    get defaultTypeName(): string {
+        return this.type.named.typeName;
+    }
+
+    get declaredTypeIdent(): Alt<Exported> {
+        return Alt.empty();
+    }
+}
+
+export class IdolJsCodegenTypeStruct implements GeneratorContext {
+    tsDecon: TypeStructDeconstructor;
+    state: GeneratorAcc;
+    config: GeneratorConfig;
+
+    constructor(idolJs: IdolJs, tsDecon: TypeStructDeconstructor) {
+        this.tsDecon = tsDecon;
+        this.state = idolJs.state;
+        this.config = idolJs.config;
+    }
+}
+
+export class IdolJsCodegenScalar implements GeneratorContext {
+    scalarDecon: ScalarDeconstructor;
+    state: GeneratorAcc;
+    config: GeneratorConfig;
+    idolJs: IdolJs;
+
+    constructor(idolJs: IdolJs, scalarDecon: ScalarDeconstructor) {
+        this.scalarDecon = scalarDecon;
+        this.state = idolJs.state;
+        this.config = idolJs.config;
+        this.idolJs = idolJs;
+    }
+
+    get constructorExpr(): Alt<Expression> {
+        return cachedProperty(this, "consturctorExpr", () => this.referenceImportExpr.asDisjoint().concat(this.primConstructorExpr.asDisjoint()).asAlt());
+    }
+
+    get referenceImportExpr(): Alt<Expression> {
+        return cachedProperty(this, "referenceImportExpr", () => {
+            const aliasScaffoldFile = this.scalarDecon.getAlias().filter(ref => ref.qualified_name in this.config.params.scaffoldTypes.obj).map(ref => this.idolJs.scaffoldFile(ref));
+
+            if (aliasScaffoldFile.isEmpty()) {
+                const aliasCodegenFile = this.scalarDecon.getAlias().map(ref => this.idolJs.codegenFile(ref));
+                return aliasCodegenFile.bind(codegenFile => codegenFile.declaredTypeIdent).map(codegenType => importExpr(codegenType, "Codegen" + codegenType.ident));
+            }
+
+            return aliasScaffoldFile.bind(scaffoldFile => scaffoldFile.declaredTypeIdent).map(scaffoldType => importExpr(codegenType, "Scaffold" + codegenType.ident));
+        })
+    }
+
+    get primConstructorExpr(): Alt<Expression> {
+        return cachedProperty(this, "primConstructorExpr", () => {
+            let constructorExpr: Disjoint<Expression> = this.scalarDecon.getPrimitive().map(prim => (state: GeneratorAcc, path: Path) => {
+                const primCon = state.importIdent(path, this.idolJs.idolJsFile.primitive);
+                return scripter.invocation(scripter.propAccess(primCon, "of"), scripter.literal(prim));
+            }).asDisjoint();
+
+            constructorExpr = constructorExpr.concat(this.scalarDecon.getLiteral().map(([lit, val]) => (state: GeneratorAcc, path: Path) => {
+                const literalCon = state.importIdent(path, this.idolJs.idolJsFile.literal);
+                return scripter.invocation(scripter.propAccess(literalCon, "of"), scripter.literal(val));
+            }).asDisjoint());
+
+            return constructorExpr.asAlt();
+        });
+    }
+}
+
+export class IdolJsCodegenScalarDeclaration extends IdolJsCodegenScalar {
+    codegenFile: IdolJsCodegenFile;
+
+    constructor(codegenFile: IdolJsCodegenFile, scalarDecon: ScalarDeconstructor) {
+        super(codegenFile.parent, scalarDecon);
+        this.codegenFile = codegenFile;
+    }
+
+    get path(): Path {
+        return this.codegenFile.path;
+    }
+
+    declaredPrimIdent(): Alt<Exported> {
+        return cachedProperty(this, "declaredPrimIdent", () => this.primConstructorExpr.map(primConExpr => {
+            return { path: this.path, ident: this.state.addContentWithIdent(this.path, this.codegenFile.defaultTypeName, scripter.variable(primConExpr(this.state, this.path))) };
+        }));
+    }
+}
+
+
+export class IdolJsFile extends GeneratorFileContext<IdolJs> {
+    get dumpedFile(): Path {
+        return cachedProperty(this, "dumpedFile", () => {
+            const content = fs.readFileSync(path.resolve(__dirname, "../../lib/idol/__idol__.js"), "UTF-8").toString();
+            this.state.addContent(this.path, content);
+            return this.path;
+        });
+    }
+
+    get literal(): Exported {
+        return cachedProperty(this, "literal", () => {
+            return { path: this.dumpedFile, ident: "Literal" };
+        })
+    }
+
+    get primitive(): Exported {
+        return cachedProperty(this, "primitive", () => {
+            return { path: this.dumpedFile, ident: "Primitive" };
+        })
+    }
+
+    get list(): Exported {
+        return cachedProperty(this, "list", () => {
+            return { path: this.dumpedFile, ident: "List" };
+        })
+    }
+
+    get map(): Exported {
+        return cachedProperty(this, "map", () => {
+            return { path: this.dumpedFile, ident: "Map" };
+        })
+    }
+
+    get enum(): Exported {
+        return cachedProperty(this, "enum", () => {
+            return { path: this.dumpedFile, ident: "Enum" };
+        })
+    }
+
+    get struct(): Exported {
+        return cachedProperty(this, "struct", () => {
+            return { path: this.dumpedFile, ident: "Struct" };
+        })
+    }
+}
 
 function main() {
-  const params = start({
-    flags: {},
-    args: {
-      target: "idol module names whose contents will have extensible types scaffolded.",
-      output: "a directory to generate the scaffolds and codegen into."
-    }
-  });
+    const params = start({
+        flags: {},
+        args: {
+            target: "idol module names whose contents will have extensible types scaffolded.",
+            output: "a directory to generate the scaffolds and codegen into."
+        }
+    });
 
-  const config = new GeneratorConfig(params);
-  config.withPathConfig();
+    const config = new GeneratorConfig(params);
+    config.withPathMappings(
+        {
+            codegen: config.inCodegenDir(GeneratorConfig.oneFilePerType),
+            scaffold: GeneratorConfig.oneFilePerType,
+        }
+    );
 
-  const pojos = runGenerator(params, config);
-  const renderedOutput = render(config, pojos);
-  const moveTo = build(config, renderedOutput);
-  moveTo(params.outputDir);
+    /*
+      const pojos = runGenerator(params, config);
+      const renderedOutput = render(config, pojos);
+      const moveTo = build(config, renderedOutput);
+    */
+    /*
+      moveTo(params.outputDir);
+    */
 }
 
 if (require.main === module) {
-  main();
+    main();
 }

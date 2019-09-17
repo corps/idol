@@ -3,9 +3,7 @@
 import fs from "fs";
 import { Map } from "./__idol__";
 import { Module } from "./schema/Module";
-import { sortObj } from "./utils";
-import { concatMap, flatten, OrderedObj } from "./functional";
-import { moduleTypesAsOrderedObj } from "./generators";
+import { OrderedObj } from "./functional";
 import { Type } from "./schema/Type";
 import type { GeneratorParams } from "./generators";
 
@@ -23,7 +21,7 @@ export function start(config: CliConfig): GeneratorParams {
     data = fs.readFileSync(0, "utf-8");
   }
 
-  return prepareGeneratorParams(args, data);
+  return prepareGeneratorParams((args: any), data);
 }
 
 export function processArgs(config: CliConfig): { [k: string]: Array<string> } {
@@ -126,10 +124,10 @@ function showHelp(config: CliConfig) {
 }
 
 export function prepareGeneratorParams(
-  options: { [k: string]: Array<string> },
+  options: { [k: string]: Array<string> | boolean },
   data: string
 ): GeneratorParams {
-  const json = sortObj(JSON.parse(data));
+  const json = JSON.parse(data);
   const MapOfModules = Map.of(Module);
   MapOfModules.validate(json);
   const modules: { [k: string]: Module } = MapOfModules.wrap(json);
@@ -138,14 +136,15 @@ export function prepareGeneratorParams(
   }
 
   const allModules = new OrderedObj<Module>(modules);
-  const allTypes: OrderedObj<Type> = concatMap(
-    allModules,
-    ([module, _]: [Module, string]) => moduleTypesAsOrderedObj(module),
-    new OrderedObj()
+  const allTypes: OrderedObj<Type> = OrderedObj.fromIterable(
+    allModules.keys().map(k => {
+      const module: Module = allModules.obj[k];
+      return module.typesAsOrderedObject();
+    })
   );
 
-  const targets: Array<string> = options.target || [];
-  const scaffoldTypes = flatten<OrderedObj<Type>, OrderedObj<Type>>(
+  const targets: Array<string> = (options.target || []: any);
+  const scaffoldTypes = OrderedObj.fromIterable(
     targets.map(target => {
       const scaffoldModule = modules[target];
 
@@ -153,9 +152,8 @@ export function prepareGeneratorParams(
         throw new Error("Module " + target + " does not exist in the given build.json");
       }
 
-      return moduleTypesAsOrderedObj(scaffoldModule);
+      return scaffoldModule.typesAsOrderedObject();
     }),
-    new OrderedObj<Type>()
   );
 
   return {
@@ -163,6 +161,6 @@ export function prepareGeneratorParams(
     allTypes,
     scaffoldTypes,
     options,
-    outputDir: Array.isArray(options.output) ? options.output[0] : options.output
+    outputDir: Array.isArray(options.output) ? options.output[0] : ""
   };
 }

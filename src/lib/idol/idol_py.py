@@ -463,8 +463,8 @@ class IdolPyCodegenScalar(GeneratorContext):
 
         constructor_expr: Disjoint[Expression] = Disjoint(
             prim_con_expr(prim_expr)
-            for _ in self.scalar_dec.get_primitive()
             for prim_expr in self.prim_typing_expr
+            if self.scalar_dec.get_primitive()
         )
 
         constructor_expr += Disjoint(

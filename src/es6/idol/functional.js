@@ -179,6 +179,16 @@ export class Alt<T> {
 
     return other;
   }
+
+  filter(pred: (T) => boolean): Alt<T> {
+    if (this.isEmpty()) return this;
+    if (pred(this.unwrap())) return this;
+    return Alt.empty();
+  }
+
+  asDisjoint(): Disjoint<T> {
+    return new Disjoint(this.value);
+  }
 }
 
 export class Disjoint<T> {
@@ -196,6 +206,11 @@ export class Disjoint<T> {
     }
 
     return new Disjoint(value);
+  }
+
+  asAlt(): Alt<T> {
+    if (this.isEmpty()) return Alt.empty();
+    return Alt.lift(this.unwrap());
   }
 
   static lift<T>(v: T): Disjoint<T> {
@@ -262,4 +277,10 @@ export function naiveObjectConcat(one: any, other: any) {
   naiveObjUpdate(result, other);
   result.constructor = one.constructor;
   return result;
+}
+
+export function cachedProperty<T>(store: any, key: string, f: () => T): T {
+  key = "__" + key;
+  if (key in store) return store[key];
+  return (store[key] = f());
 }
