@@ -11,7 +11,8 @@
     "babel-loader": "^8.0.6",
     "babel-plugin-syntax-dynamic-import": "^6.18.0",
     "flow-bin": "^0.104.0",
-    "graphql": "^14.4.2"
+    "graphql": "^14.4.2",
+    "prettifier": "^0.4.0"
   },
   "scripts": {
     "compile": "babel --source-type module src/es6 -d src/lib"

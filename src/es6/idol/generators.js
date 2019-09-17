@@ -403,6 +403,21 @@ export class GeneratorAcc {
            throw new Error(`Found conflicting identifiers\n${identConflicts.join('\n  ')}`);
         }
     }
+
+    render(commentHeaders: {[k: string]: string}): OrderedObj<string> {
+        this.validate();
+
+        return OrderedObj.fromIterable(
+            this.groupOfPath.keys().map(path => new OrderedObj({
+                    [path]: scripter.render(this.groupOfPath.obj[path].map(group => group in commentHeaders ? commentHeaders[group] : "").filter(Boolean).map(scripter.comment).concat(
+                        this.imports.render(path)
+                    ).concat(
+                        this.content.get(path).getOr([])
+                    ))
+                })
+            )
+        )
+    }
 }
 
 /*
