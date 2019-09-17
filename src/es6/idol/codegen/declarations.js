@@ -35,9 +35,7 @@ export class declarationsTypeDec {
   }
 
   get enum() {
-    return List_.of(Primitive_.of("string"), { atleastOne: false }).wrap(
-      this._original["enum"]
-    );
+    return List_.of(Primitive_.of("string"), { atleastOne: false }).wrap(this._original["enum"]);
   }
 
   set enum(val) {
@@ -71,9 +69,7 @@ export class declarationsTypeDec {
   }
 
   get tags() {
-    return List_.of(Primitive_.of("string"), { atleastOne: false }).wrap(
-      this._original["tags"]
-    );
+    return List_.of(Primitive_.of("string"), { atleastOne: false }).wrap(this._original["tags"]);
   }
 
   set tags(val) {

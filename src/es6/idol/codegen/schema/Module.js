@@ -50,9 +50,7 @@ export class schemaModule {
   }
 
   get dependencies() {
-    return List_.of(schemaDependency, { atleastOne: false }).wrap(
-      this._original["dependencies"]
-    );
+    return List_.of(schemaDependency, { atleastOne: false }).wrap(this._original["dependencies"]);
   }
 
   set dependencies(val) {
@@ -100,10 +98,9 @@ export class schemaModule {
   }
 
   set types_dependency_ordering(val) {
-    this._original["types_dependency_ordering"] = List_.of(
-      Primitive_.of("string"),
-      { atleastOne: false }
-    ).unwrap(val);
+    this._original["types_dependency_ordering"] = List_.of(Primitive_.of("string"), {
+      atleastOne: false
+    }).unwrap(val);
   }
 
   get typesDependencyOrdering() {

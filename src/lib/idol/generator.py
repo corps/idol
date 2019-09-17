@@ -498,7 +498,7 @@ class GeneratorAcc:
         as_ident = get_safe_ident(as_ident)
 
         while source not in self.idents.get_identifier_sources(into_path, as_ident).get_or(
-                StringSet([source or ""])
+                StringSet([source])
         ):
             as_ident += "_"
 

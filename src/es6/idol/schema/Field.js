@@ -2,7 +2,7 @@
 import { schemaField } from "./../codegen/schema/Field";
 
 export class Field extends schemaField {
-    getTagValue(tag: string, d: string) {
-        return getTagValue(this.tags, tag, d);
-    }
+  getTagValue(tag: string, d: string) {
+    return getTagValue(this.tags, tag, d);
+  }
 }

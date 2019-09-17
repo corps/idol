@@ -39,9 +39,7 @@ export class schemaTypeStruct {
   }
 
   get parameters() {
-    return List_.of(schemaReference, { atleastOne: false }).wrap(
-      this._original["parameters"]
-    );
+    return List_.of(schemaReference, { atleastOne: false }).wrap(this._original["parameters"]);
   }
 
   set parameters(val) {

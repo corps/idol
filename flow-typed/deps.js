@@ -1,4 +1,3 @@
-declare module 'prettier' {
-    declare export default any;
+declare module "prettier" {
+  declare export default any;
 }
-

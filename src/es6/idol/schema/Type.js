@@ -3,11 +3,11 @@ import { schemaType } from "./../codegen/schema/Type";
 import { getTagValue } from "../utils";
 
 export class Type extends schemaType {
-    get isEnum() {
-        return !!this.options.length;
-    }
+  get isEnum() {
+    return !!this.options.length;
+  }
 
-    getTagValue(tag: string, d: string) {
-        return getTagValue(this.tags, tag, d);
-    }
+  getTagValue(tag: string, d: string) {
+    return getTagValue(this.tags, tag, d);
+  }
 }

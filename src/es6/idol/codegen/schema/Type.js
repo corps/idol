@@ -36,9 +36,7 @@ export class schemaType {
   }
 
   get dependencies() {
-    return List_.of(schemaDependency, { atleastOne: false }).wrap(
-      this._original["dependencies"]
-    );
+    return List_.of(schemaDependency, { atleastOne: false }).wrap(this._original["dependencies"]);
   }
 
   set dependencies(val) {
@@ -80,9 +78,7 @@ export class schemaType {
   }
 
   get options() {
-    return List_.of(Primitive_.of("string"), { atleastOne: false }).wrap(
-      this._original["options"]
-    );
+    return List_.of(Primitive_.of("string"), { atleastOne: false }).wrap(this._original["options"]);
   }
 
   set options(val) {
@@ -92,9 +88,7 @@ export class schemaType {
   }
 
   get tags() {
-    return List_.of(Primitive_.of("string"), { atleastOne: false }).wrap(
-      this._original["tags"]
-    );
+    return List_.of(Primitive_.of("string"), { atleastOne: false }).wrap(this._original["tags"]);
   }
 
   set tags(val) {

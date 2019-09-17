@@ -9,7 +9,23 @@ exports.Enum = Enum;
 exports.Struct = Struct;
 exports.Map = exports.List = exports.Literal = exports.Primitive = void 0;
 
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+function _typeof(obj) {
+  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+    _typeof = function _typeof(obj) {
+      return typeof obj;
+    };
+  } else {
+    _typeof = function _typeof(obj) {
+      return obj &&
+        typeof Symbol === "function" &&
+        obj.constructor === Symbol &&
+        obj !== Symbol.prototype
+        ? "symbol"
+        : typeof obj;
+    };
+  }
+  return _typeof(obj);
+}
 
 function isObj(v) {
   return !Array.isArray(v) && v instanceof Object;
@@ -36,7 +52,9 @@ var Primitive = {
       switch (_typeof(val)) {
         case "string":
           if (primitiveKind !== "string") {
-            throw new Error("".concat(path.join('.'), " Found string, expected ").concat(primitiveKind));
+            throw new Error(
+              "".concat(path.join("."), " Found string, expected ").concat(primitiveKind)
+            );
           }
 
           return;
@@ -44,11 +62,15 @@ var Primitive = {
         case "number":
           if ((val | 0) === val) {
             if (primitiveKind !== "int" && primitiveKind !== "double") {
-              throw new Error("".concat(path.join('.'), " Found int, expected ").concat(primitiveKind));
+              throw new Error(
+                "".concat(path.join("."), " Found int, expected ").concat(primitiveKind)
+              );
             }
           } else {
             if (primitiveKind !== "double") {
-              throw new Error("".concat(path.join('.'), " Found double, expected ").concat(primitiveKind));
+              throw new Error(
+                "".concat(path.join("."), " Found double, expected ").concat(primitiveKind)
+              );
             }
           }
 
@@ -56,19 +78,27 @@ var Primitive = {
 
         case "boolean":
           if (primitiveKind !== "bool") {
-            throw new Error("".concat(path.join('.'), " Found boolean, expected ").concat(primitiveKind));
+            throw new Error(
+              "".concat(path.join("."), " Found boolean, expected ").concat(primitiveKind)
+            );
           }
 
           return;
 
         case "object":
           if (val == null) {
-            throw new Error("".concat(path.join('.'), " Found null, expected ").concat(primitiveKind));
+            throw new Error(
+              "".concat(path.join("."), " Found null, expected ").concat(primitiveKind)
+            );
           }
-
       }
 
-      throw new Error("".concat(path.join('.'), " Found ").concat(_typeof(val), ", expected ").concat(primitiveKind));
+      throw new Error(
+        ""
+          .concat(path.join("."), " Found ")
+          .concat(_typeof(val), ", expected ")
+          .concat(primitiveKind)
+      );
     }
 
     var result = {
@@ -118,7 +148,12 @@ var Literal = {
       var path = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
 
       if (val !== value) {
-        throw new Error("".concat(path.join('.'), " Expected ").concat(value, " but found ").concat(val));
+        throw new Error(
+          ""
+            .concat(path.join("."), " Expected ")
+            .concat(value, " but found ")
+            .concat(val)
+        );
       }
     }
 
@@ -155,7 +190,12 @@ function Enum(values) {
     var path = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
 
     if (options.indexOf(val) === -1) {
-      throw new Error("".concat(path.join('.'), " Expected one of ").concat(options.join(', '), ", found ").concat(val));
+      throw new Error(
+        ""
+          .concat(path.join("."), " Expected one of ")
+          .concat(options.join(", "), ", found ")
+          .concat(val)
+      );
     }
   }
 
@@ -186,17 +226,19 @@ function Enum(values) {
 function Struct(klass, fields) {
   function validate(json) {
     var path = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-    if (!isObj(json)) throw new Error("".concat(path.join('.'), " Expected an object, found ").concat(json));
-    fields.forEach(function (field) {
+    if (!isObj(json))
+      throw new Error("".concat(path.join("."), " Expected an object, found ").concat(json));
+    fields.forEach(function(field) {
       var fieldName = field.fieldName,
-          type = field.type,
-          optional = field.optional;
+        type = field.type,
+        optional = field.optional;
       var val = json[fieldName];
 
       if (optional) {
         if (val == null) return;
       } else {
-        if (val == null) throw new Error("".concat(path.join('.'), " Missing key ").concat(fieldName));
+        if (val == null)
+          throw new Error("".concat(path.join("."), " Missing key ").concat(fieldName));
       }
 
       type.validate(val, path.concat([fieldName]));
@@ -224,10 +266,10 @@ function Struct(klass, fields) {
         return json;
       }
 
-      fields.forEach(function (field) {
+      fields.forEach(function(field) {
         var fieldName = field.fieldName,
-            type = field.type,
-            optional = field.optional;
+          type = field.type,
+          optional = field.optional;
         var val = json[fieldName];
 
         if (optional) {
@@ -278,16 +320,18 @@ var List = {
       var path = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
 
       if (!Array.isArray(val)) {
-        throw new Error("".concat(path.join('.'), " Expected array but found ").concat(val));
+        throw new Error("".concat(path.join("."), " Expected array but found ").concat(val));
       }
 
       if (atleastOne) {
         if (val.length < 1) {
-          throw new Error("".concat(path.join('.'), " Expected atleast one element but found empty list"));
+          throw new Error(
+            "".concat(path.join("."), " Expected atleast one element but found empty list")
+          );
         }
       }
 
-      val.forEach(function (v, i) {
+      val.forEach(function(v, i) {
         innerKind.validate(v, path.concat("[".concat(i, "]")));
       });
     }
@@ -318,18 +362,18 @@ var List = {
           }
         }
 
-        val.forEach(function (v, i) {
+        val.forEach(function(v, i) {
           val[i] = innerKind.expand(v);
         });
         return val;
       },
       wrap: function wrap(val) {
-        return val.map(function (v) {
+        return val.map(function(v) {
           return innerKind.wrap(v);
         });
       },
       unwrap: function unwrap(val) {
-        return val.map(function (v) {
+        return val.map(function(v) {
           return innerKind.unwrap(v);
         });
       }
@@ -344,7 +388,7 @@ var Map = {
       var path = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
 
       if (!isObj(val)) {
-        throw new Error("".concat(path.join('.'), " Expected object but found ").concat(val));
+        throw new Error("".concat(path.join("."), " Expected object but found ").concat(val));
       }
 
       for (var _k in val) {
