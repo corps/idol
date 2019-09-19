@@ -114,9 +114,9 @@ function () {
         var scaffoldFile = _this3.scaffoldFile(t.named);
 
         if (!scaffoldFile.declaredTypeIdent.isEmpty()) {
-          console.log("Rendered ".concat(t.named.qualified_name, " (").concat(i, " / ").concat(scaffoldTypes.length, ")"));
+          console.log("Generated ".concat(t.named.qualified_name, " (").concat(i + 1, " / ").concat(scaffoldTypes.length, ")"));
         } else {
-          console.log("Skipped ".concat(t.named.qualified_name, " (").concat(i, " / ").concat(scaffoldTypes.length, ")"));
+          console.log("Skipped ".concat(t.named.qualified_name, " (").concat(i + 1, " / ").concat(scaffoldTypes.length, ")"));
         }
       });
       return this.state.render({

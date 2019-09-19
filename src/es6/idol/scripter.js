@@ -1,9 +1,9 @@
 // @flow
 import prettier from "prettier";
 
-export function render(lines: Array<string>, prettierOptions: any = { parsers: "babel-flow" }) {
-  lines.map(v => v + "").join(";\n");
-  return prettier.format("", prettierOptions);
+export function render(lines: Array<string>, prettierOptions: any = { parser: "babel-flow" }) {
+  const content = lines.map(v => v + "").join(";\n");
+  return prettier.format(content, prettierOptions);
 }
 
 export function variable(
@@ -41,7 +41,8 @@ export function propExpr(obj: string, ...exprs: string[]): string {
 }
 
 export function comment(comment: string): string {
-  return `// ${comment.replace(/\//g, "\\/")}\n`;
+  if (!comment) return comment;
+  return `/*\n${comment.replace(/\//g, "\\/")}\n*/\n`;
 }
 
 export function propDec(prop: string, expr: string): string {
@@ -53,7 +54,7 @@ export function propExprDec(prop: string, expr: string): string {
 }
 
 export function objLiteral(...parts: string[]): string {
-  return `{${parts.join(",")}}`;
+  return `{${parts.map(p => p.trim() ? p + "," : p).join("")}}`;
 }
 
 export function assignment(ident: string, expr: string): string {

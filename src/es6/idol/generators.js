@@ -39,9 +39,9 @@ export class Path {
     const fromParts = this.path.split("/");
     const toParts = toPath.path.split("/");
     const parts: Array<string> = [];
-    let i = fromParts.length - 1;
+    let i = fromParts.length;
 
-    while (i >= 0 && fromParts.slice(0, i) !== toParts.slice(0, i)) {
+    while (i > 0 && fromParts.slice(0, i).join('/') !== toParts.slice(0, i).join('/')) {
       parts.push("..");
       i--;
     }
@@ -467,17 +467,19 @@ export class GeneratorAcc {
 
     return OrderedObj.fromIterable(
       this.groupOfPath.keys().map(
-        path =>
-          new OrderedObj({
+        path => {
+          console.log(`Rendering / formatting output for ${path}`)
+          return new OrderedObj({
             [path]: scripter.render(
-              this.groupOfPath.obj[path].items
-                .map(group => (group in commentHeaders ? commentHeaders[group] : ""))
-                .filter(Boolean)
-                .map(scripter.comment)
-                .concat(this.imports.render(path))
-                .concat(this.content.get(path).getOr([]))
+                this.groupOfPath.obj[path].items
+                    .map(group => (group in commentHeaders ? commentHeaders[group] : ""))
+                    .filter(Boolean)
+                    .map(scripter.comment)
+                    .concat(this.imports.render(path))
+                    .concat(this.content.get(path).getOr([]))
             )
           })
+        }
       )
     );
   }

@@ -72,9 +72,9 @@ export class IdolJs implements GeneratorContext {
         scaffoldTypes.forEach((t, i) => {
             const scaffoldFile = this.scaffoldFile(t.named);
             if (!scaffoldFile.declaredTypeIdent.isEmpty()) {
-                console.log(`Rendered ${t.named.qualified_name} (${i} / ${scaffoldTypes.length})`);
+                console.log(`Generated ${t.named.qualified_name} (${i + 1} / ${scaffoldTypes.length})`);
             } else {
-                console.log(`Skipped ${t.named.qualified_name} (${i} / ${scaffoldTypes.length})`);
+                console.log(`Skipped ${t.named.qualified_name} (${i + 1} / ${scaffoldTypes.length})`);
             }
         });
 

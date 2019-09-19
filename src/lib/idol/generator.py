@@ -40,9 +40,9 @@ class Path:
         from_parts = self.path.split("/")
         to_parts = to_path.path.split("/")
         parts = []
-        i = len(from_parts) - 1
+        i = len(from_parts)
 
-        while i >= 0 and from_parts[:i] != to_parts[:i]:
+        while i > 0 and from_parts[:i] != to_parts[:i]:
             parts.append("..")
             i -= 1
 
@@ -81,7 +81,9 @@ class ImportPath:
             raise ValueError("is_local path cannot be a python module path!")
 
         if rel_path.endswith(".py"):
-            return "." + rel_path[:-3].replace("../", ".").replace("/", ".")
+            if rel_path[0] != ".":
+                rel_path = "./" + rel_path
+            return rel_path[:-3].replace("../", ".").replace("/", ".")
 
         return rel_path
 

@@ -31,12 +31,12 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "d
 
 function render(lines) {
   var prettierOptions = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {
-    parsers: "babel-flow"
+    parser: "babel-flow"
   };
-  lines.map(function (v) {
+  var content = lines.map(function (v) {
     return v + "";
   }).join(";\n");
-  return _prettier["default"].format("", prettierOptions);
+  return _prettier["default"].format(content, prettierOptions);
 }
 
 function variable(expr) {
@@ -82,7 +82,8 @@ function propExpr(obj) {
 }
 
 function comment(comment) {
-  return "// ".concat(comment.replace(/\//g, "\\/"), "\n");
+  if (!comment) return comment;
+  return "/*\n".concat(comment.replace(/\//g, "\\/"), "\n*/\n");
 }
 
 function propDec(prop, expr) {
@@ -98,7 +99,9 @@ function objLiteral() {
     parts[_key3] = arguments[_key3];
   }
 
-  return "{".concat(parts.join(","), "}");
+  return "{".concat(parts.map(function (p) {
+    return p.trim() ? p + "," : p;
+  }).join(""), "}");
 }
 
 function assignment(ident, expr) {

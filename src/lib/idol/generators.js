@@ -85,9 +85,9 @@ function () {
       var fromParts = this.path.split("/");
       var toParts = toPath.path.split("/");
       var parts = [];
-      var i = fromParts.length - 1;
+      var i = fromParts.length;
 
-      while (i >= 0 && fromParts.slice(0, i) !== toParts.slice(0, i)) {
+      while (i > 0 && fromParts.slice(0, i).join('/') !== toParts.slice(0, i).join('/')) {
         parts.push("..");
         i--;
       }
@@ -97,6 +97,7 @@ function () {
         i += 1;
       }
 
+      console.log(toPath.path, this.path, parts);
       return new ImportPath(toPath, parts.join("/"));
     }
   }, {
@@ -637,6 +638,7 @@ function () {
 
       this.validate();
       return _functional.OrderedObj.fromIterable(this.groupOfPath.keys().map(function (path) {
+        console.log("Rendering / formatting output for ".concat(path));
         return new _functional.OrderedObj(_defineProperty({}, path, scripter.render(_this4.groupOfPath.obj[path].items.map(function (group) {
           return group in commentHeaders ? commentHeaders[group] : "";
         }).filter(Boolean).map(scripter.comment).concat(_this4.imports.render(path)).concat(_this4.content.get(path).getOr([])))));
