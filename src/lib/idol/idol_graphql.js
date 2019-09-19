@@ -499,8 +499,8 @@ function main() {
   var params = (0, _cli.start)({
     flags: {},
     args: {
-      "target": "idol module names whose contents will have extensible GraphQLType's scaffolded.",
-      "output": "a directory to generate the scaffolds and codegen into."
+      target: "idol module names whose contents will have extensible GraphQLType's scaffolded.",
+      output: "a directory to generate the scaffolds and codegen into."
     }
   });
   var config = new GeneratorConfig(params);

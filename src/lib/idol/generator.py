@@ -320,6 +320,12 @@ class IdentifiersAcc:
     __add__ = concat
 
     def add_identifier(self, into_path: Path, ident: str, source: str) -> str:
+        if source not in Alt(
+                sources for path_idents in self.idents.get(into_path.path) for sources in
+                path_idents.get(ident)).get_or(StringSet([source])):
+            raise ValueError(
+                f"Cannot create ident {ident} in {into_path.path}, conflicts with existing definition.")
+
         self.idents += OrderedObj({into_path.path: OrderedObj({ident: StringSet([source])})})
         return ident
 
@@ -420,7 +426,7 @@ class GeneratorAcc:
             raise ValueError(
                 "Found conflicting identifiers:\n"
                 + "\n  ".join(
-                    f"ident {ident} was defined or imported into {path} by {len(sources)} different sources"
+                    f"ident {ident} was defined or imported into {path} by conflicting sources: {' '.join(sources)}"
                     for path, ident, sources in conflicts
                 )
             )

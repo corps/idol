@@ -13,23 +13,11 @@ var _idol__ = require("./__idol__");
 
 var _Module = require("./schema/Module");
 
-var _utils = require("./utils");
-
 var _functional = require("./functional");
-
-var _generators = require("./generators");
 
 var _Type = require("./schema/Type");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
-
-function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
-
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
-
-function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
-
-function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
 function start(config) {
   var args = processArgs(config);
@@ -40,9 +28,9 @@ function start(config) {
       showHelp(config);
     }
 
-    data = _fs["default"].readFileSync(args.input_json[0], 'utf-8');
+    data = _fs["default"].readFileSync(args.input_json[0], "utf-8");
   } else {
-    data = _fs["default"].readFileSync(0, 'utf-8');
+    data = _fs["default"].readFileSync(0, "utf-8");
   }
 
   return prepareGeneratorParams(args, data);
@@ -139,7 +127,7 @@ function showHelp(config) {
 }
 
 function prepareGeneratorParams(options, data) {
-  var json = (0, _utils.sortObj)(JSON.parse(data));
+  var json = JSON.parse(data);
 
   var MapOfModules = _idol__.Map.of(_Module.Module);
 
@@ -151,28 +139,29 @@ function prepareGeneratorParams(options, data) {
   }
 
   var allModules = new _functional.OrderedObj(modules);
-  var allTypes = (0, _functional.concatMap)(allModules, function (_ref) {
-    var _ref2 = _slicedToArray(_ref, 2),
-        module = _ref2[0],
-        _ = _ref2[1];
 
-    return (0, _generators.moduleTypesAsOrderedObj)(module);
-  }, new _functional.OrderedObj());
+  var allTypes = _functional.OrderedObj.fromIterable(allModules.keys().map(function (k) {
+    var module = allModules.obj[k];
+    return module.typesAsOrderedObject();
+  }));
+
   var targets = options.target || [];
-  var scaffoldTypes = (0, _functional.flatten)(targets.map(function (target) {
+
+  var scaffoldTypes = _functional.OrderedObj.fromIterable(targets.map(function (target) {
     var scaffoldModule = modules[target];
 
     if (scaffoldModule == null) {
       throw new Error("Module " + target + " does not exist in the given build.json");
     }
 
-    return (0, _generators.moduleTypesAsOrderedObj)(scaffoldModule);
-  }), new _functional.OrderedObj());
+    return scaffoldModule.typesAsOrderedObject();
+  }));
+
   return {
     allModules: allModules,
     allTypes: allTypes,
     scaffoldTypes: scaffoldTypes,
     options: options,
-    outputDir: Array.isArray(options.output) ? options.output[0] : options.output
+    outputDir: Array.isArray(options.output) ? options.output[0] : ""
   };
 }

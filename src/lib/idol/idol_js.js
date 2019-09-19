@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.idolJsOutput = exports.ScaffoldTypeHandler = exports.CodegenTypeHandler = exports.CodegenTypeStructExpressionHandler = exports.CodegenScalarExpressionHandler = exports.GeneratorConfig = void 0;
+exports.IdolJsFile = exports.IdolJsCodegenScalar = exports.IdolJsCodegenTypeStructDeclaration = exports.IdolJsCodegenTypeStruct = exports.IdolJsCodegenEnum = exports.IdolJsCodegenStruct = exports.IdolJsScaffoldFile = exports.IdolJsCodegenFile = exports.IdolJs = void 0;
 
 var _fs = _interopRequireDefault(require("fs"));
 
@@ -11,23 +11,29 @@ var _path = _interopRequireDefault(require("path"));
 
 var scripter = _interopRequireWildcard(require("./scripter"));
 
-var _functional = require("./functional");
-
-var _generators = require("./generators");
-
 var _cli = require("./cli");
-
-var _utils = require("./utils");
 
 var _Reference = require("./schema/Reference");
 
 var _Type = require("./schema/Type");
+
+var _generators = require("./generators");
+
+var _functional = require("./functional");
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = Object.defineProperty && Object.getOwnPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : {}; if (desc.get || desc.set) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj["default"] = obj; return newObj; } }
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
+
+function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
 function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
 
@@ -36,14 +42,6 @@ function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread n
 function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
 
 function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
 function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
 
@@ -55,389 +53,620 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
 
-var GeneratorConfig =
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var IdolJs =
 /*#__PURE__*/
-function (_BaseGeneratorConfig) {
-  _inherits(GeneratorConfig, _BaseGeneratorConfig);
+function () {
+  function IdolJs(config) {
+    var codegenImpl = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : function (idolJs, path, type) {
+      return new IdolJsCodegenFile(idolJs, path, type);
+    };
+    var scaffoldImpl = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : function (idolJs, path, type) {
+      return new IdolJsScaffoldFile(idolJs, path, type);
+    };
 
-  function GeneratorConfig(params) {
-    var _this;
+    _classCallCheck(this, IdolJs);
 
-    _classCallCheck(this, GeneratorConfig);
-
-    _this = _possibleConstructorReturn(this, _getPrototypeOf(GeneratorConfig).call(this, params));
-    _this.idolJsPath = _this.codegenRoot + "/__idol__.js";
-    return _this;
+    this.state = new _generators.GeneratorAcc();
+    this.config = config;
+    this.codegenImpl = codegenImpl;
+    this.scaffoldImpl = scaffoldImpl;
   }
 
-  _createClass(GeneratorConfig, [{
-    key: "idolJsImports",
-    value: function idolJsImports(module) {
-      var path = this.resolvePath(module, {
-        supplemental: this.idolJsPath
+  _createClass(IdolJs, [{
+    key: "codegenFile",
+    value: function codegenFile(ref) {
+      var _this = this;
+
+      var path = this.state.reservePath(this.config.pathsOf({
+        codegen: ref
+      }));
+      var type = this.config.params.allTypes.obj[ref.qualified_name];
+      return (0, _functional.cachedProperty)(this, "codegenFile".concat(path.path), function () {
+        return _this.codegenImpl(_this, path, type);
       });
-
-      for (var _len = arguments.length, imports = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-        imports[_key - 1] = arguments[_key];
-      }
-
-      return new _functional.OrderedObj(_defineProperty({}, path, new _functional.StringSet(imports.map(function (i) {
-        return "".concat(i, " as ").concat(i, "_");
-      }))));
     }
   }, {
-    key: "codegenReferenceImport",
-    value: function codegenReferenceImport(from, reference) {
-      return new _functional.OrderedObj(_defineProperty({}, this.resolvePath(from, {
-        codegen: reference.qualifiedName
-      }), new _functional.StringSet([(0, _utils.asQualifiedIdent)(reference)])));
-    }
-  }, {
-    key: "scaffoldReferenceImport",
-    value: function scaffoldReferenceImport(from, reference) {
-      return new _functional.OrderedObj(_defineProperty({}, this.resolvePath(from, {
-        scaffold: reference.qualifiedName
-      }), new _functional.StringSet(["".concat(reference.typeName, " as ").concat((0, _utils.asQualifiedIdent)(reference))])));
-    }
-  }, {
-    key: "scalarImports",
-    value: function scalarImports(module) {
+    key: "scaffoldFile",
+    value: function scaffoldFile(ref) {
       var _this2 = this;
 
-      return (0, _generators.scalarMapper)({
-        Literal: function Literal() {
-          return _this2.idolJsImports(module, "Literal");
-        },
-        Primitive: function Primitive() {
-          return _this2.idolJsImports(module, "Primitive");
-        },
-        Alias: function Alias(reference) {
-          if (reference.qualifiedName in _this2.params.scaffoldTypes.obj) {
-            return _this2.scaffoldReferenceImport(module, reference);
-          }
-
-          return _this2.codegenReferenceImport(module, reference);
-        }
+      var path = this.state.reservePath(this.config.pathsOf({
+        codegen: ref
+      }));
+      var type = this.config.params.allTypes.obj[ref.qualified_name];
+      return (0, _functional.cachedProperty)(this, "scaffoldFile".concat(path.path), function () {
+        return _this2.scaffoldImpl(_this2, path, type);
       });
     }
   }, {
-    key: "typeStructImports",
-    value: function typeStructImports(module) {
+    key: "render",
+    value: function render() {
       var _this3 = this;
 
-      return (0, _generators.typeStructMapper)({
-        Scalar: this.scalarImports(module),
-        Repeated: function Repeated(scalarImports) {
-          return scalarImports.concat(_this3.idolJsImports(module, "List"));
-        },
-        Map: function Map(scalarImports) {
-          return scalarImports.concat(_this3.idolJsImports(module, "Map"));
+      var scaffoldTypes = this.config.params.scaffoldTypes.values();
+      scaffoldTypes.forEach(function (t, i) {
+        var scaffoldFile = _this3.scaffoldFile(t.named);
+
+        if (!scaffoldFile.declaredTypeIdent.isEmpty()) {
+          console.log("Rendered ".concat(t.named.qualified_name, " (").concat(i, " / ").concat(scaffoldTypes.length, ")"));
+        } else {
+          console.log("Skipped ".concat(t.named.qualified_name, " (").concat(i, " / ").concat(scaffoldTypes.length, ")"));
         }
+      });
+      return this.state.render({
+        codegen: "DO NOT EDIT\nThis file was generated by idol_js, any changes will be overwritten when idol_js is run again.",
+        scaffold: "This file was scaffolded by idol_js.  Feel free to edit as you please.  It can be regenerated by deleting the file and rerunning idol_js."
       });
     }
   }, {
-    key: "typeImports",
-    value: function typeImports(module) {
+    key: "idolJsFile",
+    get: function get() {
       var _this4 = this;
 
-      var typeStructImportMapper = this.typeStructImports(module);
-      return (0, _generators.typeMapper)({
-        Field: typeStructImportMapper,
-        TypeStruct: function TypeStruct(type) {
-          for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-            args[_key2 - 1] = arguments[_key2];
-          }
-
-          return typeStructImportMapper.apply(void 0, args);
-        },
-        Enum: function Enum() {
-          return _this4.idolJsImports(module, "Enum");
-        },
-        Struct: function Struct(type, fieldImports) {
-          return _this4.idolJsImports(module, "Struct").concat((0, _functional.flattenOrderedObj)(fieldImports, new _functional.OrderedObj()));
-        }
+      return (0, _functional.cachedProperty)(this, "idolJsFile", function () {
+        return new IdolJsFile(_this4, _this4.state.reservePath({
+          runtime: _this4.config.codegenRoot + "/__idol__.js"
+        }));
       });
     }
   }]);
 
-  return GeneratorConfig;
-}(_generators.GeneratorConfig);
-
-exports.GeneratorConfig = GeneratorConfig;
-
-var CodegenScalarExpressionHandler =
-/*#__PURE__*/
-function () {
-  function CodegenScalarExpressionHandler() {
-    _classCallCheck(this, CodegenScalarExpressionHandler);
-  }
-
-  _createClass(CodegenScalarExpressionHandler, [{
-    key: "Literal",
-    get: function get() {
-      return function (primitiveType, val) {
-        return scripter.invocation("Literal_.of", scripter.literal(val));
-      };
-    }
-  }, {
-    key: "Primitive",
-    get: function get() {
-      return function (primitiveType) {
-        return scripter.invocation("Primitive_.of", scripter.literal(primitiveType));
-      };
-    }
-  }, {
-    key: "Alias",
-    get: function get() {
-      return function (reference) {
-        return (0, _utils.asQualifiedIdent)(reference);
-      };
-    }
-  }]);
-
-  return CodegenScalarExpressionHandler;
+  return IdolJs;
 }();
 
-exports.CodegenScalarExpressionHandler = CodegenScalarExpressionHandler;
+exports.IdolJs = IdolJs;
 
-var CodegenTypeStructExpressionHandler =
+var IdolJsCodegenFile =
 /*#__PURE__*/
-function () {
-  function CodegenTypeStructExpressionHandler() {
-    var scalarHandler = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : new CodegenScalarExpressionHandler();
+function (_GeneratorFileContext) {
+  _inherits(IdolJsCodegenFile, _GeneratorFileContext);
 
-    _classCallCheck(this, CodegenTypeStructExpressionHandler);
+  function IdolJsCodegenFile(idolJs, path, type) {
+    var _this5;
 
-    this.scalarHandler = scalarHandler;
+    _classCallCheck(this, IdolJsCodegenFile);
+
+    _this5 = _possibleConstructorReturn(this, _getPrototypeOf(IdolJsCodegenFile).call(this, idolJs, path));
+    _this5.typeDecon = new _generators.TypeDeconstructor(type);
+    return _this5;
   }
 
-  _createClass(CodegenTypeStructExpressionHandler, [{
-    key: "Scalar",
+  _createClass(IdolJsCodegenFile, [{
+    key: "type",
     get: function get() {
-      return (0, _generators.scalarMapper)(this.scalarHandler);
+      return this.typeDecon.t;
     }
   }, {
-    key: "Repeated",
+    key: "defaultTypeName",
     get: function get() {
-      return function (scalar) {
-        var tags = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-        return scripter.invocation("List_.of", scalar, scripter.objLiteral(scripter.propDec("atleastOne", scripter.literal(!!tags.typeTags && tags.typeTags.indexOf('atleast_one') !== -1))));
-      };
+      return this.type.named.asQualifiedIdent;
     }
   }, {
-    key: "Map",
-    get: function get() {
-      return function (scalar) {
-        return scripter.invocation("Map_.of", scalar);
-      };
-    }
-  }]);
-
-  return CodegenTypeStructExpressionHandler;
-}();
-
-exports.CodegenTypeStructExpressionHandler = CodegenTypeStructExpressionHandler;
-
-var CodegenTypeHandler =
-/*#__PURE__*/
-function () {
-  function CodegenTypeHandler(params, config) {
-    var typeStructHandler = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : new CodegenTypeStructExpressionHandler();
-
-    _classCallCheck(this, CodegenTypeHandler);
-
-    this.params = params;
-    this.config = config;
-    this.typeStructHandler = typeStructHandler;
-  }
-
-  _createClass(CodegenTypeHandler, [{
-    key: "enumConst",
-    value: function enumConst(options) {
-      var values = options.map(function (o) {
-        return scripter.propDec(o.toUpperCase(), scripter.literal(o));
-      });
-      return scripter.objLiteral.apply(scripter, _toConsumableArray(values).concat(["\n\n", scripter.propDec("options", scripter.literal(options)), scripter.propDec("default", scripter.literal(options[0])), "\n\n", scripter.methodDec("validate", ["val"], []), scripter.methodDec("isValid", ["val"], [scripter.ret("true")]), scripter.methodDec("expand", ["val"], [scripter.ret("val")]), scripter.methodDec("wrap", ["val"], [scripter.ret("val")]), scripter.methodDec("unwrap", ["val"], [scripter.ret("val")])]));
-    }
-  }, {
-    key: "gettersAndSettersFor",
-    value: function gettersAndSettersFor(propName, fieldName, field) {
-      return [scripter.getProp(propName, [], [propName !== fieldName ? scripter.ret(scripter.propAccess("this", fieldName)) : scripter.ret(scripter.invocation(scripter.propAccess(field, "wrap"), scripter.propLiteralAccess("this._original", fieldName)))]), scripter.setProp(propName, ["val"], [propName !== fieldName ? scripter.assignment(scripter.propAccess("this", fieldName), "val") : scripter.assignment(scripter.propLiteralAccess("this._original", fieldName), scripter.invocation(scripter.propAccess(field, "unwrap"), "val"))])];
-    }
-  }, {
-    key: "structClass",
-    value: function structClass(type, fields) {
-      var _this5 = this;
-
-      return scripter.exportedClass(this.exportIdent(type), null, [scripter.methodDec("constructor", ["val"], [scripter.assignment("this._original", "val")]), scripter.staticMethodDec("validate", ["val"], []), scripter.staticMethodDec("isValid", ["val"], [scripter.ret(scripter.literal(true))]), scripter.staticMethodDec("expand", ["val"], [scripter.ret("val")]), scripter.staticMethodDec("wrap", ["val"], [scripter.ret(scripter.newInvocation(this.exportIdent(type), "val"))]), scripter.staticMethodDec("unwrap", ["val"], [scripter.ret("val")])].concat((0, _functional.concatMap)(fields.ordering, function (fieldName) {
-        var originalField = _this5.gettersAndSettersFor(fieldName, fieldName, fields.obj[fieldName]);
-
-        var camelField = fieldName !== (0, _utils.camelCase)(fieldName) ? _this5.gettersAndSettersFor((0, _utils.camelCase)(fieldName), fieldName, fields.obj[fieldName]) : [];
-        return originalField.concat(camelField);
-      }, [])));
-    }
-  }, {
-    key: "exportIdent",
-    value: function exportIdent(type) {
-      return (0, _utils.asQualifiedIdent)(type.named);
-    }
-  }, {
-    key: "exportDec",
-    value: function exportDec(type, expr) {
-      return scripter.exportedConst(this.exportIdent(type), expr);
-    }
-  }, {
-    key: "fieldsExpr",
-    value: function fieldsExpr(type, fields) {
-      return scripter.arrayLiteral.apply(scripter, _toConsumableArray(fields.map(function (field, name) {
-        return scripter.objLiteral(scripter.propDec("fieldName", scripter.literal(name)), scripter.propDec("type", field), scripter.propDec("optional", scripter.literal(type.fields[name].tags.indexOf('optional') !== -1)));
-      }).items()));
-    }
-  }, {
-    key: "TypeStruct",
+    key: "declaredTypeIdent",
     get: function get() {
       var _this6 = this;
 
-      var typeStructExpression = (0, _generators.typeStructMapper)(this.typeStructHandler);
-      return function (type) {
-        for (var _len3 = arguments.length, args = new Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
-          args[_key3 - 1] = arguments[_key3];
-        }
-
-        return new _generators.TypedOutputBuilder([_this6.exportDec(type, typeStructExpression.apply(void 0, args))], {
-          imports: _this6.config.typeImports({
-            codegen: type.named.qualifiedName
-          })(type)
-        });
-      };
+      return (0, _functional.cachedProperty)(this, "declaredTypeIdent", function () {
+        return _this6["enum"].bind(function (e) {
+          return e.declaredIdent;
+        }).asDisjoint().concat(_this6.typeStruct.bind(function (ts) {
+          return ts.declaredIdent;
+        }).asDisjoint()).concat(_this6.struct.bind(function (struct) {
+          return struct.declaredIdent;
+        }).asDisjoint()).asAlt();
+      });
     }
   }, {
-    key: "Enum",
+    key: "struct",
     get: function get() {
       var _this7 = this;
 
-      return function (type, options) {
-        return new _generators.TypedOutputBuilder([_this7.exportDec(type, _this7.enumConst(options)), scripter.invocation("Enum_", _this7.exportIdent(type)), "\n\n"], {
-          imports: _this7.config.typeImports({
-            codegen: type.named.qualifiedName
-          })(type)
+      return (0, _functional.cachedProperty)(this, "struct", function () {
+        return _this7.typeDecon.getStruct().map(function (fields) {
+          return new IdolJsCodegenStruct(_this7, fields.map(function (tsDecon) {
+            return new IdolJsCodegenTypeStruct(_this7.parent, tsDecon);
+          }));
         });
-      };
+      });
     }
   }, {
-    key: "Field",
-    get: function get() {
-      return (0, _generators.typeStructMapper)(this.typeStructHandler);
-    }
-  }, {
-    key: "Struct",
+    key: "enum",
     get: function get() {
       var _this8 = this;
 
-      return function (type, fields) {
-        return new _generators.TypedOutputBuilder([_this8.structClass(type, fields), scripter.invocation("Struct_", _this8.exportIdent(type), _this8.fieldsExpr(type, fields)), "\n\n"], {
-          imports: _this8.config.typeImports({
-            codegen: type.named.qualifiedName
-          })(type)
+      return (0, _functional.cachedProperty)(this, "enum", function () {
+        return _this8.typeDecon.getEnum().map(function (options) {
+          return new IdolJsCodegenEnum(_this8, options);
         });
-      };
+      });
     }
-  }]);
-
-  return CodegenTypeHandler;
-}();
-
-exports.CodegenTypeHandler = CodegenTypeHandler;
-
-var ScaffoldTypeHandler =
-/*#__PURE__*/
-function () {
-  function ScaffoldTypeHandler(config) {
-    _classCallCheck(this, ScaffoldTypeHandler);
-
-    this.config = config;
-  }
-
-  _createClass(ScaffoldTypeHandler, [{
-    key: "TypeStruct",
+  }, {
+    key: "typeStruct",
     get: function get() {
       var _this9 = this;
 
-      return function (type) {
-        return new _generators.TypedOutputBuilder([scripter.exportedConst(type.named.typeName, (0, _utils.asQualifiedIdent)(type.named))], {
-          imports: _this9.config.codegenReferenceImport({
-            scaffold: type.named.qualifiedName
-          }, type.named)
+      return (0, _functional.cachedProperty)(this, "typeStruct", function () {
+        return _this9.typeDecon.getTypeStruct().map(function (tsDecon) {
+          return new IdolJsCodegenTypeStructDeclaration(_this9, tsDecon);
         });
-      };
-    }
-  }, {
-    key: "Enum",
-    get: function get() {
-      var _this10 = this;
-
-      return function (type) {
-        return new _generators.TypedOutputBuilder([scripter.exportedConst(type.named.typeName, (0, _utils.asQualifiedIdent)(type.named))], {
-          imports: _this10.config.codegenReferenceImport({
-            scaffold: type.named.qualifiedName
-          }, type.named)
-        });
-      };
-    }
-  }, {
-    key: "Struct",
-    get: function get() {
-      var _this11 = this;
-
-      return function (type) {
-        return new _generators.TypedOutputBuilder([scripter.exportedClass(type.named.typeName, (0, _utils.asQualifiedIdent)(type.named), [])], {
-          imports: _this11.config.codegenReferenceImport({
-            scaffold: type.named.qualifiedName
-          }, type.named)
-        });
-      };
+      });
     }
   }]);
 
-  return ScaffoldTypeHandler;
+  return IdolJsCodegenFile;
+}(_generators.GeneratorFileContext);
+
+exports.IdolJsCodegenFile = IdolJsCodegenFile;
+
+var IdolJsScaffoldFile =
+/*#__PURE__*/
+function (_GeneratorFileContext2) {
+  _inherits(IdolJsScaffoldFile, _GeneratorFileContext2);
+
+  function IdolJsScaffoldFile(idolJs, path, type) {
+    var _this10;
+
+    _classCallCheck(this, IdolJsScaffoldFile);
+
+    _this10 = _possibleConstructorReturn(this, _getPrototypeOf(IdolJsScaffoldFile).call(this, idolJs, path));
+    _this10.typeDecon = new _generators.TypeDeconstructor(type);
+    return _this10;
+  }
+
+  _createClass(IdolJsScaffoldFile, [{
+    key: "type",
+    get: function get() {
+      return this.typeDecon.t;
+    }
+  }, {
+    key: "defaultTypeName",
+    get: function get() {
+      return this.type.named.typeName;
+    }
+  }, {
+    key: "declaredTypeIdent",
+    get: function get() {
+      var _this11 = this;
+
+      var codegenFile = this.parent.codegenFile(this.type.named);
+      return codegenFile.declaredTypeIdent.bind(function (codegenType) {
+        return codegenFile.struct.map(function (codegenStruct) {
+          return scripter.classDec([scripter.methodDec("constructor", ["val"], [scripter.invocation("super", "val")])], _this11.state.importIdent(_this11.path, codegenType));
+        }).concat(codegenFile.typeStruct.map(function (tsDecon) {
+          return scripter.variable(_this11.state.importIdent(_this11.path, codegenType));
+        })).concat(codegenFile["enum"].map(function (options) {
+          return scripter.variable(_this11.state.importIdent(_this11.path, codegenType));
+        })).map(function (scriptable) {
+          return {
+            ident: _this11.state.addContentWithIdent(_this11.path, _this11.defaultTypeName, scriptable),
+            path: _this11.path
+          };
+        });
+      });
+    }
+  }]);
+
+  return IdolJsScaffoldFile;
+}(_generators.GeneratorFileContext);
+
+exports.IdolJsScaffoldFile = IdolJsScaffoldFile;
+
+var IdolJsCodegenStruct =
+/*#__PURE__*/
+function (_GeneratorFileContext3) {
+  _inherits(IdolJsCodegenStruct, _GeneratorFileContext3);
+
+  function IdolJsCodegenStruct(codegenFile, fields) {
+    var _this12;
+
+    _classCallCheck(this, IdolJsCodegenStruct);
+
+    _this12 = _possibleConstructorReturn(this, _getPrototypeOf(IdolJsCodegenStruct).call(this, codegenFile.parent, codegenFile.path));
+    _this12.fields = fields;
+    return _this12;
+  }
+
+  _createClass(IdolJsCodegenStruct, [{
+    key: "gettersAndSettersFor",
+    value: function gettersAndSettersFor(propName, fieldName, constructor) {
+      return [scripter.getProp(propName, [propName !== fieldName ? scripter.ret(scripter.propAccess("this", fieldName)) : scripter.ret(scripter.invocation(scripter.propAccess(constructor, "wrap"), scripter.propExpr("this._original", scripter.literal(fieldName))))]), scripter.setProp(propName, "val", [propName !== fieldName ? scripter.assignment(scripter.propAccess("this", fieldName), "val") : scripter.assignment(scripter.propExpr("this._original", scripter.literal(fieldName)), scripter.invocation(scripter.propAccess(constructor, "unwrap"), "val"))])];
+    }
+  }, {
+    key: "declaredIdent",
+    get: function get() {
+      var _this13 = this;
+
+      return (0, _functional.cachedProperty)(this, "declaredIdent", function () {
+        return _functional.Alt.lift({
+          path: _this13.path,
+          ident: _this13.state.addContentWithIdent(_this13.path, _this13.codegenFile.defaultTypeName, scripter.classDec([scripter.methodDec("constructor", ["val"], [scripter.assignment("this._original", "val")])].concat(_toConsumableArray(_this13.stubMethods), _toConsumableArray(_this13.fields.keys().reduce(function (lines, fieldName) {
+            var field = _this13.fields.obj[fieldName];
+            var camelFieldName = (0, _generators.camelify)(fieldName);
+            return lines.concat(field.constructorExpr.map(function (constructor) {
+              return _this13.gettersAndSettersFor(fieldName, fieldName, constructor(_this13.state, _this13.path)).concat(_this13.gettersAndSettersFor(camelFieldName, fieldName, constructor(_this13.state, _this13.path)));
+            }).getOr([]));
+          }, [])))))
+        });
+      });
+    }
+  }, {
+    key: "stubMethods",
+    get: function get() {
+      return [scripter.comment("These methods are implemented via the runtime, stubs exist here for reference."), scripter.methodDec("validate", ["val"], [], true), scripter.methodDec("isValid", ["val"], [scripter.ret(scripter.literal(true))], true), scripter.methodDec("expand", ["val"], [scripter.ret("val")], true), scripter.methodDec("unwrap", ["val"], [scripter.ret("val")], true), scripter.methodDec("wrap", ["val"], [scripter.ret("null")], true)];
+    }
+  }]);
+
+  return IdolJsCodegenStruct;
+}(_generators.GeneratorFileContext);
+
+exports.IdolJsCodegenStruct = IdolJsCodegenStruct;
+
+var IdolJsCodegenEnum =
+/*#__PURE__*/
+function (_GeneratorFileContext4) {
+  _inherits(IdolJsCodegenEnum, _GeneratorFileContext4);
+
+  function IdolJsCodegenEnum(codegenFile, options) {
+    var _this14;
+
+    _classCallCheck(this, IdolJsCodegenEnum);
+
+    _this14 = _possibleConstructorReturn(this, _getPrototypeOf(IdolJsCodegenEnum).call(this, codegenFile.parent, codegenFile.path));
+    _this14.codegenFile = codegenFile;
+    return _this14;
+  }
+
+  _createClass(IdolJsCodegenEnum, [{
+    key: "declaredIdent",
+    get: function get() {
+      var _this15 = this;
+
+      return (0, _functional.cachedProperty)(this, "declaredIdent", function () {
+        return _functional.Alt.lift({
+          path: _this15.path,
+          ident: _this15.state.addContentWithIdent(_this15.path, _this15.codegenFile.defaultTypeName, function (ident) {
+            return [scripter.variable(scripter.objLiteral.apply(scripter, _toConsumableArray(_this15.options.map(function (option) {
+              return scripter.propDec(option.toUpperCase(), scripter.literal(option));
+            })).concat(["\n", scripter.propDec("options", scripter.literal(_this15.options)), scripter.propDec("default", scripter.literal(_this15.options[0])), "\n", scripter.methodDec("validate", ["val"], []), scripter.methodDec("isValid", ["val"], [scripter.ret("true")]), scripter.methodDec("expand", ["val"], [scripter.ret("val")]), scripter.methodDec("expand", ["wrap"], [scripter.ret("val")]), scripter.methodDec("expand", ["unwrap"], [scripter.ret("val")])])))(ident), scripter.invocation(_this15.state.importIdent(_this15.path, _this15.parent.idolJsFile["enum"]), ident)];
+          })
+        });
+      });
+    }
+  }]);
+
+  return IdolJsCodegenEnum;
+}(_generators.GeneratorFileContext);
+
+exports.IdolJsCodegenEnum = IdolJsCodegenEnum;
+
+var IdolJsCodegenTypeStruct =
+/*#__PURE__*/
+function () {
+  function IdolJsCodegenTypeStruct(idolJs, tsDecon) {
+    _classCallCheck(this, IdolJsCodegenTypeStruct);
+
+    this.tsDecon = tsDecon;
+    this.state = idolJs.state;
+    this.config = idolJs.config;
+    this.idolJS = idolJs;
+  }
+
+  _createClass(IdolJsCodegenTypeStruct, [{
+    key: "constructorExpr",
+    get: function get() {
+      return this.scalarConstructorExpr.concat(this.collectionConstructorExpr);
+    }
+  }, {
+    key: "scalarConstructorExpr",
+    get: function get() {
+      if (this.tsDecon.getScalar().isEmpty()) return _functional.Alt.empty();
+      return this.innerScalar.bind(function (scalar) {
+        return scalar.constructorExpr;
+      });
+    }
+  }, {
+    key: "collectionConstructorExpr",
+    get: function get() {
+      var _this16 = this;
+
+      var containerConstructorExpr = this.tsDecon.getMap().map(function (_) {
+        return (0, _generators.importExpr)(_this16.idolJS.idolJsFile.map);
+      }).concat(this.tsDecon.getRepeated().map(function (_) {
+        return (0, _generators.importExpr)(_this16.idolJS.idolJsFile.list);
+      }));
+      return this.innerScalar.bind(function (scalar) {
+        return scalar.constructorExpr;
+      }).bind(function (scalarExpr) {
+        return containerConstructorExpr.map(function (containerExpr) {
+          return function (state, path) {
+            return scripter.invocation(scripter.propAccess(containerExpr(state, path), "of"), scalarExpr(state, path));
+          };
+        });
+      });
+    }
+  }, {
+    key: "innerScalar",
+    get: function get() {
+      var _this17 = this;
+
+      return (0, _functional.cachedProperty)(this, "innerScalar", function () {
+        return _this17.tsDecon.getScalar().concat(_this17.tsDecon.getMap()).concat(_this17.tsDecon.getRepeated()).map(function (scalarDecon) {
+          return new IdolJsCodegenScalar(_this17.idolJS, scalarDecon);
+        });
+      });
+    }
+  }]);
+
+  return IdolJsCodegenTypeStruct;
 }();
 
-exports.ScaffoldTypeHandler = ScaffoldTypeHandler;
+exports.IdolJsCodegenTypeStruct = IdolJsCodegenTypeStruct;
 
-var idolJsOutput = function idolJsOutput(config) {
-  return new _generators.SinglePassGeneratorOutput({
-    supplemental: new _functional.OrderedObj(_defineProperty({}, config.idolJsPath, new _functional.Conflictable([_fs["default"].readFileSync(_path["default"].resolve(__dirname, '../../lib/idol/__idol__.js'), "UTF-8").toString()])))
-  });
-};
+var IdolJsCodegenTypeStructDeclaration =
+/*#__PURE__*/
+function (_IdolJsCodegenTypeStr) {
+  _inherits(IdolJsCodegenTypeStructDeclaration, _IdolJsCodegenTypeStr);
 
-exports.idolJsOutput = idolJsOutput;
-var CODEGEN_FILE_COMMENT_HEADER = ["DO NO EDIT", "This file is managed by idol_js.js.  Any edits will be overwritten on next run of the generator.", "Please edit the scaffolded files generated outside of the codegen directory, as you can extend your models more effectively there."].join("\n");
-var SCAFFOLD_FILE_COMMENT_HEADER = ["This file was scaffolded by idol_js.js  Please feel free to modify and extend, but do not delete or remove its exports."].join("\n");
+  function IdolJsCodegenTypeStructDeclaration(codegenFile, tsDecon) {
+    var _this18;
 
-function runGenerator(params, config) {
-  var codegenTypeHandler = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : new CodegenTypeHandler(params, config);
-  var scaffoldTypeHandler = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : new ScaffoldTypeHandler(config);
-  var codegenOutputs = params.allTypes.map((0, _generators.asCodegenOutput)((0, _generators.asTypedGeneratorOutput)((0, _functional.compose)((0, _generators.typeMapper)(codegenTypeHandler), (0, _generators.withCommentHeader)(CODEGEN_FILE_COMMENT_HEADER)))));
-  var scaffoldOutputs = params.scaffoldTypes.map((0, _generators.asScaffoldOutput)((0, _generators.asTypedGeneratorOutput)((0, _functional.compose)((0, _generators.materialTypeMapper)(scaffoldTypeHandler, params.allTypes.obj), (0, _generators.withCommentHeader)(SCAFFOLD_FILE_COMMENT_HEADER)))));
-  var output = (0, _functional.flattenOrderedObj)(codegenOutputs, new _generators.SinglePassGeneratorOutput());
-  output = output.concat((0, _functional.flattenOrderedObj)(scaffoldOutputs, new _generators.SinglePassGeneratorOutput()));
-  output = output.concat(idolJsOutput(config));
-  return output;
-}
+    _classCallCheck(this, IdolJsCodegenTypeStructDeclaration);
+
+    _this18 = _possibleConstructorReturn(this, _getPrototypeOf(IdolJsCodegenTypeStructDeclaration).call(this, codegenFile.parent, tsDecon));
+    _this18.codegenFile = codegenFile;
+    return _this18;
+  }
+
+  _createClass(IdolJsCodegenTypeStructDeclaration, [{
+    key: "path",
+    get: function get() {
+      return this.codegenFile.path;
+    }
+  }, {
+    key: "declaredIdent",
+    get: function get() {
+      var _this19 = this;
+
+      return (0, _functional.cachedProperty)(this, "declaredIdent", function () {
+        return _this19.constructorExpr.map(function (expr) {
+          return {
+            path: _this19.path,
+            ident: _this19.state.addContentWithIdent(_this19.path, _this19.codegenFile.defaultTypeName, scripter.variable(expr(_this19.state, _this19.path)))
+          };
+        });
+      });
+    }
+  }]);
+
+  return IdolJsCodegenTypeStructDeclaration;
+}(IdolJsCodegenTypeStruct);
+
+exports.IdolJsCodegenTypeStructDeclaration = IdolJsCodegenTypeStructDeclaration;
+
+var IdolJsCodegenScalar =
+/*#__PURE__*/
+function () {
+  function IdolJsCodegenScalar(idolJs, scalarDecon) {
+    _classCallCheck(this, IdolJsCodegenScalar);
+
+    this.scalarDecon = scalarDecon;
+    this.state = idolJs.state;
+    this.config = idolJs.config;
+    this.idolJs = idolJs;
+  }
+
+  _createClass(IdolJsCodegenScalar, [{
+    key: "constructorExpr",
+    get: function get() {
+      return this.referenceImportExpr.asDisjoint().concat(this.primConstructorExpr.asDisjoint()).concat(this.literalConstructorExpr.asDisjoint()).asAlt();
+    }
+  }, {
+    key: "referenceImportExpr",
+    get: function get() {
+      var _this20 = this;
+
+      var aliasScaffoldFile = this.scalarDecon.getAlias().filter(function (ref) {
+        return ref.qualified_name in _this20.config.params.scaffoldTypes.obj;
+      }).map(function (ref) {
+        return _this20.idolJs.scaffoldFile(ref);
+      });
+
+      if (aliasScaffoldFile.isEmpty()) {
+        var aliasCodegenFile = this.scalarDecon.getAlias().map(function (ref) {
+          return _this20.idolJs.codegenFile(ref);
+        });
+        return aliasCodegenFile.bind(function (codegenFile) {
+          return codegenFile.declaredTypeIdent;
+        }).map(function (codegenType) {
+          return (0, _generators.importExpr)(codegenType, "Codegen" + codegenType.ident);
+        });
+      }
+
+      return aliasScaffoldFile.bind(function (scaffoldFile) {
+        return scaffoldFile.declaredTypeIdent;
+      }).map(function (scaffoldType) {
+        return (0, _generators.importExpr)(scaffoldType, "Scaffold" + scaffoldType.ident);
+      });
+    }
+  }, {
+    key: "primConstructorExpr",
+    get: function get() {
+      var _this21 = this;
+
+      return this.scalarDecon.getPrimitive().map(function (prim) {
+        return function (state, path) {
+          var primCon = state.importIdent(path, _this21.idolJs.idolJsFile.primitive);
+          return scripter.invocation(scripter.propAccess(primCon, "of"), scripter.literal(prim));
+        };
+      });
+    }
+  }, {
+    key: "literalConstructorExpr",
+    get: function get() {
+      var _this22 = this;
+
+      return this.scalarDecon.getLiteral().map(function (_ref) {
+        var _ref2 = _slicedToArray(_ref, 2),
+            lit = _ref2[0],
+            val = _ref2[1];
+
+        return function (state, path) {
+          var literalCon = state.importIdent(path, _this22.idolJs.idolJsFile.literal);
+          return scripter.invocation(scripter.propAccess(literalCon, "of"), scripter.literal(val));
+        };
+      });
+    }
+  }]);
+
+  return IdolJsCodegenScalar;
+}();
+
+exports.IdolJsCodegenScalar = IdolJsCodegenScalar;
+
+var IdolJsFile =
+/*#__PURE__*/
+function (_GeneratorFileContext5) {
+  _inherits(IdolJsFile, _GeneratorFileContext5);
+
+  function IdolJsFile() {
+    _classCallCheck(this, IdolJsFile);
+
+    return _possibleConstructorReturn(this, _getPrototypeOf(IdolJsFile).apply(this, arguments));
+  }
+
+  _createClass(IdolJsFile, [{
+    key: "dumpedFile",
+    get: function get() {
+      var _this23 = this;
+
+      return (0, _functional.cachedProperty)(this, "dumpedFile", function () {
+        var content = _fs["default"].readFileSync(_path["default"].resolve(__dirname, "../../lib/idol/__idol__.js"), "UTF-8").toString();
+
+        _this23.state.addContent(_this23.path, content);
+
+        return _this23.path;
+      });
+    }
+  }, {
+    key: "literal",
+    get: function get() {
+      var _this24 = this;
+
+      return (0, _functional.cachedProperty)(this, "literal", function () {
+        return {
+          path: _this24.dumpedFile,
+          ident: "Literal"
+        };
+      });
+    }
+  }, {
+    key: "primitive",
+    get: function get() {
+      var _this25 = this;
+
+      return (0, _functional.cachedProperty)(this, "primitive", function () {
+        return {
+          path: _this25.dumpedFile,
+          ident: "Primitive"
+        };
+      });
+    }
+  }, {
+    key: "list",
+    get: function get() {
+      var _this26 = this;
+
+      return (0, _functional.cachedProperty)(this, "list", function () {
+        return {
+          path: _this26.dumpedFile,
+          ident: "List"
+        };
+      });
+    }
+  }, {
+    key: "map",
+    get: function get() {
+      var _this27 = this;
+
+      return (0, _functional.cachedProperty)(this, "map", function () {
+        return {
+          path: _this27.dumpedFile,
+          ident: "Map"
+        };
+      });
+    }
+  }, {
+    key: "enum",
+    get: function get() {
+      var _this28 = this;
+
+      return (0, _functional.cachedProperty)(this, "enum", function () {
+        return {
+          path: _this28.dumpedFile,
+          ident: "Enum"
+        };
+      });
+    }
+  }, {
+    key: "struct",
+    get: function get() {
+      var _this29 = this;
+
+      return (0, _functional.cachedProperty)(this, "struct", function () {
+        return {
+          path: _this29.dumpedFile,
+          ident: "Struct"
+        };
+      });
+    }
+  }]);
+
+  return IdolJsFile;
+}(_generators.GeneratorFileContext);
+
+exports.IdolJsFile = IdolJsFile;
 
 function main() {
   var params = (0, _cli.start)({
     flags: {},
     args: {
-      "target": "idol module names whose contents will have extensible types scaffolded.",
-      "output": "a directory to generate the scaffolds and codegen into."
+      target: "idol module names whose contents will have extensible types scaffolded.",
+      output: "a directory to generate the scaffolds and codegen into."
     }
   });
-  var config = new GeneratorConfig(params);
-  config.withPathConfig();
-  var pojos = runGenerator(params, config);
-  var renderedOutput = (0, _generators.render)(config, pojos);
-  var moveTo = (0, _generators.build)(config, renderedOutput);
+  var config = new _generators.GeneratorConfig(params);
+  config.withPathMappings({
+    codegen: config.inCodegenDir(_generators.GeneratorConfig.oneFilePerType),
+    scaffold: _generators.GeneratorConfig.oneFilePerType
+  });
+  var idolJs = new IdolJs(config);
+  var moveTo = (0, _generators.build)(config, idolJs.render());
   moveTo(params.outputDir);
 }
 

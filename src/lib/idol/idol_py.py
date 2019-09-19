@@ -561,7 +561,6 @@ class IdolPyScaffoldFile(GeneratorFileContext):
     @cached_property
     def declared_type_ident(self) -> Alt[Exported]:
         type_decon = get_material_type_deconstructor(self.idol_py.config.params.all_types, self.t)
-        self.state.idents.add_identifier(self.path, self.default_type_name, "declared_type_ident")
 
         codegen_type_ident: Alt[str] = Alt(
             self.state.import_ident(self.path, codegen_type, self.default_type_name + "Codegen")

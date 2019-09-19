@@ -277,6 +277,7 @@ export class IdolJsCodegenEnum extends GeneratorFileContext<IdolJs> {
     constructor(codegenFile: IdolJsCodegenFile, options: string[]) {
         super(codegenFile.parent, codegenFile.path);
         this.codegenFile = codegenFile;
+        this.options = options;
     }
 
     get declaredIdent(): Alt<Exported> {

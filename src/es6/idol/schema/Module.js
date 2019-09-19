@@ -8,7 +8,7 @@ export class Module extends schemaModule {
     return OrderedObj.fromIterable(
       this.types_dependency_ordering.map(name => {
         const type = this.types_by_name[name];
-        return new OrderedObj({ [type.qualified_name]: type });
+        return new OrderedObj({ [type.named.qualified_name]: type });
       })
     );
   }
