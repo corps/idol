@@ -1,16 +1,9 @@
 // @flow
 import { schemaReference } from "./../codegen/schema/Reference";
+import { camelify, snakify } from "../generators";
 
 export class Reference extends schemaReference {
   snakify(): Reference {
-    function snakify(name: string): string {
-      const firstPass = name.replace(
-        /([^.])([A-Z][a-z]+)/,
-        (_, group1, group2) => `${group1}_${group2}`
-      );
-      return firstPass.replace(/([a-z0-9])([A-Z])/, (_, group1, group2) => `${group1}_${group2}`);
-    }
-
     return new Reference({
       module_name: snakify(this.moduleName),
       qualified_name: snakify(this.qualifiedName),
@@ -19,13 +12,6 @@ export class Reference extends schemaReference {
   }
 
   camelify(): Reference {
-    function camelify(name: string): string {
-      return name
-        .split(/[._]/)
-        .map(p => p[0].toUpperCase() + p.slice(1))
-        .join("");
-    }
-
     return new Reference({
       module_name: camelify(this.moduleName),
       qualified_name: camelify(this.qualifiedName),

@@ -20,6 +20,12 @@ export class OrderedObj<I> {
     return Object.keys(this.obj).length;
   }
 
+  map<R>(f: I => R): OrderedObj<R> {
+    const newObj: { [k: string]: R } = {};
+    this.ordering.forEach(k => (newObj[k] = f(this.obj[k])));
+    return new OrderedObj<R>(newObj, this.ordering);
+  }
+
   concat(other: OrderedObj<I>): OrderedObj<I> {
     const ordering = this.ordering.concat(other.ordering.filter(k => !(k in this.obj)));
     const result = {};
@@ -180,7 +186,7 @@ export class Alt<T> {
     return other;
   }
 
-  filter(pred: (T) => boolean): Alt<T> {
+  filter(pred: T => boolean): Alt<T> {
     if (this.isEmpty()) return this;
     if (pred(this.unwrap())) return this;
     return Alt.empty();

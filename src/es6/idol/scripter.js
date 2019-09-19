@@ -18,15 +18,14 @@ export function variable(
   };
 }
 
-export function getProp(body: Array<string>): (ident: string) => string {
+export function getProp(ident: string, body: Array<string>): string {
   const bodyRendered = body.join(";\n");
-
-  return (ident: string) => `get ${ident}() { ${bodyRendered} }`;
+  return `get ${ident}() { ${bodyRendered} }`;
 }
 
-export function setProp(body: Array<string>): (ident: string) => string {
+export function setProp(ident: string, arg: string, body: Array<string>): string {
   const bodyRendered = body.join(";\n");
-  return (ident: string) => `set ${ident}() { ${bodyRendered} }`;
+  return `set ${ident}(${arg}) { ${bodyRendered} }`;
 }
 
 export function ret(expr: string): string {
@@ -57,6 +56,10 @@ export function objLiteral(...parts: string[]): string {
   return `{${parts.join(",")}}`;
 }
 
+export function assignment(ident: string, expr: string): string {
+  return `${ident} = ${expr}`;
+}
+
 export function classDec(
   body: string[],
   extendsExpr: ?string,
@@ -73,12 +76,20 @@ export function classDec(
   };
 }
 
+export const newMod = "new ";
+
 export function invocation(ident: string, ...args: string[]): string {
   return `${ident}(${args.join(",")})`;
 }
 
-export function methodDec(ident: string, args: string[], body: string[]): string {
-  return `${ident}(${args.join(",")}) {${body.join("\n")}}`;
+export function methodDec(
+  ident: string,
+  args: string[],
+  body: string[],
+  staticDec: boolean = false
+): string {
+  const dec = `${ident}(${args.join(",")}) {${body.join("\n")}}`;
+  return staticDec ? `static ${dec}` : dec;
 }
 
 export function functionDec(

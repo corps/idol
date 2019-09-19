@@ -153,7 +153,7 @@ export function prepareGeneratorParams(
       }
 
       return scaffoldModule.typesAsOrderedObject();
-    }),
+    })
   );
 
   return {
