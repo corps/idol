@@ -40,8 +40,8 @@ export function propExpr(obj: string, ...exprs: string[]): string {
   return exprs.reduce((last, next) => `${last}[${next}]`, obj);
 }
 
-export function comment(f: string): string {
-  return `// ${this.comment.replace(/\//g, "\\/")}\n`;
+export function comment(comment: string): string {
+  return `// ${comment.replace(/\//g, "\\/")}\n`;
 }
 
 export function propDec(prop: string, expr: string): string {

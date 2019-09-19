@@ -81,8 +81,8 @@ function propExpr(obj) {
   }, obj);
 }
 
-function comment(f) {
-  return "// ".concat(this.comment.replace(/\//g, "\\/"), "\n");
+function comment(comment) {
+  return "// ".concat(comment.replace(/\//g, "\\/"), "\n");
 }
 
 function propDec(prop, expr) {

@@ -4,7 +4,7 @@ import { PrimitiveType } from "./PrimitiveType";
 
 export class TypeStruct extends schemaTypeStruct {
   get isPrimitive() {
-    return !this.isAlias;
+    return !this.isAlias && !this.isLiteral;
   }
 
   get isAlias() {

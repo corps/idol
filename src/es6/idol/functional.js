@@ -179,8 +179,8 @@ export class Alt<T> {
   }
 
   either(other: Alt<T>): Alt<T> {
-    if (!this.isEmpty()) {
-      throw new Error("Unexpected conflict!");
+    if (!this.isEmpty() && !other.isEmpty()) {
+      throw new Error(`Unexpected conflict, found ${this.value.join(' ')}`);
     }
 
     return other;
@@ -233,7 +233,7 @@ export class Disjoint<T> {
     }
 
     if (this.value.length > 1) {
-      throw new Error("Unexpected conflict!");
+      throw new Error(`Unexpected conflict, found ${this.value.join(' ')}`);
     }
 
     throw new Error("Unwrapped empty value!");

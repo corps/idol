@@ -105,10 +105,8 @@ export class IdolJsCodegenFile extends GeneratorFileContext<IdolJs> {
         return cachedProperty(this, "declaredTypeIdent", () => {
             return this.enum
                 .bind(e => e.declaredIdent)
-                .asDisjoint()
-                .concat(this.typeStruct.bind(ts => ts.declaredIdent).asDisjoint())
-                .concat(this.struct.bind(struct => struct.declaredIdent).asDisjoint())
-                .asAlt();
+                .either(this.typeStruct.bind(ts => ts.declaredIdent))
+                .either(this.struct.bind(struct => struct.declaredIdent));
         });
     }
 
@@ -158,27 +156,29 @@ export class IdolJsScaffoldFile extends GeneratorFileContext<IdolJs> {
     }
 
     get declaredTypeIdent(): Alt<Exported> {
-        const codegenFile = this.parent.codegenFile(this.type.named);
-        return codegenFile.declaredTypeIdent.bind(codegenType =>
-            codegenFile.struct
-                .map(codegenStruct =>
-                    scripter.classDec(
-                        [scripter.methodDec("constructor", ["val"], [scripter.invocation("super", "val")])],
-                        this.state.importIdent(this.path, codegenType)
+        return cachedProperty(this, "declaredTypeIdent", () => {
+            const codegenFile = this.parent.codegenFile(this.type.named);
+            return codegenFile.declaredTypeIdent.bind(codegenType =>
+                codegenFile.struct
+                    .map(codegenStruct =>
+                        scripter.classDec(
+                            [scripter.methodDec("constructor", ["val"], [scripter.invocation("super", "val")])],
+                            this.state.importIdent(this.path, codegenType)
+                        )
                     )
-                )
-                .concat(
-                    codegenFile.typeStruct.map(tsDecon =>
-                        scripter.variable(this.state.importIdent(this.path, codegenType))
+                    .concat(
+                        codegenFile.typeStruct.map(tsDecon =>
+                            scripter.variable(this.state.importIdent(this.path, codegenType))
+                        )
                     )
-                )
-                .concat(
-                    codegenFile.enum.map(options =>
-                        scripter.variable(this.state.importIdent(this.path, codegenType))
+                    .concat(
+                        codegenFile.enum.map(options =>
+                            scripter.variable(this.state.importIdent(this.path, codegenType))
+                        )
                     )
-                )
-                .map(scriptable => ({ ident: this.state.addContentWithIdent(this.path, this.defaultTypeName, scriptable), path: this.path }))
-        );
+                    .map(scriptable => ({ ident: this.state.addContentWithIdent(this.path, this.defaultTypeName, scriptable), path: this.path }))
+            );
+        });
     }
 }
 
@@ -189,6 +189,7 @@ export class IdolJsCodegenStruct extends GeneratorFileContext<IdolJs> {
     constructor(codegenFile: IdolJsCodegenFile, fields: OrderedObj<IdolJsCodegenTypeStruct>) {
         super(codegenFile.parent, codegenFile.path);
         this.fields = fields;
+        this.codegenFile = codegenFile;
     }
 
     get declaredIdent(): Alt<Exported> {
@@ -405,10 +406,8 @@ export class IdolJsCodegenScalar implements GeneratorContext {
 
     get constructorExpr(): Alt<Expression> {
         return this.referenceImportExpr
-            .asDisjoint()
-            .concat(this.primConstructorExpr.asDisjoint())
-            .concat(this.literalConstructorExpr.asDisjoint())
-            .asAlt();
+            .either(this.primConstructorExpr)
+            .either(this.literalConstructorExpr);
     }
 
     get referenceImportExpr(): Alt<Expression> {
@@ -457,37 +456,37 @@ export class IdolJsFile extends GeneratorFileContext<IdolJs> {
 
     get literal(): Exported {
         return cachedProperty(this, "literal", () => {
-            return { path: this.dumpedFile, ident: "Literal" };
+            return { path: this.dumpedFile, ident: this.state.idents.addIdentifier(this.path, "Literal", "literal"), };
         });
     }
 
     get primitive(): Exported {
         return cachedProperty(this, "primitive", () => {
-            return { path: this.dumpedFile, ident: "Primitive" };
+            return { path: this.dumpedFile, ident: this.state.idents.addIdentifier(this.path, "Primitive", "primitive"), };
         });
     }
 
     get list(): Exported {
         return cachedProperty(this, "list", () => {
-            return { path: this.dumpedFile, ident: "List" };
+            return { path: this.dumpedFile, ident: this.state.idents.addIdentifier(this.path, "List", "list"), };
         });
     }
 
     get map(): Exported {
         return cachedProperty(this, "map", () => {
-            return { path: this.dumpedFile, ident: "Map" };
+            return { path: this.dumpedFile, ident: this.state.idents.addIdentifier(this.path, "Map", "map"), };
         });
     }
 
     get enum(): Exported {
         return cachedProperty(this, "enum", () => {
-            return { path: this.dumpedFile, ident: "Enum" };
+            return { path: this.dumpedFile, ident: this.state.idents.addIdentifier(this.path, "Enum", "enum"), };
         });
     }
 
     get struct(): Exported {
         return cachedProperty(this, "struct", () => {
-            return { path: this.dumpedFile, ident: "Struct" };
+            return { path: this.dumpedFile, ident: this.state.idents.addIdentifier(this.path, "Struct", "struct"), };
         });
     }
 }

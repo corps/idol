@@ -41,7 +41,7 @@ function (_schemaTypeStruct) {
   _createClass(TypeStruct, [{
     key: "isPrimitive",
     get: function get() {
-      return !this.isAlias;
+      return !this.isAlias && !this.isLiteral;
     }
   }, {
     key: "isAlias",

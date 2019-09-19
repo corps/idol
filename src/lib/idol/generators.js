@@ -231,7 +231,7 @@ function () {
   _createClass(ScalarDeconstructor, [{
     key: "getPrimitive",
     value: function getPrimitive() {
-      if (this.typeStruct.isAlias && this.typeStruct.isLiteral) {
+      if (this.typeStruct.isAlias || this.typeStruct.isLiteral) {
         return _functional.Alt.empty();
       }
 
@@ -342,8 +342,8 @@ function () {
         return _functional.Alt.empty();
       }
 
-      return _functional.Alt.lift(_functional.OrderedObj.fromIterable(this.t.fields.keys().map(function (k) {
-        return new _functional.OrderedObj(_defineProperty({}, k, new TypeStructDeconstructor(_this.t.fields.obj[k].typeStruct, new TypeStructContext(_this.t.fields.obj[k].tags))));
+      return _functional.Alt.lift(_functional.OrderedObj.fromIterable(Object.keys(this.t.fields).sort().map(function (k) {
+        return new _functional.OrderedObj(_defineProperty({}, k, new TypeStructDeconstructor(_this.t.fields[k].typeStruct, new TypeStructContext(_this.t.fields[k].tags))));
       })));
     }
   }]);
@@ -445,6 +445,14 @@ function () {
   }, {
     key: "addIdentifier",
     value: function addIdentifier(intoPath, ident, source) {
+      var existingSources = this.idents.get(intoPath.path).bind(function (idents) {
+        return idents.get(ident);
+      }).getOr(new _functional.StringSet([source])).items;
+
+      if (existingSources.indexOf(source) === -1) {
+        throw new Error("Cannot create ident ".concat(ident, " into path ").concat(intoPath.path, ", conflicts with existing from ").concat(existingSources.join(' ')));
+      }
+
       this.idents = this.idents.concat(new _functional.OrderedObj(_defineProperty({}, intoPath.path, new _functional.OrderedObj(_defineProperty({}, ident, new _functional.StringSet([source]))))));
       return ident;
     }
@@ -519,7 +527,7 @@ function () {
             ident = _ref7[1],
             sources = _ref7[2];
 
-        return "ident ".concat(ident, " was defined or imported into ").concat(path, " by ").concat(sources.items.length, " different sources");
+        return "ident ".concat(ident, " was defined or imported into ").concat(path, " by conflicting sources: ").concat(sources.items.join(' '));
       });
     }
   }]);
@@ -652,7 +660,7 @@ function () {
       var groups = this.groupOfPath.get(p).getOr(new _functional.StringSet([group]));
 
       if (groups.items.indexOf(group) !== -1) {
-        this.groupOfPath = this.groupOfPath.concat(new _functional.OrderedObj(new _functional.StringSet([group])));
+        this.groupOfPath = this.groupOfPath.concat(new _functional.OrderedObj(_defineProperty({}, p, new _functional.StringSet([group]))));
         return new Path(p);
       }
 

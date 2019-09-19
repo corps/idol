@@ -175,11 +175,11 @@ function (_GeneratorFileContext) {
       return (0, _functional.cachedProperty)(this, "declaredTypeIdent", function () {
         return _this6["enum"].bind(function (e) {
           return e.declaredIdent;
-        }).asDisjoint().concat(_this6.typeStruct.bind(function (ts) {
+        }).either(_this6.typeStruct.bind(function (ts) {
           return ts.declaredIdent;
-        }).asDisjoint()).concat(_this6.struct.bind(function (struct) {
+        })).either(_this6.struct.bind(function (struct) {
           return struct.declaredIdent;
-        }).asDisjoint()).asAlt();
+        }));
       });
     }
   }, {
@@ -254,19 +254,22 @@ function (_GeneratorFileContext2) {
     get: function get() {
       var _this11 = this;
 
-      var codegenFile = this.parent.codegenFile(this.type.named);
-      return codegenFile.declaredTypeIdent.bind(function (codegenType) {
-        return codegenFile.struct.map(function (codegenStruct) {
-          return scripter.classDec([scripter.methodDec("constructor", ["val"], [scripter.invocation("super", "val")])], _this11.state.importIdent(_this11.path, codegenType));
-        }).concat(codegenFile.typeStruct.map(function (tsDecon) {
-          return scripter.variable(_this11.state.importIdent(_this11.path, codegenType));
-        })).concat(codegenFile["enum"].map(function (options) {
-          return scripter.variable(_this11.state.importIdent(_this11.path, codegenType));
-        })).map(function (scriptable) {
-          return {
-            ident: _this11.state.addContentWithIdent(_this11.path, _this11.defaultTypeName, scriptable),
-            path: _this11.path
-          };
+      return (0, _functional.cachedProperty)(this, "declaredTypeIdent", function () {
+        var codegenFile = _this11.parent.codegenFile(_this11.type.named);
+
+        return codegenFile.declaredTypeIdent.bind(function (codegenType) {
+          return codegenFile.struct.map(function (codegenStruct) {
+            return scripter.classDec([scripter.methodDec("constructor", ["val"], [scripter.invocation("super", "val")])], _this11.state.importIdent(_this11.path, codegenType));
+          }).concat(codegenFile.typeStruct.map(function (tsDecon) {
+            return scripter.variable(_this11.state.importIdent(_this11.path, codegenType));
+          })).concat(codegenFile["enum"].map(function (options) {
+            return scripter.variable(_this11.state.importIdent(_this11.path, codegenType));
+          })).map(function (scriptable) {
+            return {
+              ident: _this11.state.addContentWithIdent(_this11.path, _this11.defaultTypeName, scriptable),
+              path: _this11.path
+            };
+          });
         });
       });
     }
@@ -289,6 +292,7 @@ function (_GeneratorFileContext3) {
 
     _this12 = _possibleConstructorReturn(this, _getPrototypeOf(IdolJsCodegenStruct).call(this, codegenFile.parent, codegenFile.path));
     _this12.fields = fields;
+    _this12.codegenFile = codegenFile;
     return _this12;
   }
 
@@ -339,6 +343,7 @@ function (_GeneratorFileContext4) {
 
     _this14 = _possibleConstructorReturn(this, _getPrototypeOf(IdolJsCodegenEnum).call(this, codegenFile.parent, codegenFile.path));
     _this14.codegenFile = codegenFile;
+    _this14.options = options;
     return _this14;
   }
 
@@ -484,7 +489,7 @@ function () {
   _createClass(IdolJsCodegenScalar, [{
     key: "constructorExpr",
     get: function get() {
-      return this.referenceImportExpr.asDisjoint().concat(this.primConstructorExpr.asDisjoint()).concat(this.literalConstructorExpr.asDisjoint()).asAlt();
+      return this.referenceImportExpr.either(this.primConstructorExpr).either(this.literalConstructorExpr);
     }
   }, {
     key: "referenceImportExpr",
@@ -581,7 +586,7 @@ function (_GeneratorFileContext5) {
       return (0, _functional.cachedProperty)(this, "literal", function () {
         return {
           path: _this24.dumpedFile,
-          ident: "Literal"
+          ident: _this24.state.idents.addIdentifier(_this24.path, "Literal", "literal")
         };
       });
     }
@@ -593,7 +598,7 @@ function (_GeneratorFileContext5) {
       return (0, _functional.cachedProperty)(this, "primitive", function () {
         return {
           path: _this25.dumpedFile,
-          ident: "Primitive"
+          ident: _this25.state.idents.addIdentifier(_this25.path, "Primitive", "primitive")
         };
       });
     }
@@ -605,7 +610,7 @@ function (_GeneratorFileContext5) {
       return (0, _functional.cachedProperty)(this, "list", function () {
         return {
           path: _this26.dumpedFile,
-          ident: "List"
+          ident: _this26.state.idents.addIdentifier(_this26.path, "List", "list")
         };
       });
     }
@@ -617,7 +622,7 @@ function (_GeneratorFileContext5) {
       return (0, _functional.cachedProperty)(this, "map", function () {
         return {
           path: _this27.dumpedFile,
-          ident: "Map"
+          ident: _this27.state.idents.addIdentifier(_this27.path, "Map", "map")
         };
       });
     }
@@ -629,7 +634,7 @@ function (_GeneratorFileContext5) {
       return (0, _functional.cachedProperty)(this, "enum", function () {
         return {
           path: _this28.dumpedFile,
-          ident: "Enum"
+          ident: _this28.state.idents.addIdentifier(_this28.path, "Enum", "enum")
         };
       });
     }
@@ -641,7 +646,7 @@ function (_GeneratorFileContext5) {
       return (0, _functional.cachedProperty)(this, "struct", function () {
         return {
           path: _this29.dumpedFile,
-          ident: "Struct"
+          ident: _this29.state.idents.addIdentifier(_this29.path, "Struct", "struct")
         };
       });
     }

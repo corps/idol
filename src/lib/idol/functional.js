@@ -274,8 +274,8 @@ function () {
   }, {
     key: "either",
     value: function either(other) {
-      if (!this.isEmpty()) {
-        throw new Error("Unexpected conflict!");
+      if (!this.isEmpty() && !other.isEmpty()) {
+        throw new Error("Unexpected conflict, found ".concat(this.value.join(' ')));
       }
 
       return other;
@@ -345,7 +345,7 @@ function () {
       }
 
       if (this.value.length > 1) {
-        throw new Error("Unexpected conflict!");
+        throw new Error("Unexpected conflict, found ".concat(this.value.join(' ')));
       }
 
       throw new Error("Unwrapped empty value!");

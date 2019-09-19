@@ -149,7 +149,7 @@ export class ScalarDeconstructor {
   }
 
   getPrimitive(): Alt<string> {
-    if (this.typeStruct.isAlias && this.typeStruct.isLiteral) {
+    if (this.typeStruct.isAlias || this.typeStruct.isLiteral) {
       return Alt.empty();
     }
 
@@ -245,12 +245,12 @@ export class TypeDeconstructor {
 
     return Alt.lift(
       OrderedObj.fromIterable(
-        this.t.fields.keys().map(
+        Object.keys(this.t.fields).sort().map(
           k =>
             new OrderedObj<TypeStructDeconstructor>({
               [k]: new TypeStructDeconstructor(
-                this.t.fields.obj[k].typeStruct,
-                new TypeStructContext(this.t.fields.obj[k].tags)
+                this.t.fields[k].typeStruct,
+                new TypeStructContext(this.t.fields[k].tags)
               )
             })
         )
@@ -333,6 +333,11 @@ export class IdentifiersAcc {
   }
 
   addIdentifier(intoPath: Path, ident: string, source: string): string {
+    const existingSources = this.idents.get(intoPath.path).bind(idents => idents.get(ident)).getOr(new StringSet([source])).items;
+    if (existingSources.indexOf(source) === -1) {
+      throw new Error(`Cannot create ident ${ident} into path ${intoPath.path}, conflicts with existing from ${existingSources.join(' ')}`)
+    }
+
     this.idents = this.idents.concat(
       new OrderedObj<OrderedObj<StringSet>>({
         [intoPath.path]: new OrderedObj({ [ident]: new StringSet([source]) })
@@ -361,7 +366,7 @@ export class IdentifiersAcc {
 
     return result.map(
       ([path, ident, sources]) =>
-        `ident ${ident} was defined or imported into ${path} by ${sources.items.length} different sources`
+        `ident ${ident} was defined or imported into ${path} by conflicting sources: ${sources.items.join(' ')}`
     );
   }
 }
@@ -491,7 +496,7 @@ export class GeneratorAcc {
 
     const groups = this.groupOfPath.get(p).getOr(new StringSet([group]));
     if (groups.items.indexOf(group) !== -1) {
-      this.groupOfPath = this.groupOfPath.concat(new OrderedObj<StringSet>(new StringSet([group])));
+      this.groupOfPath = this.groupOfPath.concat(new OrderedObj<StringSet>({ [p]: new StringSet([group] ) }));
       return new Path(p);
     }
 
