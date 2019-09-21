@@ -43,7 +43,7 @@ export function propExpr(obj: string, ...exprs: string[]): string {
 export function comment(comment: string): string {
   if (!comment) return comment;
   comment = comment.replace(/\//g, "\\/");
-  if (comment.indexOf("\n") === -1) return `// ${comment}`
+  if (comment.indexOf("\n") === -1) return `// ${comment}`;
   return `/*\n${comment}\n*/\n`;
 }
 

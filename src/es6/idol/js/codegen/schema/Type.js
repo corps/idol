@@ -27,9 +27,7 @@ export class SchemaType {
     return null;
   }
   get dependencies() {
-    return List.of(ScaffoldDependency, { atleastOne: false }).wrap(
-      this._original["dependencies"]
-    );
+    return List.of(ScaffoldDependency, { atleastOne: false }).wrap(this._original["dependencies"]);
   }
   set dependencies(val) {
     this._original["dependencies"] = List.of(ScaffoldDependency, {
@@ -61,9 +59,7 @@ export class SchemaType {
     this._original["named"] = ScaffoldReference.unwrap(val);
   }
   get options() {
-    return List.of(Primitive.of("string"), { atleastOne: false }).wrap(
-      this._original["options"]
-    );
+    return List.of(Primitive.of("string"), { atleastOne: false }).wrap(this._original["options"]);
   }
   set options(val) {
     this._original["options"] = List.of(Primitive.of("string"), {
@@ -71,9 +67,7 @@ export class SchemaType {
     }).unwrap(val);
   }
   get tags() {
-    return List.of(Primitive.of("string"), { atleastOne: false }).wrap(
-      this._original["tags"]
-    );
+    return List.of(Primitive.of("string"), { atleastOne: false }).wrap(this._original["tags"]);
   }
   set tags(val) {
     this._original["tags"] = List.of(Primitive.of("string"), {
@@ -81,9 +75,7 @@ export class SchemaType {
     }).unwrap(val);
   }
   get type_vars() {
-    return List.of(Primitive.of("string"), { atleastOne: false }).wrap(
-      this._original["type_vars"]
-    );
+    return List.of(Primitive.of("string"), { atleastOne: false }).wrap(this._original["type_vars"]);
   }
   set type_vars(val) {
     this._original["type_vars"] = List.of(Primitive.of("string"), {

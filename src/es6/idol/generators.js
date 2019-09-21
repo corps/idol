@@ -47,7 +47,7 @@ export class Path {
     }
 
     if (parts.length === 0) {
-      parts.push(".")
+      parts.push(".");
     }
 
     while (i < toParts.length) {
@@ -497,7 +497,7 @@ export class GeneratorAcc {
               .filter(Boolean)
               .map(scripter.comment)
               .concat(this.imports.render(path))
-                .concat(["\n"])
+              .concat(["\n"])
               .concat(this.content.get(path).getOr([]))
           )
         });
@@ -643,7 +643,7 @@ export function importExpr(exported: Exported, asIdent: string | null = null): E
 export function camelify(name: string, typeName: boolean = true): string {
   return name
     .split(/[._]/)
-    .map((p, i) => i > 0 || typeName ? p[0].toUpperCase() + p.slice(1) : p)
+    .map((p, i) => (i > 0 || typeName ? p[0].toUpperCase() + p.slice(1) : p))
     .join("");
 }
 
