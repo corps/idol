@@ -3,8 +3,8 @@ import fs from "fs";
 import path from "path";
 import * as scripter from "./scripter";
 import { start } from "./cli";
-import { Reference } from "./schema/Reference";
-import { Type } from "./schema/Type";
+import { Reference } from "./js/schema/Reference";
+import { Type } from "./js/schema/Type";
 import {
   build,
   camelify,

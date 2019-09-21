@@ -2,9 +2,9 @@
 
 import fs from "fs";
 import { Map } from "./__idol__";
-import { Module } from "./schema/Module";
+import { Module } from "./js/schema/Module";
 import { OrderedObj } from "./functional";
-import { Type } from "./schema/Type";
+import { Type } from "./js/schema/Type";
 import type { GeneratorParams } from "./generators";
 
 export function start(config: CliConfig): GeneratorParams {

@@ -1,9 +1,9 @@
 // @flow
-import { Module } from "./schema/Module";
-import { Type } from "./schema/Type";
-import { Reference } from "./schema/Reference";
-import { TypeStruct } from "./schema/TypeStruct";
-import { StructKind } from "./schema/StructKind";
+import { Module } from "./js/schema/Module";
+import { Type } from "./js/schema/Type";
+import { Reference } from "./js/schema/Reference";
+import { TypeStruct } from "./js/schema/TypeStruct";
+import { StructKind } from "./js/schema/StructKind";
 import { Alt, Disjoint, naiveObjectConcat, OrderedObj, StringSet } from "./functional";
 import * as scripter from "./scripter";
 import { BuildEnv } from "./build_env";
