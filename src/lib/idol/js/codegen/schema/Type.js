@@ -34,18 +34,22 @@ function () {
   _createClass(SchemaType, [{
     key: "dependencies",
     get: function get() {
-      return _idol__.List.of(_Dependency.Dependency).wrap(this._original["dependencies"]);
+      return _idol__.List.of(_Dependency.Dependency, {
+        atleastOne: false
+      }).wrap(this._original["dependencies"]);
     },
     set: function set(val) {
-      this._original["dependencies"] = _idol__.List.of(_Dependency.Dependency).unwrap(val);
+      this._original["dependencies"] = _idol__.List.of(_Dependency.Dependency, {
+        atleastOne: false
+      }).unwrap(val);
     }
   }, {
     key: "fields",
     get: function get() {
-      return _idol__.Map.of(_Field.Field).wrap(this._original["fields"]);
+      return _idol__.Map.of(_Field.Field, {}).wrap(this._original["fields"]);
     },
     set: function set(val) {
-      this._original["fields"] = _idol__.Map.of(_Field.Field).unwrap(val);
+      this._original["fields"] = _idol__.Map.of(_Field.Field, {}).unwrap(val);
     }
   }, {
     key: "is_a",
@@ -74,26 +78,38 @@ function () {
   }, {
     key: "options",
     get: function get() {
-      return _idol__.List.of(_idol__.Primitive.of("string")).wrap(this._original["options"]);
+      return _idol__.List.of(_idol__.Primitive.of("string"), {
+        atleastOne: false
+      }).wrap(this._original["options"]);
     },
     set: function set(val) {
-      this._original["options"] = _idol__.List.of(_idol__.Primitive.of("string")).unwrap(val);
+      this._original["options"] = _idol__.List.of(_idol__.Primitive.of("string"), {
+        atleastOne: false
+      }).unwrap(val);
     }
   }, {
     key: "tags",
     get: function get() {
-      return _idol__.List.of(_idol__.Primitive.of("string")).wrap(this._original["tags"]);
+      return _idol__.List.of(_idol__.Primitive.of("string"), {
+        atleastOne: false
+      }).wrap(this._original["tags"]);
     },
     set: function set(val) {
-      this._original["tags"] = _idol__.List.of(_idol__.Primitive.of("string")).unwrap(val);
+      this._original["tags"] = _idol__.List.of(_idol__.Primitive.of("string"), {
+        atleastOne: false
+      }).unwrap(val);
     }
   }, {
     key: "type_vars",
     get: function get() {
-      return _idol__.List.of(_idol__.Primitive.of("string")).wrap(this._original["type_vars"]);
+      return _idol__.List.of(_idol__.Primitive.of("string"), {
+        atleastOne: false
+      }).wrap(this._original["type_vars"]);
     },
     set: function set(val) {
-      this._original["type_vars"] = _idol__.List.of(_idol__.Primitive.of("string")).unwrap(val);
+      this._original["type_vars"] = _idol__.List.of(_idol__.Primitive.of("string"), {
+        atleastOne: false
+      }).unwrap(val);
     }
   }, {
     key: "typeVars",
@@ -134,11 +150,13 @@ function () {
 exports.SchemaType = SchemaType;
 (0, _idol__.Struct)(SchemaType, [{
   fieldName: "dependencies",
-  type: _idol__.List.of(_Dependency.Dependency),
+  type: _idol__.List.of(_Dependency.Dependency, {
+    atleastOne: false
+  }),
   optional: false
 }, {
   fieldName: "fields",
-  type: _idol__.Map.of(_Field.Field),
+  type: _idol__.Map.of(_Field.Field, {}),
   optional: false
 }, {
   fieldName: "is_a",
@@ -150,14 +168,20 @@ exports.SchemaType = SchemaType;
   optional: false
 }, {
   fieldName: "options",
-  type: _idol__.List.of(_idol__.Primitive.of("string")),
+  type: _idol__.List.of(_idol__.Primitive.of("string"), {
+    atleastOne: false
+  }),
   optional: false
 }, {
   fieldName: "tags",
-  type: _idol__.List.of(_idol__.Primitive.of("string")),
+  type: _idol__.List.of(_idol__.Primitive.of("string"), {
+    atleastOne: false
+  }),
   optional: false
 }, {
   fieldName: "type_vars",
-  type: _idol__.List.of(_idol__.Primitive.of("string")),
+  type: _idol__.List.of(_idol__.Primitive.of("string"), {
+    atleastOne: false
+  }),
   optional: false
 }]);

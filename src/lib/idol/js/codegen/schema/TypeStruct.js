@@ -42,10 +42,14 @@ function () {
   }, {
     key: "parameters",
     get: function get() {
-      return _idol__.List.of(_Reference.Reference).wrap(this._original["parameters"]);
+      return _idol__.List.of(_Reference.Reference, {
+        atleastOne: false
+      }).wrap(this._original["parameters"]);
     },
     set: function set(val) {
-      this._original["parameters"] = _idol__.List.of(_Reference.Reference).unwrap(val);
+      this._original["parameters"] = _idol__.List.of(_Reference.Reference, {
+        atleastOne: false
+      }).unwrap(val);
     }
   }, {
     key: "primitive_type",
@@ -122,7 +126,9 @@ exports.SchemaTypeStruct = SchemaTypeStruct;
   optional: true
 }, {
   fieldName: "parameters",
-  type: _idol__.List.of(_Reference.Reference),
+  type: _idol__.List.of(_Reference.Reference, {
+    atleastOne: false
+  }),
   optional: false
 }, {
   fieldName: "primitive_type",

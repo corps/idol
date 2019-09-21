@@ -25,10 +25,14 @@ export class SchemaModule {
     return null;
   }
   get abstract_types_by_name() {
-    return Map.of(ScaffoldType, {}).wrap(this._original["abstract_types_by_name"]);
+    return Map.of(ScaffoldType, {}).wrap(
+      this._original["abstract_types_by_name"]
+    );
   }
   set abstract_types_by_name(val) {
-    this._original["abstract_types_by_name"] = Map.of(ScaffoldType, {}).unwrap(val);
+    this._original["abstract_types_by_name"] = Map.of(ScaffoldType, {}).unwrap(
+      val
+    );
   }
   get abstractTypesByName() {
     return this.abstract_types_by_name;
@@ -37,7 +41,9 @@ export class SchemaModule {
     this.abstract_types_by_name = val;
   }
   get dependencies() {
-    return List.of(ScaffoldDependency, { atleastOne: false }).wrap(this._original["dependencies"]);
+    return List.of(ScaffoldDependency, { atleastOne: false }).wrap(
+      this._original["dependencies"]
+    );
   }
   set dependencies(val) {
     this._original["dependencies"] = List.of(ScaffoldDependency, {
@@ -74,9 +80,10 @@ export class SchemaModule {
     );
   }
   set types_dependency_ordering(val) {
-    this._original["types_dependency_ordering"] = List.of(Primitive.of("string"), {
-      atleastOne: false
-    }).unwrap(val);
+    this._original["types_dependency_ordering"] = List.of(
+      Primitive.of("string"),
+      { atleastOne: false }
+    ).unwrap(val);
   }
   get typesDependencyOrdering() {
     return this.types_dependency_ordering;

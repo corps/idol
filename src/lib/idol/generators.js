@@ -11,15 +11,15 @@ exports.camelify = camelify;
 exports.snakify = snakify;
 exports.RESERVED_WORDS = exports.GeneratorFileContext = exports.GeneratorAcc = exports.ImportsAcc = exports.IdentifiersAcc = exports.GeneratorConfig = exports.TypeDeconstructor = exports.TypeStructDeconstructor = exports.ScalarDeconstructor = exports.ScalarContext = exports.TypeStructContext = exports.ImportPath = exports.Path = void 0;
 
-var _Module = require("./schema/Module");
+var _Module = require("./js/schema/Module");
 
-var _Type = require("./schema/Type");
+var _Type = require("./js/schema/Type");
 
-var _Reference = require("./schema/Reference");
+var _Reference = require("./js/schema/Reference");
 
-var _TypeStruct = require("./schema/TypeStruct");
+var _TypeStruct = require("./js/schema/TypeStruct");
 
-var _StructKind = require("./schema/StructKind");
+var _StructKind = require("./js/schema/StructKind");
 
 var _functional = require("./functional");
 

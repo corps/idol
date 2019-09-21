@@ -13,9 +13,9 @@ var scripter = _interopRequireWildcard(require("./scripter"));
 
 var _cli = require("./cli");
 
-var _Reference = require("./schema/Reference");
+var _Reference = require("./js/schema/Reference");
 
-var _Type = require("./schema/Type");
+var _Type = require("./js/schema/Type");
 
 var _generators = require("./generators");
 

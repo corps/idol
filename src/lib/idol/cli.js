@@ -11,11 +11,11 @@ var _fs = _interopRequireDefault(require("fs"));
 
 var _idol__ = require("./__idol__");
 
-var _Module = require("./schema/Module");
+var _Module = require("./js/schema/Module");
 
 var _functional = require("./functional");
 
-var _Type = require("./schema/Type");
+var _Type = require("./js/schema/Type");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 

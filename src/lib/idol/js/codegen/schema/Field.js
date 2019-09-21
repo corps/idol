@@ -44,10 +44,14 @@ function () {
   }, {
     key: "tags",
     get: function get() {
-      return _idol__.List.of(_idol__.Primitive.of("string")).wrap(this._original["tags"]);
+      return _idol__.List.of(_idol__.Primitive.of("string"), {
+        atleastOne: false
+      }).wrap(this._original["tags"]);
     },
     set: function set(val) {
-      this._original["tags"] = _idol__.List.of(_idol__.Primitive.of("string")).unwrap(val);
+      this._original["tags"] = _idol__.List.of(_idol__.Primitive.of("string"), {
+        atleastOne: false
+      }).unwrap(val);
     }
   }, {
     key: "type_struct",
@@ -100,7 +104,9 @@ exports.SchemaField = SchemaField;
   optional: false
 }, {
   fieldName: "tags",
-  type: _idol__.List.of(_idol__.Primitive.of("string")),
+  type: _idol__.List.of(_idol__.Primitive.of("string"), {
+    atleastOne: false
+  }),
   optional: false
 }, {
   fieldName: "type_struct",

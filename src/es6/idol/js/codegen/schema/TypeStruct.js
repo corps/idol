@@ -33,7 +33,9 @@ export class SchemaTypeStruct {
     this._original["literal"] = ScaffoldLiteral.unwrap(val);
   }
   get parameters() {
-    return List.of(ScaffoldReference, { atleastOne: false }).wrap(this._original["parameters"]);
+    return List.of(ScaffoldReference, { atleastOne: false }).wrap(
+      this._original["parameters"]
+    );
   }
   set parameters(val) {
     this._original["parameters"] = List.of(ScaffoldReference, {

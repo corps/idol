@@ -30,10 +30,10 @@ function () {
   _createClass(SchemaModule, [{
     key: "abstract_types_by_name",
     get: function get() {
-      return _idol__.Map.of(_Type.Type).wrap(this._original["abstract_types_by_name"]);
+      return _idol__.Map.of(_Type.Type, {}).wrap(this._original["abstract_types_by_name"]);
     },
     set: function set(val) {
-      this._original["abstract_types_by_name"] = _idol__.Map.of(_Type.Type).unwrap(val);
+      this._original["abstract_types_by_name"] = _idol__.Map.of(_Type.Type, {}).unwrap(val);
     }
   }, {
     key: "abstractTypesByName",
@@ -46,10 +46,14 @@ function () {
   }, {
     key: "dependencies",
     get: function get() {
-      return _idol__.List.of(_Dependency.Dependency).wrap(this._original["dependencies"]);
+      return _idol__.List.of(_Dependency.Dependency, {
+        atleastOne: false
+      }).wrap(this._original["dependencies"]);
     },
     set: function set(val) {
-      this._original["dependencies"] = _idol__.List.of(_Dependency.Dependency).unwrap(val);
+      this._original["dependencies"] = _idol__.List.of(_Dependency.Dependency, {
+        atleastOne: false
+      }).unwrap(val);
     }
   }, {
     key: "module_name",
@@ -70,10 +74,10 @@ function () {
   }, {
     key: "types_by_name",
     get: function get() {
-      return _idol__.Map.of(_Type.Type).wrap(this._original["types_by_name"]);
+      return _idol__.Map.of(_Type.Type, {}).wrap(this._original["types_by_name"]);
     },
     set: function set(val) {
-      this._original["types_by_name"] = _idol__.Map.of(_Type.Type).unwrap(val);
+      this._original["types_by_name"] = _idol__.Map.of(_Type.Type, {}).unwrap(val);
     }
   }, {
     key: "typesByName",
@@ -86,10 +90,14 @@ function () {
   }, {
     key: "types_dependency_ordering",
     get: function get() {
-      return _idol__.List.of(_idol__.Primitive.of("string")).wrap(this._original["types_dependency_ordering"]);
+      return _idol__.List.of(_idol__.Primitive.of("string"), {
+        atleastOne: false
+      }).wrap(this._original["types_dependency_ordering"]);
     },
     set: function set(val) {
-      this._original["types_dependency_ordering"] = _idol__.List.of(_idol__.Primitive.of("string")).unwrap(val);
+      this._original["types_dependency_ordering"] = _idol__.List.of(_idol__.Primitive.of("string"), {
+        atleastOne: false
+      }).unwrap(val);
     }
   }, {
     key: "typesDependencyOrdering",
@@ -130,11 +138,13 @@ function () {
 exports.SchemaModule = SchemaModule;
 (0, _idol__.Struct)(SchemaModule, [{
   fieldName: "abstract_types_by_name",
-  type: _idol__.Map.of(_Type.Type),
+  type: _idol__.Map.of(_Type.Type, {}),
   optional: false
 }, {
   fieldName: "dependencies",
-  type: _idol__.List.of(_Dependency.Dependency),
+  type: _idol__.List.of(_Dependency.Dependency, {
+    atleastOne: false
+  }),
   optional: false
 }, {
   fieldName: "module_name",
@@ -142,10 +152,12 @@ exports.SchemaModule = SchemaModule;
   optional: false
 }, {
   fieldName: "types_by_name",
-  type: _idol__.Map.of(_Type.Type),
+  type: _idol__.Map.of(_Type.Type, {}),
   optional: false
 }, {
   fieldName: "types_dependency_ordering",
-  type: _idol__.List.of(_idol__.Primitive.of("string")),
+  type: _idol__.List.of(_idol__.Primitive.of("string"), {
+    atleastOne: false
+  }),
   optional: false
 }]);
