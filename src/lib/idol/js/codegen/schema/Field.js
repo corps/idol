@@ -3,21 +3,11 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Field = exports.SchemaField = void 0;
+exports.SchemaField = void 0;
 
-var _ = require("");
+var _idol__ = require("../__idol__");
 
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+var _TypeStruct = require("../../schema/TypeStruct");
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -32,13 +22,50 @@ function () {
     _classCallCheck(this, SchemaField);
 
     this._original = val;
-  }
-  /*
-  These methods are implemented via the runtime, stubs exist here for reference.
-  */
+  } // These methods are implemented via the runtime, stubs exist here for reference.
 
 
-  _createClass(SchemaField, null, [{
+  _createClass(SchemaField, [{
+    key: "field_name",
+    get: function get() {
+      return _idol__.Primitive.of("string").wrap(this._original["field_name"]);
+    },
+    set: function set(val) {
+      this._original["field_name"] = _idol__.Primitive.of("string").unwrap(val);
+    }
+  }, {
+    key: "fieldName",
+    get: function get() {
+      return this.field_name;
+    },
+    set: function set(val) {
+      this.field_name = val;
+    }
+  }, {
+    key: "tags",
+    get: function get() {
+      return _idol__.List.of(_idol__.Primitive.of("string")).wrap(this._original["tags"]);
+    },
+    set: function set(val) {
+      this._original["tags"] = _idol__.List.of(_idol__.Primitive.of("string")).unwrap(val);
+    }
+  }, {
+    key: "type_struct",
+    get: function get() {
+      return _TypeStruct.TypeStruct.wrap(this._original["type_struct"]);
+    },
+    set: function set(val) {
+      this._original["type_struct"] = _TypeStruct.TypeStruct.unwrap(val);
+    }
+  }, {
+    key: "typeStruct",
+    get: function get() {
+      return this.type_struct;
+    },
+    set: function set(val) {
+      this.type_struct = val;
+    }
+  }], [{
     key: "validate",
     value: function validate(val) {}
   }, {
@@ -67,19 +94,16 @@ function () {
 }();
 
 exports.SchemaField = SchemaField;
-
-var Field =
-/*#__PURE__*/
-function (_SchemaField_) {
-  _inherits(Field, _SchemaField_);
-
-  function Field(val) {
-    _classCallCheck(this, Field);
-
-    return _possibleConstructorReturn(this, _getPrototypeOf(Field).call(this, val));
-  }
-
-  return Field;
-}(_.SchemaField);
-
-exports.Field = Field;
+(0, _idol__.Struct)(SchemaField, [{
+  fieldName: "field_name",
+  type: _idol__.Primitive.of("string"),
+  optional: false
+}, {
+  fieldName: "tags",
+  type: _idol__.List.of(_idol__.Primitive.of("string")),
+  optional: false
+}, {
+  fieldName: "type_struct",
+  type: _TypeStruct.TypeStruct,
+  optional: false
+}]);

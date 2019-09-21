@@ -83,7 +83,9 @@ function propExpr(obj) {
 
 function comment(comment) {
   if (!comment) return comment;
-  return "/*\n".concat(comment.replace(/\//g, "\\/"), "\n*/\n");
+  comment = comment.replace(/\//g, "\\/");
+  if (comment.indexOf("\n") === -1) return "// ".concat(comment);
+  return "/*\n".concat(comment, "\n*/\n");
 }
 
 function propDec(prop, expr) {
@@ -101,7 +103,7 @@ function objLiteral() {
 
   return "{".concat(parts.map(function (p) {
     return p.trim() ? p + "," : p;
-  }).join(""), "}");
+  }).join("\n"), "}");
 }
 
 function assignment(ident, expr) {

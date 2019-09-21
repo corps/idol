@@ -42,7 +42,9 @@ export function propExpr(obj: string, ...exprs: string[]): string {
 
 export function comment(comment: string): string {
   if (!comment) return comment;
-  return `/*\n${comment.replace(/\//g, "\\/")}\n*/\n`;
+  comment = comment.replace(/\//g, "\\/");
+  if (comment.indexOf("\n") === -1) return `// ${comment}`
+  return `/*\n${comment}\n*/\n`;
 }
 
 export function propDec(prop: string, expr: string): string {
@@ -54,7 +56,7 @@ export function propExprDec(prop: string, expr: string): string {
 }
 
 export function objLiteral(...parts: string[]): string {
-  return `{${parts.map(p => p.trim() ? p + "," : p).join("")}}`;
+  return `{${parts.map(p => (p.trim() ? p + "," : p)).join("\n")}}`;
 }
 
 export function assignment(ident: string, expr: string): string {

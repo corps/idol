@@ -97,7 +97,7 @@ function () {
       var _this2 = this;
 
       var path = this.state.reservePath(this.config.pathsOf({
-        codegen: ref
+        scaffold: ref
       }));
       var type = this.config.params.allTypes.obj[ref.qualified_name];
       return (0, _functional.cachedProperty)(this, "scaffoldFile".concat(path.path), function () {
@@ -307,15 +307,25 @@ function (_GeneratorFileContext3) {
       var _this13 = this;
 
       return (0, _functional.cachedProperty)(this, "declaredIdent", function () {
+        var fieldConstructorIdents = _this13.fields.mapAndFilter(function (codegenTypeStruct) {
+          return codegenTypeStruct.constructorExpr;
+        }).map(function (expr) {
+          return expr(_this13.state, _this13.path);
+        });
+
         return _functional.Alt.lift({
           path: _this13.path,
-          ident: _this13.state.addContentWithIdent(_this13.path, _this13.codegenFile.defaultTypeName, scripter.classDec([scripter.methodDec("constructor", ["val"], [scripter.assignment("this._original", "val")])].concat(_toConsumableArray(_this13.stubMethods), _toConsumableArray(_this13.fields.keys().reduce(function (lines, fieldName) {
-            var field = _this13.fields.obj[fieldName];
-            var camelFieldName = (0, _generators.camelify)(fieldName);
-            return lines.concat(field.constructorExpr.map(function (constructor) {
-              return _this13.gettersAndSettersFor(fieldName, fieldName, constructor(_this13.state, _this13.path)).concat(_this13.gettersAndSettersFor(camelFieldName, fieldName, constructor(_this13.state, _this13.path)));
-            }).getOr([]));
-          }, [])))))
+          ident: _this13.state.addContentWithIdent(_this13.path, _this13.codegenFile.defaultTypeName, function (ident) {
+            return [scripter.classDec([scripter.methodDec("constructor", ["val"], [scripter.assignment("this._original", "val")])].concat(_toConsumableArray(_this13.stubMethods), _toConsumableArray(fieldConstructorIdents.concatMap(function (fieldName, constructor) {
+              var camelFieldName = (0, _generators.camelify)(fieldName, false);
+
+              var fields = _this13.gettersAndSettersFor(fieldName, fieldName, constructor);
+
+              return fieldName === camelFieldName ? fields : fields.concat(_this13.gettersAndSettersFor(camelFieldName, fieldName, constructor));
+            }, []))))(ident), "\n", scripter.invocation(_this13.state.importIdent(_this13.path, _this13.parent.idolJsFile.struct), ident, scripter.arrayLiteral.apply(scripter, _toConsumableArray(fieldConstructorIdents.mapIntoIterable(function (fieldName, constructor) {
+              return scripter.objLiteral(scripter.propDec("fieldName", scripter.literal(fieldName)), scripter.propDec("type", constructor), scripter.propDec("optional", scripter.literal(_this13.fields.obj[fieldName].tsDecon.context.includesTag("optional"))));
+            }))))];
+          })
         });
       });
     }
@@ -358,7 +368,7 @@ function (_GeneratorFileContext4) {
           ident: _this15.state.addContentWithIdent(_this15.path, _this15.codegenFile.defaultTypeName, function (ident) {
             return [scripter.variable(scripter.objLiteral.apply(scripter, _toConsumableArray(_this15.options.map(function (option) {
               return scripter.propDec(option.toUpperCase(), scripter.literal(option));
-            })).concat(["\n", scripter.propDec("options", scripter.literal(_this15.options)), scripter.propDec("default", scripter.literal(_this15.options[0])), "\n", scripter.methodDec("validate", ["val"], []), scripter.methodDec("isValid", ["val"], [scripter.ret("true")]), scripter.methodDec("expand", ["val"], [scripter.ret("val")]), scripter.methodDec("expand", ["wrap"], [scripter.ret("val")]), scripter.methodDec("expand", ["unwrap"], [scripter.ret("val")])])))(ident), scripter.invocation(_this15.state.importIdent(_this15.path, _this15.parent.idolJsFile["enum"]), ident)];
+            })).concat(["\n", scripter.propDec("options", scripter.literal(_this15.options)), scripter.propDec("default", scripter.literal(_this15.options[0])), "\n", scripter.comment("These methods are implemented via the runtime, stubs exist here for reference."), scripter.methodDec("validate", ["val"], []), scripter.methodDec("isValid", ["val"], [scripter.ret("true")]), scripter.methodDec("expand", ["val"], [scripter.ret("val")]), scripter.methodDec("wrap", ["val"], [scripter.ret("val")]), scripter.methodDec("unwrap", ["val"], [scripter.ret("val")])])))(ident), scripter.invocation(_this15.state.importIdent(_this15.path, _this15.parent.idolJsFile["enum"]), ident)];
           })
         });
       });
@@ -396,21 +406,37 @@ function () {
       });
     }
   }, {
+    key: "listConstructorArgs",
+    get: function get() {
+      return {
+        atleastOne: this.tsDecon.context.includesTag(null, "atleast_one")
+      };
+    }
+  }, {
+    key: "mapConstructorArgs",
+    get: function get() {
+      return {};
+    }
+  }, {
     key: "collectionConstructorExpr",
     get: function get() {
       var _this16 = this;
 
-      var containerConstructorExpr = this.tsDecon.getMap().map(function (_) {
-        return (0, _generators.importExpr)(_this16.idolJS.idolJsFile.map);
-      }).concat(this.tsDecon.getRepeated().map(function (_) {
-        return (0, _generators.importExpr)(_this16.idolJS.idolJsFile.list);
+      var containerAndArgs = this.tsDecon.getMap().map(function (_) {
+        return [(0, _generators.importExpr)(_this16.idolJS.idolJsFile.map), _this16.mapConstructorArgs];
+      }).either(this.tsDecon.getRepeated().map(function (_) {
+        return [(0, _generators.importExpr)(_this16.idolJS.idolJsFile.list), _this16.listConstructorArgs];
       }));
       return this.innerScalar.bind(function (scalar) {
         return scalar.constructorExpr;
       }).bind(function (scalarExpr) {
-        return containerConstructorExpr.map(function (containerExpr) {
+        return containerAndArgs.map(function (_ref) {
+          var _ref2 = _slicedToArray(_ref, 2),
+              containerExpr = _ref2[0],
+              args = _ref2[1];
+
           return function (state, path) {
-            return scripter.invocation(scripter.propAccess(containerExpr(state, path), "of"), scalarExpr(state, path));
+            return scripter.invocation(scripter.propAccess(containerExpr(state, path), "of"), scalarExpr(state, path), scripter.literal(args));
           };
         });
       });
@@ -536,10 +562,10 @@ function () {
     get: function get() {
       var _this22 = this;
 
-      return this.scalarDecon.getLiteral().map(function (_ref) {
-        var _ref2 = _slicedToArray(_ref, 2),
-            lit = _ref2[0],
-            val = _ref2[1];
+      return this.scalarDecon.getLiteral().map(function (_ref3) {
+        var _ref4 = _slicedToArray(_ref3, 2),
+            lit = _ref4[0],
+            val = _ref4[1];
 
         return function (state, path) {
           var literalCon = state.importIdent(path, _this22.idolJs.idolJsFile.literal);

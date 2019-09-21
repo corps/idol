@@ -39,7 +39,7 @@ function (_schemaReference) {
   _createClass(Reference, [{
     key: "snakify",
     value: function snakify() {
-      var _require = require('../generators'),
+      var _require = require("../generators"),
           snakify = _require.snakify;
 
       return new Reference({
@@ -51,7 +51,7 @@ function (_schemaReference) {
   }, {
     key: "camelify",
     value: function camelify() {
-      var _require2 = require('../generators'),
+      var _require2 = require("../generators"),
           camelify = _require2.camelify;
 
       return new Reference({

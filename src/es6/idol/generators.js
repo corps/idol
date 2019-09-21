@@ -39,11 +39,15 @@ export class Path {
     const fromParts = this.path.split("/");
     const toParts = toPath.path.split("/");
     const parts: Array<string> = [];
-    let i = fromParts.length;
+    let i = fromParts.length - 1;
 
-    while (i > 0 && fromParts.slice(0, i).join('/') !== toParts.slice(0, i).join('/')) {
+    while (i > 0 && fromParts.slice(0, i).join("/") !== toParts.slice(0, i).join("/")) {
       parts.push("..");
       i--;
+    }
+
+    if (parts.length === 0) {
+      parts.push(".")
     }
 
     while (i < toParts.length) {
@@ -245,15 +249,17 @@ export class TypeDeconstructor {
 
     return Alt.lift(
       OrderedObj.fromIterable(
-        Object.keys(this.t.fields).sort().map(
-          k =>
-            new OrderedObj<TypeStructDeconstructor>({
-              [k]: new TypeStructDeconstructor(
-                this.t.fields[k].typeStruct,
-                new TypeStructContext(this.t.fields[k].tags)
-              )
-            })
-        )
+        Object.keys(this.t.fields)
+          .sort()
+          .map(
+            k =>
+              new OrderedObj<TypeStructDeconstructor>({
+                [k]: new TypeStructDeconstructor(
+                  this.t.fields[k].typeStruct,
+                  new TypeStructContext(this.t.fields[k].tags)
+                )
+              })
+          )
       )
     );
   }
@@ -333,9 +339,16 @@ export class IdentifiersAcc {
   }
 
   addIdentifier(intoPath: Path, ident: string, source: string): string {
-    const existingSources = this.idents.get(intoPath.path).bind(idents => idents.get(ident)).getOr(new StringSet([source])).items;
+    const existingSources = this.idents
+      .get(intoPath.path)
+      .bind(idents => idents.get(ident))
+      .getOr(new StringSet([source])).items;
     if (existingSources.indexOf(source) === -1) {
-      throw new Error(`Cannot create ident ${ident} into path ${intoPath.path}, conflicts with existing from ${existingSources.join(' ')}`)
+      throw new Error(
+        `Cannot create ident ${ident} into path ${
+          intoPath.path
+        }, conflicts with existing from ${existingSources.join(" ")}`
+      );
     }
 
     this.idents = this.idents.concat(
@@ -366,7 +379,9 @@ export class IdentifiersAcc {
 
     return result.map(
       ([path, ident, sources]) =>
-        `ident ${ident} was defined or imported into ${path} by conflicting sources: ${sources.items.join(' ')}`
+        `ident ${ident} was defined or imported into ${path} by conflicting sources: ${sources.items.join(
+          " "
+        )}`
     );
   }
 }
@@ -403,20 +418,27 @@ export class ImportsAcc {
     return this.imports
       .get(intoPath)
       .map(imports =>
-        imports.keys().map(relPath => {
-          const decons: OrderedObj<StringSet> = imports.obj[relPath];
+        imports
+          .keys()
+          .filter(Boolean)
+          .map(relPath => {
+            const decons: OrderedObj<StringSet> = imports.obj[relPath];
 
-          return scripter.importDecon(
-            relPath,
-            ...decons
-              .keys()
-              .map(ident =>
-                decons.obj[ident].items
-                  .map(asIdent => (asIdent === ident ? ident : `${ident} as ${asIdent}`))
-                  .join(", ")
-              )
-          );
-        })
+            if (relPath.endsWith(".js")) {
+              relPath = relPath.slice(0, relPath.length - 3);
+            }
+
+            return scripter.importDecon(
+              relPath,
+              ...decons
+                .keys()
+                .map(ident =>
+                  decons.obj[ident].items
+                    .map(asIdent => (asIdent === ident ? ident : `${ident} as ${asIdent}`))
+                    .join(", ")
+                )
+            );
+          })
       )
       .getOr([]);
   }
@@ -466,21 +488,20 @@ export class GeneratorAcc {
     this.validate();
 
     return OrderedObj.fromIterable(
-      this.groupOfPath.keys().map(
-        path => {
-          console.log(`Rendering / formatting output for ${path}`)
-          return new OrderedObj({
-            [path]: scripter.render(
-                this.groupOfPath.obj[path].items
-                    .map(group => (group in commentHeaders ? commentHeaders[group] : ""))
-                    .filter(Boolean)
-                    .map(scripter.comment)
-                    .concat(this.imports.render(path))
-                    .concat(this.content.get(path).getOr([]))
-            )
-          })
-        }
-      )
+      this.groupOfPath.keys().map(path => {
+        console.log(`Rendering / formatting output for ${path}`);
+        return new OrderedObj({
+          [path]: scripter.render(
+            this.groupOfPath.obj[path].items
+              .map(group => (group in commentHeaders ? commentHeaders[group] : ""))
+              .filter(Boolean)
+              .map(scripter.comment)
+              .concat(this.imports.render(path))
+                .concat(["\n"])
+              .concat(this.content.get(path).getOr([]))
+          )
+        });
+      })
     );
   }
 
@@ -498,7 +519,9 @@ export class GeneratorAcc {
 
     const groups = this.groupOfPath.get(p).getOr(new StringSet([group]));
     if (groups.items.indexOf(group) !== -1) {
-      this.groupOfPath = this.groupOfPath.concat(new OrderedObj<StringSet>({ [p]: new StringSet([group] ) }));
+      this.groupOfPath = this.groupOfPath.concat(
+        new OrderedObj<StringSet>({ [p]: new StringSet([group]) })
+      );
       return new Path(p);
     }
 
@@ -617,10 +640,10 @@ export function importExpr(exported: Exported, asIdent: string | null = null): E
   return (state: GeneratorAcc, path: Path): string => state.importIdent(path, exported, asIdent);
 }
 
-export function camelify(name: string): string {
+export function camelify(name: string, typeName: boolean = true): string {
   return name
     .split(/[._]/)
-    .map(p => p[0].toUpperCase() + p.slice(1))
+    .map((p, i) => i > 0 || typeName ? p[0].toUpperCase() + p.slice(1) : p)
     .join("");
 }
 

@@ -3,21 +3,17 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.TypeStruct = exports.SchemaTypeStruct = void 0;
+exports.SchemaTypeStruct = void 0;
 
-var _ = require("");
+var _Literal = require("../../schema/Literal");
 
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+var _idol__ = require("../__idol__");
 
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+var _Reference = require("../../schema/Reference");
 
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+var _PrimitiveType = require("../../schema/PrimitiveType");
 
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+var _StructKind = require("../../schema/StructKind");
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -32,13 +28,66 @@ function () {
     _classCallCheck(this, SchemaTypeStruct);
 
     this._original = val;
-  }
-  /*
-  These methods are implemented via the runtime, stubs exist here for reference.
-  */
+  } // These methods are implemented via the runtime, stubs exist here for reference.
 
 
-  _createClass(SchemaTypeStruct, null, [{
+  _createClass(SchemaTypeStruct, [{
+    key: "literal",
+    get: function get() {
+      return _Literal.Literal.wrap(this._original["literal"]);
+    },
+    set: function set(val) {
+      this._original["literal"] = _Literal.Literal.unwrap(val);
+    }
+  }, {
+    key: "parameters",
+    get: function get() {
+      return _idol__.List.of(_Reference.Reference).wrap(this._original["parameters"]);
+    },
+    set: function set(val) {
+      this._original["parameters"] = _idol__.List.of(_Reference.Reference).unwrap(val);
+    }
+  }, {
+    key: "primitive_type",
+    get: function get() {
+      return _PrimitiveType.PrimitiveType.wrap(this._original["primitive_type"]);
+    },
+    set: function set(val) {
+      this._original["primitive_type"] = _PrimitiveType.PrimitiveType.unwrap(val);
+    }
+  }, {
+    key: "primitiveType",
+    get: function get() {
+      return this.primitive_type;
+    },
+    set: function set(val) {
+      this.primitive_type = val;
+    }
+  }, {
+    key: "reference",
+    get: function get() {
+      return _Reference.Reference.wrap(this._original["reference"]);
+    },
+    set: function set(val) {
+      this._original["reference"] = _Reference.Reference.unwrap(val);
+    }
+  }, {
+    key: "struct_kind",
+    get: function get() {
+      return _StructKind.StructKind.wrap(this._original["struct_kind"]);
+    },
+    set: function set(val) {
+      this._original["struct_kind"] = _StructKind.StructKind.unwrap(val);
+    }
+  }, {
+    key: "structKind",
+    get: function get() {
+      return this.struct_kind;
+    },
+    set: function set(val) {
+      this.struct_kind = val;
+    }
+  }], [{
     key: "validate",
     value: function validate(val) {}
   }, {
@@ -67,19 +116,24 @@ function () {
 }();
 
 exports.SchemaTypeStruct = SchemaTypeStruct;
-
-var TypeStruct =
-/*#__PURE__*/
-function (_SchemaTypeStruct_) {
-  _inherits(TypeStruct, _SchemaTypeStruct_);
-
-  function TypeStruct(val) {
-    _classCallCheck(this, TypeStruct);
-
-    return _possibleConstructorReturn(this, _getPrototypeOf(TypeStruct).call(this, val));
-  }
-
-  return TypeStruct;
-}(_.SchemaTypeStruct);
-
-exports.TypeStruct = TypeStruct;
+(0, _idol__.Struct)(SchemaTypeStruct, [{
+  fieldName: "literal",
+  type: _Literal.Literal,
+  optional: true
+}, {
+  fieldName: "parameters",
+  type: _idol__.List.of(_Reference.Reference),
+  optional: false
+}, {
+  fieldName: "primitive_type",
+  type: _PrimitiveType.PrimitiveType,
+  optional: false
+}, {
+  fieldName: "reference",
+  type: _Reference.Reference,
+  optional: false
+}, {
+  fieldName: "struct_kind",
+  type: _StructKind.StructKind,
+  optional: false
+}]);

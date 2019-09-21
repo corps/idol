@@ -3,21 +3,9 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Literal = exports.SchemaLiteral = void 0;
+exports.SchemaLiteral = void 0;
 
-var _ = require("");
-
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+var _idol__ = require("../__idol__");
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -32,13 +20,42 @@ function () {
     _classCallCheck(this, SchemaLiteral);
 
     this._original = val;
-  }
-  /*
-  These methods are implemented via the runtime, stubs exist here for reference.
-  */
+  } // These methods are implemented via the runtime, stubs exist here for reference.
 
 
-  _createClass(SchemaLiteral, null, [{
+  _createClass(SchemaLiteral, [{
+    key: "bool",
+    get: function get() {
+      return _idol__.Primitive.of("bool").wrap(this._original["bool"]);
+    },
+    set: function set(val) {
+      this._original["bool"] = _idol__.Primitive.of("bool").unwrap(val);
+    }
+  }, {
+    key: "double",
+    get: function get() {
+      return _idol__.Primitive.of("double").wrap(this._original["double"]);
+    },
+    set: function set(val) {
+      this._original["double"] = _idol__.Primitive.of("double").unwrap(val);
+    }
+  }, {
+    key: "int",
+    get: function get() {
+      return _idol__.Primitive.of("int").wrap(this._original["int"]);
+    },
+    set: function set(val) {
+      this._original["int"] = _idol__.Primitive.of("int").unwrap(val);
+    }
+  }, {
+    key: "string",
+    get: function get() {
+      return _idol__.Primitive.of("string").wrap(this._original["string"]);
+    },
+    set: function set(val) {
+      this._original["string"] = _idol__.Primitive.of("string").unwrap(val);
+    }
+  }], [{
     key: "validate",
     value: function validate(val) {}
   }, {
@@ -67,19 +84,20 @@ function () {
 }();
 
 exports.SchemaLiteral = SchemaLiteral;
-
-var Literal =
-/*#__PURE__*/
-function (_SchemaLiteral_) {
-  _inherits(Literal, _SchemaLiteral_);
-
-  function Literal(val) {
-    _classCallCheck(this, Literal);
-
-    return _possibleConstructorReturn(this, _getPrototypeOf(Literal).call(this, val));
-  }
-
-  return Literal;
-}(_.SchemaLiteral);
-
-exports.Literal = Literal;
+(0, _idol__.Struct)(SchemaLiteral, [{
+  fieldName: "bool",
+  type: _idol__.Primitive.of("bool"),
+  optional: false
+}, {
+  fieldName: "double",
+  type: _idol__.Primitive.of("double"),
+  optional: false
+}, {
+  fieldName: "int",
+  type: _idol__.Primitive.of("int"),
+  optional: false
+}, {
+  fieldName: "string",
+  type: _idol__.Primitive.of("string"),
+  optional: false
+}]);

@@ -54,16 +54,36 @@ function () {
       return new OrderedObj(newObj, this.ordering);
     }
   }, {
-    key: "concat",
-    value: function concat(other) {
+    key: "mapIntoIterable",
+    value: function mapIntoIterable(f) {
       var _this2 = this;
 
+      return this.ordering.map(function (k) {
+        return f(k, _this2.obj[k]);
+      });
+    }
+  }, {
+    key: "mapAndFilter",
+    value: function mapAndFilter(f) {
+      var _this3 = this;
+
+      return OrderedObj.fromIterable(this.keys().reduce(function (result, k) {
+        return result.concat(f(_this3.obj[k]).map(function (v) {
+          return [new OrderedObj(_defineProperty({}, k, v))];
+        }).getOr([]));
+      }, []));
+    }
+  }, {
+    key: "concat",
+    value: function concat(other) {
+      var _this4 = this;
+
       var ordering = this.ordering.concat(other.ordering.filter(function (k) {
-        return !(k in _this2.obj);
+        return !(k in _this4.obj);
       }));
       var result = {};
       ordering.forEach(function (k) {
-        var left = _this2.obj[k];
+        var left = _this4.obj[k];
         var right = other.obj[k];
         if (!left) result[k] = right;else if (!right) result[k] = left;else result[k] = left.concat(right);
       });
@@ -75,25 +95,34 @@ function () {
       return Object.keys(this.obj);
     }
   }, {
+    key: "concatMap",
+    value: function concatMap(f, d) {
+      var _this5 = this;
+
+      return this.ordering.reduce(function (result, nextK) {
+        return result.concat(f(nextK, _this5.obj[nextK]));
+      }, d);
+    }
+  }, {
     key: "values",
     value: function values() {
-      var _this3 = this;
+      var _this6 = this;
 
       return this.ordering.map(function (k) {
-        return _this3.obj[k];
+        return _this6.obj[k];
       });
     }
   }, {
     key: "iter",
     value: function iter() {
-      var _ref;
+      var _ref2;
 
       var i = 0;
       var obj = this.obj;
       var keys = this.keys();
-      return _ref = {}, _defineProperty(_ref, Symbol.iterator, function () {
+      return _ref2 = {}, _defineProperty(_ref2, Symbol.iterator, function () {
         return this;
-      }), _defineProperty(_ref, "next", function next() {
+      }), _defineProperty(_ref2, "next", function next() {
         if (i < keys.length) {
           var key = keys[i];
           return {
@@ -105,7 +134,7 @@ function () {
         return {
           done: true
         };
-      }), _ref;
+      }), _ref2;
     }
   }, {
     key: "get",
@@ -162,7 +191,7 @@ var StringSet =
 /*#__PURE__*/
 function () {
   function StringSet() {
-    var _this4 = this;
+    var _this7 = this;
 
     var items = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
 
@@ -174,7 +203,7 @@ function () {
       if (i in obj) return;
       obj[i] = [];
 
-      _this4.items.push(i);
+      _this7.items.push(i);
     });
   }
 
@@ -268,17 +297,17 @@ function () {
   }, {
     key: "map",
     value: function map(f) {
-      if (this.isEmpty()) return Alt.empty();
+      if (this.isEmpty()) return this;
       return Alt.lift(f(this.unwrap()));
     }
   }, {
     key: "either",
     value: function either(other) {
       if (!this.isEmpty() && !other.isEmpty()) {
-        throw new Error("Unexpected conflict, found ".concat(this.value.join(' ')));
+        throw new Error("Unexpected conflict, found ".concat(this.value.join(" ")));
       }
 
-      return other;
+      return this.concat(other);
     }
   }, {
     key: "filter",
@@ -345,7 +374,7 @@ function () {
       }
 
       if (this.value.length > 1) {
-        throw new Error("Unexpected conflict, found ".concat(this.value.join(' ')));
+        throw new Error("Unexpected conflict, found ".concat(this.value.join(" ")));
       }
 
       throw new Error("Unwrapped empty value!");
@@ -416,8 +445,8 @@ function () {
 
       try {
         for (var _iterator2 = _from[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-          var i = _step2.value;
-          value.push(i);
+          var _i = _step2.value;
+          value.push(_i);
         }
       } catch (err) {
         _didIteratorError2 = true;

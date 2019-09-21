@@ -5,7 +5,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.SchemaPrimitiveType = void 0;
 
-var _idol__ = require("../../__idol__.js");
+var _idol__ = require("../__idol__");
 
 var _SchemaPrimitiveType;
 

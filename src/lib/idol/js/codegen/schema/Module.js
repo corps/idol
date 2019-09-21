@@ -3,21 +3,13 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Module = exports.SchemaModule = void 0;
+exports.SchemaModule = void 0;
 
-var _ = require("");
+var _idol__ = require("../__idol__");
 
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+var _Type = require("../../schema/Type");
 
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+var _Dependency = require("../../schema/Dependency");
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -32,13 +24,82 @@ function () {
     _classCallCheck(this, SchemaModule);
 
     this._original = val;
-  }
-  /*
-  These methods are implemented via the runtime, stubs exist here for reference.
-  */
+  } // These methods are implemented via the runtime, stubs exist here for reference.
 
 
-  _createClass(SchemaModule, null, [{
+  _createClass(SchemaModule, [{
+    key: "abstract_types_by_name",
+    get: function get() {
+      return _idol__.Map.of(_Type.Type).wrap(this._original["abstract_types_by_name"]);
+    },
+    set: function set(val) {
+      this._original["abstract_types_by_name"] = _idol__.Map.of(_Type.Type).unwrap(val);
+    }
+  }, {
+    key: "abstractTypesByName",
+    get: function get() {
+      return this.abstract_types_by_name;
+    },
+    set: function set(val) {
+      this.abstract_types_by_name = val;
+    }
+  }, {
+    key: "dependencies",
+    get: function get() {
+      return _idol__.List.of(_Dependency.Dependency).wrap(this._original["dependencies"]);
+    },
+    set: function set(val) {
+      this._original["dependencies"] = _idol__.List.of(_Dependency.Dependency).unwrap(val);
+    }
+  }, {
+    key: "module_name",
+    get: function get() {
+      return _idol__.Primitive.of("string").wrap(this._original["module_name"]);
+    },
+    set: function set(val) {
+      this._original["module_name"] = _idol__.Primitive.of("string").unwrap(val);
+    }
+  }, {
+    key: "moduleName",
+    get: function get() {
+      return this.module_name;
+    },
+    set: function set(val) {
+      this.module_name = val;
+    }
+  }, {
+    key: "types_by_name",
+    get: function get() {
+      return _idol__.Map.of(_Type.Type).wrap(this._original["types_by_name"]);
+    },
+    set: function set(val) {
+      this._original["types_by_name"] = _idol__.Map.of(_Type.Type).unwrap(val);
+    }
+  }, {
+    key: "typesByName",
+    get: function get() {
+      return this.types_by_name;
+    },
+    set: function set(val) {
+      this.types_by_name = val;
+    }
+  }, {
+    key: "types_dependency_ordering",
+    get: function get() {
+      return _idol__.List.of(_idol__.Primitive.of("string")).wrap(this._original["types_dependency_ordering"]);
+    },
+    set: function set(val) {
+      this._original["types_dependency_ordering"] = _idol__.List.of(_idol__.Primitive.of("string")).unwrap(val);
+    }
+  }, {
+    key: "typesDependencyOrdering",
+    get: function get() {
+      return this.types_dependency_ordering;
+    },
+    set: function set(val) {
+      this.types_dependency_ordering = val;
+    }
+  }], [{
     key: "validate",
     value: function validate(val) {}
   }, {
@@ -67,19 +128,24 @@ function () {
 }();
 
 exports.SchemaModule = SchemaModule;
-
-var Module =
-/*#__PURE__*/
-function (_SchemaModule_) {
-  _inherits(Module, _SchemaModule_);
-
-  function Module(val) {
-    _classCallCheck(this, Module);
-
-    return _possibleConstructorReturn(this, _getPrototypeOf(Module).call(this, val));
-  }
-
-  return Module;
-}(_.SchemaModule);
-
-exports.Module = Module;
+(0, _idol__.Struct)(SchemaModule, [{
+  fieldName: "abstract_types_by_name",
+  type: _idol__.Map.of(_Type.Type),
+  optional: false
+}, {
+  fieldName: "dependencies",
+  type: _idol__.List.of(_Dependency.Dependency),
+  optional: false
+}, {
+  fieldName: "module_name",
+  type: _idol__.Primitive.of("string"),
+  optional: false
+}, {
+  fieldName: "types_by_name",
+  type: _idol__.Map.of(_Type.Type),
+  optional: false
+}, {
+  fieldName: "types_dependency_ordering",
+  type: _idol__.List.of(_idol__.Primitive.of("string")),
+  optional: false
+}]);

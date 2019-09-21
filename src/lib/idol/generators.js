@@ -85,11 +85,15 @@ function () {
       var fromParts = this.path.split("/");
       var toParts = toPath.path.split("/");
       var parts = [];
-      var i = fromParts.length;
+      var i = fromParts.length - 1;
 
-      while (i > 0 && fromParts.slice(0, i).join('/') !== toParts.slice(0, i).join('/')) {
+      while (i > 0 && fromParts.slice(0, i).join("/") !== toParts.slice(0, i).join("/")) {
         parts.push("..");
         i--;
+      }
+
+      if (parts.length === 0) {
+        parts.push(".");
       }
 
       while (i < toParts.length) {
@@ -97,7 +101,6 @@ function () {
         i += 1;
       }
 
-      console.log(toPath.path, this.path, parts);
       return new ImportPath(toPath, parts.join("/"));
     }
   }, {
@@ -451,7 +454,7 @@ function () {
       }).getOr(new _functional.StringSet([source])).items;
 
       if (existingSources.indexOf(source) === -1) {
-        throw new Error("Cannot create ident ".concat(ident, " into path ").concat(intoPath.path, ", conflicts with existing from ").concat(existingSources.join(' ')));
+        throw new Error("Cannot create ident ".concat(ident, " into path ").concat(intoPath.path, ", conflicts with existing from ").concat(existingSources.join(" ")));
       }
 
       this.idents = this.idents.concat(new _functional.OrderedObj(_defineProperty({}, intoPath.path, new _functional.OrderedObj(_defineProperty({}, ident, new _functional.StringSet([source]))))));
@@ -528,7 +531,7 @@ function () {
             ident = _ref7[1],
             sources = _ref7[2];
 
-        return "ident ".concat(ident, " was defined or imported into ").concat(path, " by conflicting sources: ").concat(sources.items.join(' '));
+        return "ident ".concat(ident, " was defined or imported into ").concat(path, " by conflicting sources: ").concat(sources.items.join(" "));
       });
     }
   }]);
@@ -572,8 +575,13 @@ function () {
     key: "render",
     value: function render(intoPath) {
       return this.imports.get(intoPath).map(function (imports) {
-        return imports.keys().map(function (relPath) {
+        return imports.keys().filter(Boolean).map(function (relPath) {
           var decons = imports.obj[relPath];
+
+          if (relPath.endsWith(".js")) {
+            relPath = relPath.slice(0, relPath.length - 3);
+          }
+
           return scripter.importDecon.apply(scripter, [relPath].concat(_toConsumableArray(decons.keys().map(function (ident) {
             return decons.obj[ident].items.map(function (asIdent) {
               return asIdent === ident ? ident : "".concat(ident, " as ").concat(asIdent);
@@ -641,7 +649,7 @@ function () {
         console.log("Rendering / formatting output for ".concat(path));
         return new _functional.OrderedObj(_defineProperty({}, path, scripter.render(_this4.groupOfPath.obj[path].items.map(function (group) {
           return group in commentHeaders ? commentHeaders[group] : "";
-        }).filter(Boolean).map(scripter.comment).concat(_this4.imports.render(path)).concat(_this4.content.get(path).getOr([])))));
+        }).filter(Boolean).map(scripter.comment).concat(_this4.imports.render(path)).concat(["\n"]).concat(_this4.content.get(path).getOr([])))));
       }));
     }
   }, {
@@ -788,8 +796,9 @@ function importExpr(exported) {
 }
 
 function camelify(name) {
-  return name.split(/[._]/).map(function (p) {
-    return p[0].toUpperCase() + p.slice(1);
+  var typeName = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+  return name.split(/[._]/).map(function (p, i) {
+    return i > 0 || typeName ? p[0].toUpperCase() + p.slice(1) : p;
   }).join("");
 }
 

@@ -3,7 +3,7 @@ import { schemaReference } from "./../codegen/schema/Reference";
 
 export class Reference extends schemaReference {
   snakify(): Reference {
-    const { snakify } = require('../generators');
+    const { snakify } = require("../generators");
     return new Reference({
       module_name: snakify(this.moduleName),
       qualified_name: snakify(this.qualifiedName),
@@ -12,7 +12,7 @@ export class Reference extends schemaReference {
   }
 
   camelify(): Reference {
-    const { camelify } = require('../generators');
+    const { camelify } = require("../generators");
     return new Reference({
       module_name: camelify(this.moduleName),
       qualified_name: camelify(this.qualifiedName),

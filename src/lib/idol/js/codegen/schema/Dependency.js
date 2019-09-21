@@ -3,21 +3,11 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Dependency = exports.SchemaDependency = void 0;
+exports.SchemaDependency = void 0;
 
-var _ = require("");
+var _Reference = require("../../schema/Reference");
 
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+var _idol__ = require("../__idol__");
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -32,13 +22,58 @@ function () {
     _classCallCheck(this, SchemaDependency);
 
     this._original = val;
-  }
-  /*
-  These methods are implemented via the runtime, stubs exist here for reference.
-  */
+  } // These methods are implemented via the runtime, stubs exist here for reference.
 
 
-  _createClass(SchemaDependency, null, [{
+  _createClass(SchemaDependency, [{
+    key: "from",
+    get: function get() {
+      return _Reference.Reference.wrap(this._original["from"]);
+    },
+    set: function set(val) {
+      this._original["from"] = _Reference.Reference.unwrap(val);
+    }
+  }, {
+    key: "is_abstraction",
+    get: function get() {
+      return _idol__.Primitive.of("bool").wrap(this._original["is_abstraction"]);
+    },
+    set: function set(val) {
+      this._original["is_abstraction"] = _idol__.Primitive.of("bool").unwrap(val);
+    }
+  }, {
+    key: "isAbstraction",
+    get: function get() {
+      return this.is_abstraction;
+    },
+    set: function set(val) {
+      this.is_abstraction = val;
+    }
+  }, {
+    key: "is_local",
+    get: function get() {
+      return _idol__.Primitive.of("bool").wrap(this._original["is_local"]);
+    },
+    set: function set(val) {
+      this._original["is_local"] = _idol__.Primitive.of("bool").unwrap(val);
+    }
+  }, {
+    key: "isLocal",
+    get: function get() {
+      return this.is_local;
+    },
+    set: function set(val) {
+      this.is_local = val;
+    }
+  }, {
+    key: "to",
+    get: function get() {
+      return _Reference.Reference.wrap(this._original["to"]);
+    },
+    set: function set(val) {
+      this._original["to"] = _Reference.Reference.unwrap(val);
+    }
+  }], [{
     key: "validate",
     value: function validate(val) {}
   }, {
@@ -67,19 +102,20 @@ function () {
 }();
 
 exports.SchemaDependency = SchemaDependency;
-
-var Dependency =
-/*#__PURE__*/
-function (_SchemaDependency_) {
-  _inherits(Dependency, _SchemaDependency_);
-
-  function Dependency(val) {
-    _classCallCheck(this, Dependency);
-
-    return _possibleConstructorReturn(this, _getPrototypeOf(Dependency).call(this, val));
-  }
-
-  return Dependency;
-}(_.SchemaDependency);
-
-exports.Dependency = Dependency;
+(0, _idol__.Struct)(SchemaDependency, [{
+  fieldName: "from",
+  type: _Reference.Reference,
+  optional: false
+}, {
+  fieldName: "is_abstraction",
+  type: _idol__.Primitive.of("bool"),
+  optional: false
+}, {
+  fieldName: "is_local",
+  type: _idol__.Primitive.of("bool"),
+  optional: false
+}, {
+  fieldName: "to",
+  type: _Reference.Reference,
+  optional: false
+}]);
