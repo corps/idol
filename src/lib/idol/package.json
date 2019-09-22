@@ -10,6 +10,11 @@
   "bin": {
     "idol_js": "./idol_js.js"
   },
-  "files": ["js/*.js", "*.js", "*.js.flow", "js/*.js.flow"],
+  "files": [
+    "js/*.js",
+    "*.js",
+    "*.js.flow",
+    "js/*.js.flow"
+  ],
   "license": "MIT"
 }
