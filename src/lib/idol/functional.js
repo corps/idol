@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.naiveObjUpdate = naiveObjUpdate;
 exports.naiveObjectConcat = naiveObjectConcat;
 exports.cachedProperty = cachedProperty;
-exports.Disjoint = exports.Alt = exports.StringSet = exports.OrderedObj = void 0;
+exports.Alt = exports.StringSet = exports.OrderedObj = void 0;
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
@@ -316,11 +316,6 @@ function () {
       if (pred(this.unwrap())) return this;
       return Alt.empty();
     }
-  }, {
-    key: "asDisjoint",
-    value: function asDisjoint() {
-      return new Disjoint(this.value);
-    }
   }], [{
     key: "from",
     value: function from(f) {
@@ -350,137 +345,6 @@ function () {
 }();
 
 exports.Alt = Alt;
-
-var Disjoint =
-/*#__PURE__*/
-function () {
-  function Disjoint(value) {
-    _classCallCheck(this, Disjoint);
-
-    this.value = value.slice();
-  }
-
-  _createClass(Disjoint, [{
-    key: "asAlt",
-    value: function asAlt() {
-      if (this.isEmpty()) return Alt.empty();
-      return Alt.lift(this.unwrap());
-    }
-  }, {
-    key: "unwrap",
-    value: function unwrap() {
-      if (this.value.length === 1) {
-        return this.value[0];
-      }
-
-      if (this.value.length > 1) {
-        throw new Error("Unexpected conflict, found ".concat(this.value.join(" ")));
-      }
-
-      throw new Error("Unwrapped empty value!");
-    }
-  }, {
-    key: "getOr",
-    value: function getOr(d) {
-      if (this.value.length) {
-        return this.unwrap();
-      }
-
-      return d;
-    }
-  }, {
-    key: "binding",
-    value: function binding() {
-      var self = this;
-      return (
-        /*#__PURE__*/
-        regeneratorRuntime.mark(function _callee2() {
-          return regeneratorRuntime.wrap(function _callee2$(_context2) {
-            while (1) {
-              switch (_context2.prev = _context2.next) {
-                case 0:
-                  if (self.value.length) {
-                    _context2.next = 3;
-                    break;
-                  }
-
-                  _context2.next = 3;
-                  return false;
-
-                case 3:
-                  return _context2.abrupt("return", self.unwrap());
-
-                case 4:
-                case "end":
-                  return _context2.stop();
-              }
-            }
-          }, _callee2);
-        })()
-      );
-    }
-  }, {
-    key: "isEmpty",
-    value: function isEmpty() {
-      return !this.value.length;
-    }
-  }, {
-    key: "concat",
-    value: function concat(other) {
-      return new Disjoint(this.value.concat(other.value));
-    }
-  }, {
-    key: "map",
-    value: function map(f) {
-      if (this.isEmpty()) return Disjoint.empty();
-      return Disjoint.lift(f(this.unwrap()));
-    }
-  }], [{
-    key: "from",
-    value: function from(_from) {
-      var value = [];
-      var _iteratorNormalCompletion2 = true;
-      var _didIteratorError2 = false;
-      var _iteratorError2 = undefined;
-
-      try {
-        for (var _iterator2 = _from[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-          var _i = _step2.value;
-          value.push(_i);
-        }
-      } catch (err) {
-        _didIteratorError2 = true;
-        _iteratorError2 = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
-            _iterator2["return"]();
-          }
-        } finally {
-          if (_didIteratorError2) {
-            throw _iteratorError2;
-          }
-        }
-      }
-
-      return new Disjoint(value);
-    }
-  }, {
-    key: "lift",
-    value: function lift(v) {
-      return new Disjoint([v]);
-    }
-  }, {
-    key: "empty",
-    value: function empty() {
-      return new Disjoint([]);
-    }
-  }]);
-
-  return Disjoint;
-}();
-
-exports.Disjoint = Disjoint;
 
 function naiveObjUpdate(one, other) {
   for (var _k2 in other) {

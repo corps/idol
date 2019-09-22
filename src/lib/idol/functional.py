@@ -116,7 +116,18 @@ class Alt(Generic[A]):
             return self
         return other
 
+    def either(self, other: "Alt[A]") -> "Alt[A]":
+        if self and other:
+            raise ValueError("Unexpected conflict!")
+        return self.concat(other)
+
+    @staticmethod
+    def unwrap_conflicts(items: List[A]) -> Iterator[List[A]]:
+        if len(items) > 1:
+            yield items
+
     __add__ = concat
+    __xor__ = either
 
     def __bool__(self):
         return len(self.v) > 0
@@ -153,10 +164,6 @@ class Disjoint(Generic[A]):
             raise ValueError(f"Unexpected conflict found!")
 
         return self.v[0]
-
-    def unwrap_errors(self) -> Iterator[List[A]]:
-        if len(self.v) > 1:
-            yield self.v
 
     def __iter__(self) -> Iterable[A]:
         if len(self.v) > 0:

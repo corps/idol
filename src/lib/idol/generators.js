@@ -664,8 +664,9 @@ function () {
   }, {
     key: "reservePath",
     value: function reservePath(path) {
-      var group = _functional.Disjoint.from(Object.keys(path)).unwrap();
-
+      var group = Object.keys(path).reduce(function (result, n) {
+        return result.either(_functional.Alt.lift(n));
+      }, _functional.Alt.empty()).unwrap();
       var p = path[group];
       var groups = this.groupOfPath.get(p).getOr(new _functional.StringSet([group]));
 

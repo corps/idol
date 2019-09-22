@@ -6,7 +6,7 @@ from idol.py.schema.reference import Reference
 from idol.py.schema.struct_kind import StructKind
 from idol.py.schema.type import Type
 from .build_env import BuildEnv
-from .functional import OrderedObj, Alt, StringSet, Disjoint, naive_object_concat
+from .functional import OrderedObj, Alt, StringSet, naive_object_concat
 from idol.py.schema.module import Module
 from idol.py.schema.type_struct import TypeStruct
 
@@ -99,12 +99,12 @@ class Exported:
 
 class GeneratorParams:
     def __init__(
-            self,
-            all_modules: OrderedObj[Module],
-            all_types: OrderedObj[Type],
-            scaffold_types: OrderedObj[Type],
-            output_dir: str,
-            options: Dict[str, Union[List[str], bool]],
+        self,
+        all_modules: OrderedObj[Module],
+        all_types: OrderedObj[Type],
+        scaffold_types: OrderedObj[Type],
+        output_dir: str,
+        options: Dict[str, Union[List[str], bool]],
     ):
         self.all_modules = all_modules
         self.all_types = all_types
@@ -123,7 +123,7 @@ class TypeStructContext:
         return self.is_type_bound
 
     def __init__(
-            self, field_tags: Optional[List[str]] = None, type_tags: Optional[List[str]] = None
+        self, field_tags: Optional[List[str]] = None, type_tags: Optional[List[str]] = None
     ):
         self.field_tags = field_tags or []
         self.type_tags = type_tags or []
@@ -133,7 +133,7 @@ class TypeStructContext:
         return field_tag in self.field_tags or type_tag in self.type_tags
 
     def get_tag_value(
-            self, d: str, field_tag: Optional[str] = None, type_tag: Optional[str] = None
+        self, d: str, field_tag: Optional[str] = None, type_tag: Optional[str] = None
     ) -> str:
         for tag, tags in ((field_tag, self.field_tags), (type_tag, self.type_tags)):
             if not tag:
@@ -142,7 +142,7 @@ class TypeStructContext:
             for t in tags:
                 pre = t.index(tag + ":")
                 if pre == 0:
-                    return t[len(tag) + 1:]
+                    return t[len(tag) + 1 :]
 
         return d
 
@@ -245,8 +245,9 @@ class TypeDeconstructor:
         return Alt.lift(
             OrderedObj(
                 {
-                    k: TypeStructDeconstructor(v.type_struct,
-                                               TypeStructContext(field_tags=list(v.tags)))
+                    k: TypeStructDeconstructor(
+                        v.type_struct, TypeStructContext(field_tags=list(v.tags))
+                    )
                     for k, v in self.t.fields.items()
                 }
             )
@@ -323,10 +324,13 @@ class IdentifiersAcc:
 
     def add_identifier(self, into_path: Path, ident: str, source: str) -> str:
         if source not in Alt(
-                sources for path_idents in self.idents.get(into_path.path) for sources in
-                path_idents.get(ident)).get_or(StringSet([source])):
+            sources
+            for path_idents in self.idents.get(into_path.path)
+            for sources in path_idents.get(ident)
+        ).get_or(StringSet([source])):
             raise ValueError(
-                f"Cannot create ident {ident} in {into_path.path}, conflicts with existing definition.")
+                f"Cannot create ident {ident} in {into_path.path}, conflicts with existing definition."
+            )
 
         self.idents += OrderedObj({into_path.path: OrderedObj({ident: StringSet([source])})})
         return ident
@@ -340,7 +344,9 @@ class IdentifiersAcc:
 
     def unwrap_conflicts(self) -> List[Tuple[str, str, StringSet]]:
         return [
-            (path, ident, sources) for path, mod in self.idents for ident, sources in mod
+            (path, ident, sources)
+            for path, mod in self.idents
+            for ident, sources in mod
             if len(sources) > 1
         ]
 
@@ -367,7 +373,7 @@ class ImportsAcc:
         )
 
     def get_imported_as_idents(
-            self, into_path: Path, from_path: ImportPath, from_ident: str
+        self, into_path: Path, from_path: ImportPath, from_ident: str
     ) -> Alt[StringSet]:
         return Alt(
             into_idents
@@ -417,7 +423,7 @@ class GeneratorAcc:
         path_errors = [
             f"Conflict in paths: Multiple ({' '.join(conflicts)}) types of {path} found"
             for path, path_groups in self.group_of_path
-            for conflicts in Disjoint(path_groups).unwrap_errors()
+            for conflicts in Alt.unwrap_conflicts(path_groups)
         ]
 
         if path_errors:
@@ -463,7 +469,7 @@ class GeneratorAcc:
         self.content += OrderedObj({path.path: content})
 
     def reserve_path(self, **lookup) -> Path:
-        group, path = Disjoint(lookup.items()).get_or_fail("reserve_path requires one kwd!")
+        group, path = Alt(lookup.items()).unwrap()
         groups = self.group_of_path.get(path).get_or(StringSet([group]))
 
         if group in groups:
@@ -475,7 +481,7 @@ class GeneratorAcc:
         )
 
     def import_ident(
-            self, into_path: Path, exported: Exported, as_ident: Optional[str] = None
+        self, into_path: Path, exported: Exported, as_ident: Optional[str] = None
     ) -> str:
         ident = exported.ident
         if as_ident is None:
@@ -484,7 +490,7 @@ class GeneratorAcc:
         from_path = into_path.import_path_to(exported.path)
 
         if not from_path.is_module and not self.idents.get_identifier_sources(
-                from_path.path, ident
+            from_path.path, ident
         ):
             raise ValueError(
                 f"identifier {ident} required by {into_path} does not exist in {from_path}"
@@ -506,7 +512,7 @@ class GeneratorAcc:
         as_ident = get_safe_ident(as_ident)
 
         while source not in self.idents.get_identifier_sources(into_path, as_ident).get_or(
-                StringSet([source])
+            StringSet([source])
         ):
             as_ident += "_"
 
@@ -514,7 +520,7 @@ class GeneratorAcc:
         return as_ident
 
     def add_content_with_ident(
-            self, path: Path, ident: str, scriptable: Callable[[str], Union[str, List]]
+        self, path: Path, ident: str, scriptable: Callable[[str], Union[str, List]]
     ) -> str:
         self.idents.add_identifier(path, ident, self.get_unique_source(path))
         self.add_content(path, scriptable(ident))

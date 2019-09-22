@@ -4,7 +4,7 @@ import { Type } from "./js/schema/Type";
 import { Reference } from "./js/schema/Reference";
 import { TypeStruct } from "./js/schema/TypeStruct";
 import { StructKind } from "./js/schema/StructKind";
-import { Alt, Disjoint, naiveObjectConcat, OrderedObj, StringSet } from "./functional";
+import { Alt, naiveObjectConcat, OrderedObj, StringSet } from "./functional";
 import * as scripter from "./scripter";
 import { BuildEnv } from "./build_env";
 
@@ -514,7 +514,9 @@ export class GeneratorAcc {
   }
 
   reservePath(path: { [k: string]: string }): Path {
-    const group = Disjoint.from(Object.keys(path)).unwrap();
+    const group = Object.keys(path)
+      .reduce((result, n) => result.either(Alt.lift(n)), Alt.empty())
+      .unwrap();
     const p = path[group];
 
     const groups = this.groupOfPath.get(p).getOr(new StringSet([group]));

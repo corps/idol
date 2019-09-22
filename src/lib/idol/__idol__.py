@@ -13,7 +13,8 @@ from typing import (
     List as typingList,
     Dict,
     Iterator,
-    Optional)
+    Optional,
+)
 from enum import Enum as enumEnum
 
 
@@ -64,10 +65,7 @@ class Primitive(IdolConstructor):
 
     @staticmethod
     def of(type_constructor: Type) -> Type["Primitive"]:
-        cls = cast(
-            Type["Primitive"],
-            new_class(type_constructor.__name__, (Primitive,)),
-        )
+        cls = cast(Type["Primitive"], new_class(type_constructor.__name__, (Primitive,)))
 
         cls.type_constructor = type_constructor
         return cls
@@ -103,10 +101,7 @@ class Literal(IdolConstructor):
 
     @staticmethod
     def of(value: Union[str, int, float, bool]) -> Type["Literal"]:
-        cls = cast(
-            Type["Literal"],
-            new_class(type(value).__name__, (Literal,)),
-        )
+        cls = cast(Type["Literal"], new_class(type(value).__name__, (Literal,)))
         cls.value = value
         return cls
 
@@ -164,14 +159,10 @@ class List(IdolConstructor, MutableSequence):
     options: Dict[str, Any]
 
     @staticmethod
-    def of(inner_constructor: Type[IdolConstructor], options: Optional[Dict[str, Any]] = None) -> Type["List"]:
-        cls = cast(
-            Type["List"],
-            new_class(
-                f"List[{inner_constructor.__name__}]",
-                (List,),
-            ),
-        )
+    def of(
+        inner_constructor: Type[IdolConstructor], options: Optional[Dict[str, Any]] = None
+    ) -> Type["List"]:
+        cls = cast(Type["List"], new_class(f"List[{inner_constructor.__name__}]", (List,)))
         cls.inner_constructor = inner_constructor
         cls.options = options
         return cls
@@ -248,14 +239,10 @@ class Map(IdolConstructor, MutableMapping):
     options: Dict[str, Any]
 
     @staticmethod
-    def of(inner_constructor: Type[IdolConstructor], options: Optional[Dict[str, Any]] = {}) -> Type["Map"]:
-        cls = cast(
-            Type["Map"],
-            new_class(
-                f"Map[{inner_constructor.__name__}]",
-                (Map,),
-            ),
-        )
+    def of(
+        inner_constructor: Type[IdolConstructor], options: Optional[Dict[str, Any]] = {}
+    ) -> Type["Map"]:
+        cls = cast(Type["Map"], new_class(f"Map[{inner_constructor.__name__}]", (Map,)))
         cls.inner_constructor = inner_constructor
         cls.options = options
 
@@ -344,7 +331,7 @@ def create_struct_prop(attr, type: Type[IdolConstructor]):
 class StructMeta(type):
     def __new__(mcs: Type["Struct"], name, bases, dct):
         mcs = super().__new__(mcs, name, bases, dct)
-        for field_name, prop_name, constructor, _ in getattr(mcs, '__field_constructors__', []):
+        for field_name, prop_name, constructor, _ in getattr(mcs, "__field_constructors__", []):
             setattr(mcs, prop_name, create_struct_prop(field_name, constructor))
 
         return mcs
@@ -370,7 +357,7 @@ class Struct(with_metaclass(StructMeta, IdolConstructor)):
 
         for field_name, prop_name, constructor, options in cls.__field_constructors__:
             val = json.get(field_name, None)
-            optional = options.get('optional')
+            optional = options.get("optional")
 
             if val is None:
                 if optional:
@@ -392,7 +379,7 @@ class Struct(with_metaclass(StructMeta, IdolConstructor)):
 
         for field_name, prop_name, constructor, options in cls.__field_constructors__:
             val = json.get(field_name, None)
-            optional = options.get('optional')
+            optional = options.get("optional")
 
             if val is None:
                 if optional:
