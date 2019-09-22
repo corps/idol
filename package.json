@@ -1,7 +1,7 @@
 {
-  "name": "idol",
+  "name": "idol_js.dev",
   "version": "1.0.0",
-  "description": "**idol is a minimalistic, language-agnostic, transport agnostic, IDL**",
+  "description": "Development scripts for idol_js",
   "dependencies": {
     "@babel/cli": "^7.5.5",
     "@babel/core": "^7.5.5",
@@ -11,14 +11,11 @@
     "babel-loader": "^8.0.6",
     "babel-plugin-syntax-dynamic-import": "^6.18.0",
     "flow-bin": "^0.104.0",
-    "graphql": "^14.4.2"
+    "flow-copy-source": "^2.0.8",
+    "prettier": "^1.18.2"
   },
   "scripts": {
-    "compile": "babel --source-type module src/es6 -d src/lib",
-    "precommit": "lint-staged",
+    "compile": "babel --source-type module src/es6 -d src/lib && flow-copy-source src/es6 src/lib",
     "fmt": "prettier --write './src/es6/**/*.js'"
-  },
-  "devDependencies": {
-    "prettier": "^1.18.2"
   }
 }

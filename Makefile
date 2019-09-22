@@ -37,4 +37,11 @@ test: dev
 	cargo test
 	PATH="$$PWD/node_modules/.bin:$$PATH" make -C test
 
+versions: target/debug/idol
+	./target/debug/idol --version 2>&1 | cut -d' ' -f2 > VERSION
+	cat src/lib/idol/package.json |  jq --arg version "$$(cat VERSION)" '.version = $$version' > src/lib/idol/.package.json
+	mv src/lib/idol/.package.json src/lib/idol/package.json
+
+
+
 .PHONY: models dev test release

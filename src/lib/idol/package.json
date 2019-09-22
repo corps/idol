@@ -1,10 +1,15 @@
 {
-  "name": "idol",
-  "version": "1.0.0",
+  "name": "idol_js",
+  "version": "0.4.3",
   "description": "javascript codegen library and base code generators compatible with idol",
   "dependencies": {
     "esm": "^3.2.25",
     "prettier": "^1.18.2",
     "regenerator-runtime": "^0.13.3"
-  }
+  },
+  "bin": {
+    "idol_js": "./idol_js.js"
+  },
+  "files": ["js/*.js", "*.js", "*.js.flow", "js/*.js.flow"],
+  "license": "MIT"
 }

@@ -21,10 +21,10 @@ models: $(MODELS)
 	node --version
 	babel-node --version
 	npm --version
-	npm run compile
+	npm install
 	cat build.json | ../target/debug/idol_rs --output src/models/ --mod "crate::models"
 	cat build.json | ../src/bin/idol_py.py --output src/lib/idol/py --target all.target
-	cat build.json | ../src/bin/idol_js.js --output src/lib/idol --target all.target
-	cat build.json | ../src/bin/idol_graphql.js --output src/lib/idol/graphql --target all.target
+	cat build.json | $$(npm bin)/idol_js --output src/lib/idol/js --target all.target
+	# cat build.json | ../src/bin/idol_graphql.js --output src/lib/idol/graphql --target all.target
 
 .PHONY: models test_bins test clean

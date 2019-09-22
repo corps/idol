@@ -1,0 +1,11 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "scripts": {
+    "prepare": "cd .. && npm run compile"
+  },
+  "dependencies": {
+    "idol_js": "../src/lib/idol",
+    "graphql": "^14.4.2"
+  }
+}
