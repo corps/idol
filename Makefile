@@ -30,8 +30,8 @@ models: $(MODELS)
 	node --version
 
 	cat build.json | ./target/debug/idol_rs --output src/models/ --mod "crate::models"
-	cat build.json | ./src/bin/idol_py.py --output src/lib/idol/py --target schema
-	cat build.json | ./src/bin/idol_js.js --output src/es6/idol/js --target schema
+	cat build.json | ./src/lib/idol/idol_py --output src/lib/idol/py --target schema
+	cat build.json | ./src/lib/idol/idol_js.js --output src/es6/idol/js --target schema
 
 test: dev
 	cargo test

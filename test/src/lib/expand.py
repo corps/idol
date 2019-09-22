@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 import json
-from idol.py.all.target.assembled_required import AssembledRequired
+from .idol.py.all.target.assembled_required import AssembledRequired
 import sys
 
 data = sys.stdin.read()

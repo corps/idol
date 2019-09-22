@@ -105,7 +105,7 @@ class Literal(IdolConstructor):
     def of(value: Union[str, int, float, bool]) -> Type["Literal"]:
         cls = cast(
             Type["Literal"],
-            new_class(type(value).__name__, (Literal, type(value))),
+            new_class(type(value).__name__, (Literal,)),
         )
         cls.value = value
         return cls
