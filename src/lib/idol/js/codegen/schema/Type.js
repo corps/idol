@@ -21,6 +21,7 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
+// A wrapper type containing fields that can describe a Type, as well as its tag metadata.;
 var SchemaType =
 /*#__PURE__*/
 function () {
@@ -33,6 +34,7 @@ function () {
 
   _createClass(SchemaType, [{
     key: "dependencies",
+    // The dependencies found in this type's is_a or fields.
     get: function get() {
       return _idol__.List.of(_Dependency.Dependency, {
         atleastOne: false
@@ -43,6 +45,11 @@ function () {
         atleastOne: false
       }).unwrap(val);
     }
+    /*
+    When this type is a struct, each of its fields and the type of that field is included
+    Exclusive with is_a and options
+    */
+
   }, {
     key: "fields",
     get: function get() {
@@ -51,6 +58,11 @@ function () {
     set: function set(val) {
       this._original["fields"] = _idol__.Map.of(_Field.Field, {}).unwrap(val);
     }
+    /*
+    Set when this is type is an alias or simply an type expression (such as a generic).
+    Exclusive with having values for options or fields.
+    */
+
   }, {
     key: "is_a",
     get: function get() {
@@ -66,7 +78,8 @@ function () {
     },
     set: function set(val) {
       this.is_a = val;
-    }
+    } // The name and module information of this type's definition.
+
   }, {
     key: "named",
     get: function get() {
@@ -75,6 +88,13 @@ function () {
     set: function set(val) {
       this._original["named"] = _Reference.Reference.unwrap(val);
     }
+    /*
+    When this type is an enum includes the string values for each enum entry.  Note that each
+    target language may have different rules for the enum constant names, but these entries are
+    canonical resident values.
+    Exclusive with is_a and fields.
+    */
+
   }, {
     key: "options",
     get: function get() {
@@ -87,6 +107,13 @@ function () {
         atleastOne: false
       }).unwrap(val);
     }
+    /*
+    General metadata given to a type.  Currently, atleast_one for Repeated types is supported.
+    Custom codegen can use these tags to implement semantic types on top of simple logic types.
+    In general, however, tags are considred optional and should not be required to
+    deserialize \/ serializeconsume correct logical values.
+    */
+
   }, {
     key: "tags",
     get: function get() {
@@ -99,6 +126,13 @@ function () {
         atleastOne: false
       }).unwrap(val);
     }
+    /*
+    For high order kinds (generics) that target other types as arguments, each of these strings
+    is a local alias for the parameter at that position.
+    ie: if MyMap.type_vars = ["A", "B"] then MyMap<int, string> will replace all "A" and "B" references
+    inside of MyMap with int and string.
+    */
+
   }, {
     key: "type_vars",
     get: function get() {

@@ -51,10 +51,34 @@ Object.defineProperty(exports, "GeneratorFileContext", {
     return _generators.GeneratorFileContext;
   }
 });
+Object.defineProperty(exports, "getMaterialTypeDeconstructor", {
+  enumerable: true,
+  get: function get() {
+    return _generators.getMaterialTypeDeconstructor;
+  }
+});
 Object.defineProperty(exports, "importExpr", {
   enumerable: true,
   get: function get() {
     return _generators.importExpr;
+  }
+});
+Object.defineProperty(exports, "includesTag", {
+  enumerable: true,
+  get: function get() {
+    return _generators.includesTag;
+  }
+});
+Object.defineProperty(exports, "getTagValues", {
+  enumerable: true,
+  get: function get() {
+    return _generators.getTagValues;
+  }
+});
+Object.defineProperty(exports, "getTagValue", {
+  enumerable: true,
+  get: function get() {
+    return _generators.getTagValue;
   }
 });
 Object.defineProperty(exports, "Path", {

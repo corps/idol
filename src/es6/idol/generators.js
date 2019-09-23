@@ -104,25 +104,36 @@ export class TypeStructContext {
     this.typeTags = typeTags || [];
     this.isTypeBound = !!typeTags && !fieldTags;
   }
+}
 
-  includesTag(fieldTag: string | null = null, typeTag: string | null = null) {
-    return this.fieldTags.indexOf(fieldTag) !== -1 || this.typeTags.indexOf(typeTag) !== -1;
+export function includesTag(tags: string[] | null, tag: string): boolean {
+  if (tags == null) return false;
+  return tags.indexOf(tag) !== -1;
+}
+
+export function getTagValue(tags: string[] | null, d: string, tag: string): string {
+  if (tags == null) return d;
+
+  for (let t of tags) {
+    if (t.startsWith(tag + ":")) {
+      return t.slice(tag.length + 1);
+    }
   }
 
-  getTagValue(d: string, fieldTag: string | null = null, typeTag: string | null = null) {
-    let result: string = d;
-    [[fieldTag, this.fieldTags], [typeTag, this.typeTags]].forEach(([tag, tags]) => {
-      if (!tag) return;
+  return d;
+}
 
-      tags.forEach(t => {
-        if (t.startsWith(tag + ":")) {
-          result = t.slice(tag.length + 1);
-        }
-      });
-    });
+export function getTagValues(tags: string[] | null, tag: string): string[] {
+  if (tags == null) return [];
 
-    return result;
+  const result: string[] = [];
+  for (let t of tags) {
+    if (t.startsWith(tag + ":")) {
+      result.push(t.slice(tag.length + 1));
+    }
   }
+
+  return result;
 }
 
 export class ScalarContext {

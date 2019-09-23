@@ -13,6 +13,7 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
+// A reference describes the location of a type in the module system.;
 var SchemaReference =
 /*#__PURE__*/
 function () {
@@ -25,6 +26,7 @@ function () {
 
   _createClass(SchemaReference, [{
     key: "module_name",
+    // Just the module name
     get: function get() {
       return _idol__.Primitive.of("string").wrap(this._original["module_name"]);
     },
@@ -38,7 +40,8 @@ function () {
     },
     set: function set(val) {
       this.module_name = val;
-    }
+    } // The module_name.type_name string
+
   }, {
     key: "qualified_name",
     get: function get() {
@@ -54,7 +57,8 @@ function () {
     },
     set: function set(val) {
       this.qualified_name = val;
-    }
+    } // Just the type name
+
   }, {
     key: "type_name",
     get: function get() {

@@ -3,6 +3,9 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.includesTag = includesTag;
+exports.getTagValue = getTagValue;
+exports.getTagValues = getTagValues;
 exports.getMaterialTypeDeconstructor = getMaterialTypeDeconstructor;
 exports.getSafeIdent = getSafeIdent;
 exports.build = build;
@@ -37,8 +40,6 @@ function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.
 
 function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
 
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
@@ -46,6 +47,8 @@ function _nonIterableRest() { throw new TypeError("Invalid attempt to destructur
 function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
 
 function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -147,53 +150,88 @@ function () {
 
 exports.ImportPath = ImportPath;
 
-var TypeStructContext =
-/*#__PURE__*/
-function () {
-  function TypeStructContext() {
-    var fieldTags = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
-    var typeTags = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+var TypeStructContext = function TypeStructContext() {
+  var fieldTags = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+  var typeTags = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
 
-    _classCallCheck(this, TypeStructContext);
+  _classCallCheck(this, TypeStructContext);
 
-    this.fieldTags = fieldTags || [];
-    this.typeTags = typeTags || [];
-    this.isTypeBound = !!typeTags && !fieldTags;
-  }
-
-  _createClass(TypeStructContext, [{
-    key: "includesTag",
-    value: function includesTag() {
-      var fieldTag = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
-      var typeTag = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-      return this.fieldTags.indexOf(fieldTag) !== -1 || this.typeTags.indexOf(typeTag) !== -1;
-    }
-  }, {
-    key: "getTagValue",
-    value: function getTagValue(d) {
-      var fieldTag = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-      var typeTag = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
-      var result = d;
-      [[fieldTag, this.fieldTags], [typeTag, this.typeTags]].forEach(function (_ref) {
-        var _ref2 = _slicedToArray(_ref, 2),
-            tag = _ref2[0],
-            tags = _ref2[1];
-
-        if (!tag) return;
-        tags.forEach(function (t) {
-          if (t.startsWith(tag + ":")) {
-            result = t.slice(tag.length + 1);
-          }
-        });
-      });
-      return result;
-    }
-  }]);
-
-  return TypeStructContext;
-}();
+  this.fieldTags = fieldTags || [];
+  this.typeTags = typeTags || [];
+  this.isTypeBound = !!typeTags && !fieldTags;
+};
 
 exports.TypeStructContext = TypeStructContext;
+
+function includesTag(tags, tag) {
+  if (tags == null) return false;
+  return tags.indexOf(tag) !== -1;
+}
+
+function getTagValue(tags, d, tag) {
+  if (tags == null) return d;
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
+
+  try {
+    for (var _iterator = tags[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var t = _step.value;
+
+      if (t.startsWith(tag + ":")) {
+        return t.slice(tag.length + 1);
+      }
+    }
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+        _iterator["return"]();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+
+  return d;
+}
+
+function getTagValues(tags, tag) {
+  if (tags == null) return [];
+  var result = [];
+  var _iteratorNormalCompletion2 = true;
+  var _didIteratorError2 = false;
+  var _iteratorError2 = undefined;
+
+  try {
+    for (var _iterator2 = tags[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+      var t = _step2.value;
+
+      if (t.startsWith(tag + ":")) {
+        result.push(t.slice(tag.length + 1));
+      }
+    }
+  } catch (err) {
+    _didIteratorError2 = true;
+    _iteratorError2 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
+        _iterator2["return"]();
+      }
+    } finally {
+      if (_didIteratorError2) {
+        throw _iteratorError2;
+      }
+    }
+  }
+
+  return result;
+}
 
 var ScalarContext =
 /*#__PURE__*/
@@ -472,23 +510,23 @@ function () {
     value: function unwrapConflicts() {
       var self = this;
       var result = [];
-      var _iteratorNormalCompletion = true;
-      var _didIteratorError = false;
-      var _iteratorError = undefined;
+      var _iteratorNormalCompletion3 = true;
+      var _didIteratorError3 = false;
+      var _iteratorError3 = undefined;
 
       try {
-        for (var _iterator = self.idents.keys()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var _path = _step.value;
+        for (var _iterator3 = self.idents.keys()[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+          var _path = _step3.value;
 
           var idents = self.idents.obj[_path].keys();
 
-          var _iteratorNormalCompletion2 = true;
-          var _didIteratorError2 = false;
-          var _iteratorError2 = undefined;
+          var _iteratorNormalCompletion4 = true;
+          var _didIteratorError4 = false;
+          var _iteratorError4 = undefined;
 
           try {
-            for (var _iterator2 = idents[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-              var ident = _step2.value;
+            for (var _iterator4 = idents[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+              var ident = _step4.value;
               var sources = self.idents.obj[_path].obj[ident];
 
               if (sources.items.length > 1) {
@@ -496,40 +534,40 @@ function () {
               }
             }
           } catch (err) {
-            _didIteratorError2 = true;
-            _iteratorError2 = err;
+            _didIteratorError4 = true;
+            _iteratorError4 = err;
           } finally {
             try {
-              if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
-                _iterator2["return"]();
+              if (!_iteratorNormalCompletion4 && _iterator4["return"] != null) {
+                _iterator4["return"]();
               }
             } finally {
-              if (_didIteratorError2) {
-                throw _iteratorError2;
+              if (_didIteratorError4) {
+                throw _iteratorError4;
               }
             }
           }
         }
       } catch (err) {
-        _didIteratorError = true;
-        _iteratorError = err;
+        _didIteratorError3 = true;
+        _iteratorError3 = err;
       } finally {
         try {
-          if (!_iteratorNormalCompletion && _iterator["return"] != null) {
-            _iterator["return"]();
+          if (!_iteratorNormalCompletion3 && _iterator3["return"] != null) {
+            _iterator3["return"]();
           }
         } finally {
-          if (_didIteratorError) {
-            throw _iteratorError;
+          if (_didIteratorError3) {
+            throw _iteratorError3;
           }
         }
       }
 
-      return result.map(function (_ref6) {
-        var _ref7 = _slicedToArray(_ref6, 3),
-            path = _ref7[0],
-            ident = _ref7[1],
-            sources = _ref7[2];
+      return result.map(function (_ref4) {
+        var _ref5 = _slicedToArray(_ref4, 3),
+            path = _ref5[0],
+            ident = _ref5[1],
+            sources = _ref5[2];
 
         return "ident ".concat(ident, " was defined or imported into ").concat(path, " by conflicting sources: ").concat(sources.items.join(" "));
       });

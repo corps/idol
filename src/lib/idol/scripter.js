@@ -5,6 +5,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.render = render;
 exports.variable = variable;
+exports.commented = commented;
 exports.getProp = getProp;
 exports.setProp = setProp;
 exports.ret = ret;
@@ -49,6 +50,12 @@ function variable(expr) {
   };
 }
 
+function commented(c, scriptable) {
+  return function (ident) {
+    return "".concat(comment(c), "\n").concat(scriptable(ident));
+  };
+}
+
 function getProp(ident, body) {
   var bodyRendered = body.join(";\n");
   return "get ".concat(ident, "() { ").concat(bodyRendered, " }");
@@ -84,8 +91,13 @@ function propExpr(obj) {
 function comment(comment) {
   if (!comment) return comment;
   comment = comment.replace(/\//g, "\\/");
-  if (comment.indexOf("\n") === -1) return "// ".concat(comment);
-  return "/*\n".concat(comment, "\n*/\n");
+  return comment.split("\n").map(function (l) {
+    return "// ".concat(l);
+  }).join("\n");
+  /*
+    if (comment.indexOf("\n") === -1) return `// ${comment}`;
+    return `/!*\n${comment}\n*!/\n`;
+  */
 }
 
 function propDec(prop, expr) {

@@ -11,8 +11,11 @@ import {
   camelify,
   GeneratorAcc,
   GeneratorConfig,
-  GeneratorFileContext, getMaterialTypeDeconstructor,
+  GeneratorFileContext,
+  getMaterialTypeDeconstructor,
+  getTagValues,
   importExpr,
+  includesTag,
   Path,
   ScalarDeconstructor,
   TypeDeconstructor,
@@ -210,6 +213,9 @@ export class IdolJsCodegenStruct extends GeneratorFileContext<IdolJs> {
           this.path,
           this.codegenFile.defaultTypeName,
           (ident: string) => [
+            scripter.comment(
+              getTagValues(this.codegenFile.typeDecon.t.tags, "description").join("\n")
+            ),
             scripter.classDec([
               scripter.methodDec(
                 "constructor",
@@ -222,11 +228,21 @@ export class IdolJsCodegenStruct extends GeneratorFileContext<IdolJs> {
 
                 const fields = this.gettersAndSettersFor(fieldName, fieldName, constructor);
 
-                return fieldName === camelFieldName
-                  ? fields
-                  : fields.concat(
-                      this.gettersAndSettersFor(camelFieldName, fieldName, constructor)
-                    );
+                return [
+                  "\n",
+                  scripter.comment(
+                    getTagValues(
+                      this.fields.obj[fieldName].tsDecon.context.fieldTags,
+                      "description"
+                    ).join("\n")
+                  )
+                ].concat(
+                  fieldName === camelFieldName
+                    ? fields
+                    : fields.concat(
+                        this.gettersAndSettersFor(camelFieldName, fieldName, constructor)
+                      )
+                );
               }, [])
             ])(ident),
             "\n",
@@ -241,7 +257,10 @@ export class IdolJsCodegenStruct extends GeneratorFileContext<IdolJs> {
                     scripter.propDec(
                       "optional",
                       scripter.literal(
-                        this.fields.obj[fieldName].tsDecon.context.includesTag("optional")
+                        includesTag(
+                          this.fields.obj[fieldName].tsDecon.context.fieldTags,
+                          "optional"
+                        )
                       )
                     )
                   )
@@ -309,6 +328,9 @@ export class IdolJsCodegenEnum extends GeneratorFileContext<IdolJs> {
           this.path,
           this.codegenFile.defaultTypeName,
           ident => [
+            scripter.comment(
+              getTagValues(this.codegenFile.typeDecon.t.tags, "description").join("\n")
+            ),
             scripter.variable(
               scripter.objLiteral(
                 ...this.options.map(option =>
@@ -362,7 +384,7 @@ export class IdolJsCodegenTypeStruct implements GeneratorContext {
   }
 
   get listConstructorArgs(): { [k: string]: any } {
-    return { atleastOne: this.tsDecon.context.includesTag(null, "atleast_one") };
+    return { atleastOne: includesTag(this.tsDecon.context.typeTags, "atleast_one") };
   }
 
   get mapConstructorArgs(): { [k: string]: any } {
@@ -422,7 +444,10 @@ export class IdolJsCodegenTypeStructDeclaration extends IdolJsCodegenTypeStruct 
           ident: this.state.addContentWithIdent(
             this.path,
             this.codegenFile.defaultTypeName,
-            scripter.variable(expr(this.state, this.path))
+            scripter.commented(
+              getTagValues(this.tsDecon.context.typeTags, "description").join("\n"),
+              scripter.variable(expr(this.state, this.path))
+            )
           )
         };
       })

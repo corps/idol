@@ -23,6 +23,7 @@ export class SchemaField {
   static wrap(val) {
     return null;
   }
+
   get field_name() {
     return Primitive.of("string").wrap(this._original["field_name"]);
   }
@@ -35,6 +36,7 @@ export class SchemaField {
   set fieldName(val) {
     this.field_name = val;
   }
+
   get tags() {
     return List.of(Primitive.of("string"), { atleastOne: false }).wrap(
       this._original["tags"]
@@ -45,6 +47,7 @@ export class SchemaField {
       atleastOne: false
     }).unwrap(val);
   }
+
   get type_struct() {
     return ScaffoldTypeStruct.wrap(this._original["type_struct"]);
   }

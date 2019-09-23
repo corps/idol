@@ -317,14 +317,14 @@ function (_GeneratorFileContext3) {
         return _functional.Alt.lift({
           path: _this13.path,
           ident: _this13.state.addContentWithIdent(_this13.path, _this13.codegenFile.defaultTypeName, function (ident) {
-            return [scripter.classDec([scripter.methodDec("constructor", ["val"], [scripter.assignment("this._original", "val")])].concat(_toConsumableArray(_this13.stubMethods), _toConsumableArray(fieldConstructorIdents.concatMap(function (fieldName, constructor) {
+            return [scripter.comment((0, _generators.getTagValues)(_this13.codegenFile.typeDecon.t.tags, "description").join("\n")), scripter.classDec([scripter.methodDec("constructor", ["val"], [scripter.assignment("this._original", "val")])].concat(_toConsumableArray(_this13.stubMethods), _toConsumableArray(fieldConstructorIdents.concatMap(function (fieldName, constructor) {
               var camelFieldName = (0, _generators.camelify)(fieldName, false);
 
               var fields = _this13.gettersAndSettersFor(fieldName, fieldName, constructor);
 
-              return fieldName === camelFieldName ? fields : fields.concat(_this13.gettersAndSettersFor(camelFieldName, fieldName, constructor));
+              return ["\n", scripter.comment((0, _generators.getTagValues)(_this13.fields.obj[fieldName].tsDecon.context.fieldTags, "description").join("\n"))].concat(fieldName === camelFieldName ? fields : fields.concat(_this13.gettersAndSettersFor(camelFieldName, fieldName, constructor)));
             }, []))))(ident), "\n", scripter.invocation(_this13.state.importIdent(_this13.path, _this13.parent.idolJsFile.struct), ident, scripter.arrayLiteral.apply(scripter, _toConsumableArray(fieldConstructorIdents.mapIntoIterable(function (fieldName, constructor) {
-              return scripter.objLiteral(scripter.propDec("fieldName", scripter.literal(fieldName)), scripter.propDec("type", constructor), scripter.propDec("optional", scripter.literal(_this13.fields.obj[fieldName].tsDecon.context.includesTag("optional"))));
+              return scripter.objLiteral(scripter.propDec("fieldName", scripter.literal(fieldName)), scripter.propDec("type", constructor), scripter.propDec("optional", scripter.literal((0, _generators.includesTag)(_this13.fields.obj[fieldName].tsDecon.context.fieldTags, "optional"))));
             }))))];
           })
         });
@@ -367,7 +367,7 @@ function (_GeneratorFileContext4) {
         return _functional.Alt.lift({
           path: _this15.path,
           ident: _this15.state.addContentWithIdent(_this15.path, _this15.codegenFile.defaultTypeName, function (ident) {
-            return [scripter.variable(scripter.objLiteral.apply(scripter, _toConsumableArray(_this15.options.map(function (option) {
+            return [scripter.comment((0, _generators.getTagValues)(_this15.codegenFile.typeDecon.t.tags, "description").join("\n")), scripter.variable(scripter.objLiteral.apply(scripter, _toConsumableArray(_this15.options.map(function (option) {
               return scripter.propDec(option.toUpperCase(), scripter.literal(option));
             })).concat(["\n", scripter.propDec("options", scripter.literal(_this15.options)), scripter.propDec("default", scripter.literal(_this15.options[0])), "\n", scripter.comment("These methods are implemented via the runtime, stubs exist here for reference."), scripter.methodDec("validate", ["val"], []), scripter.methodDec("isValid", ["val"], [scripter.ret("true")]), scripter.methodDec("expand", ["val"], [scripter.ret("val")]), scripter.methodDec("wrap", ["val"], [scripter.ret("val")]), scripter.methodDec("unwrap", ["val"], [scripter.ret("val")])])))(ident), scripter.invocation(_this15.state.importIdent(_this15.path, _this15.parent.idolJsFile["enum"]), ident)];
           })
@@ -410,7 +410,7 @@ function () {
     key: "listConstructorArgs",
     get: function get() {
       return {
-        atleastOne: this.tsDecon.context.includesTag(null, "atleast_one")
+        atleastOne: (0, _generators.includesTag)(this.tsDecon.context.typeTags, "atleast_one")
       };
     }
   }, {
@@ -489,7 +489,7 @@ function (_IdolJsCodegenTypeStr) {
         return _this19.constructorExpr.map(function (expr) {
           return {
             path: _this19.path,
-            ident: _this19.state.addContentWithIdent(_this19.path, _this19.codegenFile.defaultTypeName, scripter.variable(expr(_this19.state, _this19.path)))
+            ident: _this19.state.addContentWithIdent(_this19.path, _this19.codegenFile.defaultTypeName, scripter.commented((0, _generators.getTagValues)(_this19.tsDecon.context.typeTags, "description").join("\n"), scripter.variable(expr(_this19.state, _this19.path))))
           };
         });
       });

@@ -15,6 +15,11 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
+/*
+A structure describing a dependency relationship between two types.
+Usually this comes from the types inside of a Structure, but it can also
+come from a TypeStruct that builds a container from some other structure.
+*/
 var SchemaDependency =
 /*#__PURE__*/
 function () {
@@ -27,12 +32,14 @@ function () {
 
   _createClass(SchemaDependency, [{
     key: "from",
+    // The information on the type needing the to type.
     get: function get() {
       return _Reference.Reference.wrap(this._original["from"]);
     },
     set: function set(val) {
       this._original["from"] = _Reference.Reference.unwrap(val);
-    }
+    } // True when the to reference is a higher kinded type (should take type_vars).
+
   }, {
     key: "is_abstraction",
     get: function get() {
@@ -48,7 +55,8 @@ function () {
     },
     set: function set(val) {
       this.is_abstraction = val;
-    }
+    } // Convenience attribute indicating when the module for the from and to are equal.
+
   }, {
     key: "is_local",
     get: function get() {
@@ -64,7 +72,8 @@ function () {
     },
     set: function set(val) {
       this.is_local = val;
-    }
+    } // The external type name required by the from type
+
   }, {
     key: "to",
     get: function get() {

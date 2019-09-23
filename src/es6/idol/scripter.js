@@ -18,6 +18,15 @@ export function variable(
   };
 }
 
+export function commented(
+  c: string,
+  scriptable: (ident: string) => string
+): (ident: string) => string {
+  return (ident: string): string => {
+    return `${comment(c)}\n${scriptable(ident)}`;
+  };
+}
+
 export function getProp(ident: string, body: Array<string>): string {
   const bodyRendered = body.join(";\n");
   return `get ${ident}() { ${bodyRendered} }`;
@@ -43,8 +52,7 @@ export function propExpr(obj: string, ...exprs: string[]): string {
 export function comment(comment: string): string {
   if (!comment) return comment;
   comment = comment.replace(/\//g, "\\/");
-  if (comment.indexOf("\n") === -1) return `// ${comment}`;
-  return `/*\n${comment}\n*/\n`;
+  return comment.split("\n").map(l => `// ${l}`).join("\n");
 }
 
 export function propDec(prop: string, expr: string): string {

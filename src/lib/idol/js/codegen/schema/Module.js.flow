@@ -6,6 +6,7 @@ import { Map, List, Primitive, Struct } from "../__idol__";
 import { Type as ScaffoldType } from "../../schema/Type";
 import { Dependency as ScaffoldDependency } from "../../schema/Dependency";
 
+// Metadata contained about a module.;
 export class SchemaModule {
   constructor(val) {
     this._original = val;
@@ -24,6 +25,7 @@ export class SchemaModule {
   static wrap(val) {
     return null;
   }
+
   get abstract_types_by_name() {
     return Map.of(ScaffoldType, {}).wrap(
       this._original["abstract_types_by_name"]
@@ -40,6 +42,7 @@ export class SchemaModule {
   set abstractTypesByName(val) {
     this.abstract_types_by_name = val;
   }
+
   get dependencies() {
     return List.of(ScaffoldDependency, { atleastOne: false }).wrap(
       this._original["dependencies"]
@@ -50,6 +53,7 @@ export class SchemaModule {
       atleastOne: false
     }).unwrap(val);
   }
+
   get module_name() {
     return Primitive.of("string").wrap(this._original["module_name"]);
   }
@@ -62,6 +66,7 @@ export class SchemaModule {
   set moduleName(val) {
     this.module_name = val;
   }
+
   get types_by_name() {
     return Map.of(ScaffoldType, {}).wrap(this._original["types_by_name"]);
   }
@@ -74,6 +79,7 @@ export class SchemaModule {
   set typesByName(val) {
     this.types_by_name = val;
   }
+
   get types_dependency_ordering() {
     return List.of(Primitive.of("string"), { atleastOne: false }).wrap(
       this._original["types_dependency_ordering"]
