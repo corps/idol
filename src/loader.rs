@@ -112,7 +112,7 @@ impl Loader {
 
     fn apply_description_comments(comments: &HashMap<String, Vec<String>>, module_dec: &mut ModuleDec) {
         for (type_name, t) in module_dec.0.iter_mut() {
-            if let Some(description_comments) = comments.get(type_name) {
+            if let Some(description_comments) = comments.get(type_name).or_else(|| comments.get(&format!("{}.fields", type_name).to_string())) {
                 t.tags = t.tags.to_owned().into_iter().chain(description_comments.iter().map(|c| format!("description:{}", c))).collect();
             }
 

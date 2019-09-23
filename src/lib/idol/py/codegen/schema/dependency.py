@@ -5,10 +5,24 @@ from ...schema.reference import Reference as ScaffoldReference
 
 
 class SchemaDependency(Struct):
+    """
+    A structure describing a dependency relationship between two types.
+    Usually this comes from the types inside of a Structure, but it can also
+    come from a TypeStruct that builds a container from some other structure.
+    """
+
+    # The information on the type needing the to type.
     from_: ScaffoldReference
+
+    # True when the to reference is a higher kinded type (should take type_vars).
     is_abstraction: bool
+
+    # Convenience attribute indicating when the module for the from and to are equal.
     is_local: bool
+
+    # The external type name required by the from type
     to: ScaffoldReference
+
     __field_constructors__ = [
         ("from", "from_", ScaffoldReference, dict(optional=False)),
         ("is_abstraction", "is_abstraction", Primitive.of(bool), dict(optional=False)),

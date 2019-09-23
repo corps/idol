@@ -5,9 +5,13 @@ from ..__idol__ import Struct, Primitive
 
 class SchemaLiteral(Struct):
     bool: bool
+
     double: float
+
     int: int
+
     string: str
+
     __field_constructors__ = [
         ("bool", "bool", Primitive.of(bool), dict(optional=False)),
         ("double", "double", Primitive.of(float), dict(optional=False)),

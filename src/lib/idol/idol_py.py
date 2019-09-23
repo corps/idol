@@ -172,11 +172,21 @@ class IdolPyCodegenStruct(GeneratorFileContext):
                             )
                         ],
                         [
-                            scripter.typing(
-                                get_safe_ident(field_name), typing_expr(self.state, self.path)
-                            )
+                            line
                             for field_name, field in self.fields
                             for typing_expr in field.typing_expr
+                            for line in (
+                                scripter.comments(
+                                    get_tag_values(field.ts_decon.context.field_tags, "description")
+                                )
+                                + [
+                                    scripter.typing(
+                                        get_safe_ident(field_name),
+                                        typing_expr(self.state, self.path),
+                                    ),
+                                    ""
+                                ]
+                            )
                         ]
                         + [
                             scripter.assignment(

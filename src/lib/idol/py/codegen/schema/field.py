@@ -7,8 +7,11 @@ from ...schema.type_struct import TypeStruct as ScaffoldTypeStruct
 
 class SchemaField(Struct):
     field_name: str
+
     tags: MutableSequence[str]
+
     type_struct: ScaffoldTypeStruct
+
     __field_constructors__ = [
         ("field_name", "field_name", Primitive.of(str), dict(optional=False)),
         (

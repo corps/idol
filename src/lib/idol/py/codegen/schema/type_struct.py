@@ -10,10 +10,15 @@ from ...schema.struct_kind import StructKind as ScaffoldStructKind
 
 class SchemaTypeStruct(Struct):
     literal: Optional[ScaffoldLiteral]
+
     parameters: MutableSequence[ScaffoldReference]
+
     primitive_type: ScaffoldPrimitiveType
+
     reference: ScaffoldReference
+
     struct_kind: ScaffoldStructKind
+
     __field_constructors__ = [
         ("literal", "literal", ScaffoldLiteral, dict(optional=True)),
         (

@@ -122,8 +122,7 @@ def get_tag_value(tags: Optional[Iterable[str]], d: str, tag: str) -> str:
         return d
 
     for t in tags:
-        pre = t.index(tag + ":")
-        if pre == 0:
+        if t.startswith(tag + ":"):
             return t[len(tag) + 1 :]
 
     return d
@@ -136,8 +135,7 @@ def get_tag_values(tags: Optional[Iterable[str]], tag: str) -> List[str]:
     result: List[str] = []
 
     for t in tags:
-        pre = t.index(tag + ":")
-        if pre == 0:
+        if t.startswith(tag + ":"):
             result.append(t[len(tag) + 1 :])
 
     return result

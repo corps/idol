@@ -7,11 +7,20 @@ from ...schema.dependency import Dependency as ScaffoldDependency
 
 
 class SchemaModule(Struct):
+    """
+    Metadata contained about a module.
+    """
+
     abstract_types_by_name: MutableMapping[str, ScaffoldType]
+
     dependencies: MutableSequence[ScaffoldDependency]
+
     module_name: str
+
     types_by_name: MutableMapping[str, ScaffoldType]
+
     types_dependency_ordering: MutableSequence[str]
+
     __field_constructors__ = [
         (
             "abstract_types_by_name",
