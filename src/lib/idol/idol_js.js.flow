@@ -11,7 +11,7 @@ import {
   camelify,
   GeneratorAcc,
   GeneratorConfig,
-  GeneratorFileContext,
+  GeneratorFileContext, getMaterialTypeDeconstructor,
   importExpr,
   Path,
   ScalarDeconstructor,
@@ -147,7 +147,7 @@ export class IdolJsScaffoldFile extends GeneratorFileContext<IdolJs> {
 
   constructor(idolJs: IdolJs, path: Path, type: Type) {
     super(idolJs, path);
-    this.typeDecon = new TypeDeconstructor(type);
+    this.typeDecon = getMaterialTypeDeconstructor(idolJs.config.params.allTypes, type);
   }
 
   get type(): Type {

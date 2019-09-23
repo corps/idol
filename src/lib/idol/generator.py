@@ -1,5 +1,5 @@
 import idol.scripter as scripter
-from typing import Dict, List, Union, TypeVar, Callable, Tuple, Any, Optional
+from typing import Dict, List, Union, TypeVar, Callable, Tuple, Any, Optional, Iterable
 
 from idol.py.schema.primitive_type import PrimitiveType
 from idol.py.schema.reference import Reference
@@ -113,6 +113,36 @@ class GeneratorParams:
         self.options = options
 
 
+def includes_tag(tags: Optional[Iterable[str]], tag: str) -> bool:
+    return bool(tags) and tag in list(tags)
+
+
+def get_tag_value(tags: Optional[Iterable[str]], d: str, tag: str) -> str:
+    if not tags:
+        return d
+
+    for t in tags:
+        pre = t.index(tag + ":")
+        if pre == 0:
+            return t[len(tag) + 1 :]
+
+    return d
+
+
+def get_tag_values(tags: Optional[Iterable[str]], tag: str) -> List[str]:
+    if not tags:
+        return []
+
+    result: List[str] = []
+
+    for t in tags:
+        pre = t.index(tag + ":")
+        if pre == 0:
+            result.append(t[len(tag) + 1 :])
+
+    return result
+
+
 class TypeStructContext:
     field_tags: List[str]
     type_tags: List[str]
@@ -128,23 +158,6 @@ class TypeStructContext:
         self.field_tags = field_tags or []
         self.type_tags = type_tags or []
         self.is_type_bound = type_tags is not None and field_tags is None
-
-    def includes_tag(self, field_tag: Optional[str] = None, type_tag: Optional[str] = None) -> bool:
-        return field_tag in self.field_tags or type_tag in self.type_tags
-
-    def get_tag_value(
-        self, d: str, field_tag: Optional[str] = None, type_tag: Optional[str] = None
-    ) -> str:
-        for tag, tags in ((field_tag, self.field_tags), (type_tag, self.type_tags)):
-            if not tag:
-                continue
-
-            for t in tags:
-                pre = t.index(tag + ":")
-                if pre == 0:
-                    return t[len(tag) + 1 :]
-
-        return d
 
 
 class ScalarContext:

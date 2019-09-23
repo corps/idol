@@ -236,7 +236,7 @@ function (_GeneratorFileContext2) {
     _classCallCheck(this, IdolJsScaffoldFile);
 
     _this10 = _possibleConstructorReturn(this, _getPrototypeOf(IdolJsScaffoldFile).call(this, idolJs, path));
-    _this10.typeDecon = new _generators.TypeDeconstructor(type);
+    _this10.typeDecon = (0, _generators.getMaterialTypeDeconstructor)(idolJs.config.params.allTypes, type);
     return _this10;
   }
 

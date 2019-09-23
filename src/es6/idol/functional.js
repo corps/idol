@@ -221,7 +221,7 @@ export class Alt<T> {
 export function naiveObjUpdate(one: any, other: any) {
   for (let k in other) {
     if (k in one) one[k] = one[k].concat(other[k]);
-    else one[k] = other[k];
+    else one[k] = other[k]
   }
 }
 

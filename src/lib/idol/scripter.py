@@ -1,4 +1,4 @@
-from typing import Iterable, List, Dict, Optional, Callable
+from typing import Iterable, List, Dict, Optional, Callable, Union
 
 import black
 
@@ -27,7 +27,7 @@ def flatten_inner(inner, indent=0):
     try:
         for block in inner:
             for line in flatten_inner(block, indent + 1):
-                yield ("  " * indent) + line
+                yield ("    " * indent) + line
         return
     except TypeError:
         pass
@@ -57,6 +57,16 @@ def shadow_assignment(ident: str, expr: str) -> List:
         assignment(ident, expr),
         assignment(index_access(invocation("locals"), literal(ident)), expr),
     ]
+
+
+def commented(
+    comment: Iterable[str], scriptable: Callable[[str], Union[List, str]]
+) -> Callable[[str], List]:
+    def wrapped(ident: str) -> List:
+        script = scriptable(ident)
+        return comments(comment) + (script if isinstance(script, list) else [script])
+
+    return wrapped
 
 
 def declare_and_shadow(
@@ -101,14 +111,24 @@ def array(values: Iterable[str]):
     return f"[{', '.join(values)}]"
 
 
-def class_dec(class_name: str, super_classes: Iterable[str], body: Iterable) -> List:
+def class_dec(
+    class_name: str,
+    super_classes: Iterable[str],
+    body: Iterable,
+    doc_str: Optional[Iterable[str]] = None,
+) -> List:
     super_str: str = ", ".join(super_classes) if super_classes else "object"
-    return [f"class {class_name}({super_str}):", list(body) or ["pass"]]
+    return [
+        f"class {class_name}({super_str}):",
+        (['"""'] + list(doc_str) + ['"""'] if doc_str else []) + (list(body) or ["pass"]),
+    ]
 
 
-def nameable_class_dec(super_classes: Iterable[str], body: Iterable) -> Callable[[str], List]:
+def nameable_class_dec(
+    super_classes: Iterable[str], body: Iterable, doc_str: Optional[Iterable[str]] = None
+) -> Callable[[str], List]:
     def nameable(ident: str) -> List:
-        return class_dec(ident, super_classes, body)
+        return class_dec(ident, super_classes, body, doc_str=doc_str)
 
     return nameable
 

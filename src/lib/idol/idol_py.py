@@ -7,7 +7,7 @@ from typing import Callable, List, Dict, Any
 
 from idol import scripter
 from idol.cli import start, CliConfig
-from idol.functional import OrderedObj, Disjoint, Alt
+from idol.functional import OrderedObj, Alt
 from idol.generator import (
     GeneratorParams,
     GeneratorConfig,
@@ -24,6 +24,8 @@ from idol.generator import (
     Expression,
     import_expr,
     get_safe_ident,
+    get_tag_values,
+    includes_tag,
 )
 from idol.py.schema.primitive_type import PrimitiveType
 from idol.py.schema.reference import Reference
@@ -187,8 +189,8 @@ class IdolPyCodegenStruct(GeneratorFileContext):
                                         scripter.invocation(
                                             "dict",
                                             optional=scripter.literal(
-                                                field.ts_decon.context.includes_tag(
-                                                    field_tag="optional"
+                                                includes_tag(
+                                                    field.ts_decon.context.field_tags, "optional"
                                                 )
                                             ),
                                         ),
@@ -198,6 +200,7 @@ class IdolPyCodegenStruct(GeneratorFileContext):
                                 ),
                             )
                         ],
+                        doc_str=get_tag_values(self.codegen_file.t.tags, "description"),
                     ),
                 ),
             )
@@ -231,6 +234,7 @@ class IdolPyCodegenEnum(GeneratorFileContext):
                             scripter.assignment(name.upper(), scripter.literal(name))
                             for name in self.options
                         ],
+                        doc_str=get_tag_values(self.codegen_file.t.tags, "description"),
                     ),
                 ),
             )
@@ -303,7 +307,7 @@ class IdolPyCodegenTypeStruct(GeneratorContext):
             expr for scalar in self.inner_scalar for expr in scalar.typing_expr
         )
 
-        if self.ts_decon.context.includes_tag(field_tag="optional"):
+        if includes_tag(self.ts_decon.context.field_tags, "optional"):
             return Alt(optional_expr(typing_expr) for typing_expr in typing)
 
         return typing
@@ -336,7 +340,7 @@ class IdolPyCodegenTypeStruct(GeneratorContext):
                     scripter.invocation(
                         "dict",
                         atleast_one=scripter.literal(
-                            self.ts_decon.context.includes_tag(type_tag="atleast_one")
+                            includes_tag(self.ts_decon.context.type_tags, "atleast_one")
                         ),
                     ),
                 )
@@ -375,8 +379,12 @@ class IdolPyCodegenTypeStructDeclaration(IdolPyCodegenTypeStruct):
                 self.state.add_content_with_ident(
                     self.path,
                     self.codegen_file.default_type_name,
-                    scripter.declare_and_shadow(
-                        typing_expr(self.state, self.path), constructor_expr(self.state, self.path)
+                    scripter.commented(
+                        get_tag_values(self.codegen_file.t_decon.t.tags, "description"),
+                        scripter.declare_and_shadow(
+                            typing_expr(self.state, self.path),
+                            constructor_expr(self.state, self.path),
+                        ),
                     ),
                 ),
             )
@@ -514,8 +522,11 @@ class IdolPyCodegenScalarDeclaration(IdolPyCodegenScalar):
                 self.state.add_content_with_ident(
                     self.path,
                     self.codegen_file.default_type_name,
-                    scripter.declare_and_shadow(
-                        prim_expr(self.state, self.path), prim_con_expr(self.state, self.path)
+                    scripter.commented(
+                        get_tag_values(self.codegen_file.t_decon.t.tags, "description"),
+                        scripter.declare_and_shadow(
+                            prim_expr(self.state, self.path), prim_con_expr(self.state, self.path)
+                        ),
                     ),
                 ),
             )
@@ -535,7 +546,10 @@ class IdolPyCodegenScalarDeclaration(IdolPyCodegenScalar):
                 self.state.add_content_with_ident(
                     self.path,
                     self.codegen_file.default_type_name,
-                    scripter.assignable(ref_import(self.state, self.path)),
+                    scripter.commented(
+                        get_tag_values(self.codegen_file.t_decon.t.tags, "description"),
+                        scripter.assignable(ref_import(self.state, self.path)),
+                    ),
                 ),
             )
             for ref_import in self.reference_import_expr
@@ -575,7 +589,9 @@ class IdolPyScaffoldFile(GeneratorFileContext):
                 self.state.add_content_with_ident(
                     self.path,
                     self.default_type_name,
-                    scripter.nameable_class_dec([codegen_ident], []),
+                    scripter.nameable_class_dec(
+                        [codegen_ident], [], doc_str=get_tag_values(self.t.tags, "description")
+                    ),
                 ),
             )
             for codegen_ident in codegen_type_ident

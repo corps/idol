@@ -1,14 +1,17 @@
-[StructKind]
 # Scalars are non contained values
-# Repeated are essentially lists.  They can be upgraded or downgraded to and from Scalars.
+# Repeated are homogenous lists.  They can be upgraded or downgraded to and from Scalars.
 #   A repeated is indicated in a TypeDec by ending with '[]'
-# Maps are 'dictionaries', whose key is always a string, mapping to js objects.
+# Maps are homogenous 'dictionaries', whose key is always a string, mapping to js objects.
 #   A map is indicated in a TypeDec by ending with '{}'
+[StructKind]
 enum = ["Scalar", "Repeated", "Map"]
 
 [PrimitiveType]
 enum = ["int", "double", "string", "bool", "any"]
 
+# A structure describing a dependency relationship between two types.
+# Usually this comes from the types inside of a Structure, but it can also
+# come from a TypeStruct that builds a container from some other structure.
 [Dependency.fields]
 # The external type name required by the from type
 to = "Reference"
@@ -19,6 +22,7 @@ is_local = "bool"
 # True when the to reference is a higher kinded type (should take type_vars).
 is_abstraction = "bool"
 
+# A reference describes the location of a type in the module system.
 [Reference.fields]
 # The module_name.type_name string
 qualified_name = "string"
@@ -27,6 +31,7 @@ type_name = "string"
 # Just the module name
 module_name = "string"
 
+# A wrapper type containing fields that can describe a Type, as well as its tag metadata.
 [Type.fields]
 # Set when this is type is an alias or simply an type expression (such as a generic).
 # Exclusive with having values for options or fields.
@@ -55,6 +60,7 @@ named = "Reference"
 dependencies = "Dependency[]"
 
 
+# Metadata contained about a module.
 [Module.fields]
 module_name = "string"
 dependencies = "Dependency[]"

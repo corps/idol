@@ -133,51 +133,6 @@ class Alt(Generic[A]):
         return len(self.v) > 0
 
 
-class Disjoint(Generic[A]):
-    v: List[A]
-
-    def __init__(self, v: Iterable[A]):
-        if not isinstance(v, list):
-            v = list(v)
-        self.v = v
-
-    @classmethod
-    def lift(cls, v: A) -> "Disjoint[A]":
-        return cls((v,))
-
-    @classmethod
-    def empty(cls) -> "Disjoint[Any]":
-        return cls([])
-
-    def get_or(self, d: A) -> A:
-        if not self:
-            return d
-        return self.unwrap()
-
-    def get_or_fail(self, msg: str) -> A:
-        if self:
-            return self.unwrap()
-        raise ValueError(msg)
-
-    def unwrap(self) -> A:
-        if len(self.v) > 1:
-            raise ValueError(f"Unexpected conflict found!")
-
-        return self.v[0]
-
-    def __iter__(self) -> Iterable[A]:
-        if len(self.v) > 0:
-            yield self.unwrap()
-
-    def concat(self, other: "Disjoint[A]") -> "Disjoint[A]":
-        return Disjoint(self.v + other.v)
-
-    __add__ = concat
-
-    def __bool__(self):
-        return len(self.v) > 0
-
-
 def naive_object_update(self, other: object) -> None:
     self_dict = self.__dict__
     for k, v in other.__dict__.items():
