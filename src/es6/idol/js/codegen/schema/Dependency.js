@@ -33,20 +33,6 @@ export class SchemaDependency {
     this._original["from"] = ScaffoldReference.unwrap(val);
   }
 
-  // True when the to reference is a higher kinded type (should take type_vars).
-  get is_abstraction() {
-    return Primitive.of("bool").wrap(this._original["is_abstraction"]);
-  }
-  set is_abstraction(val) {
-    this._original["is_abstraction"] = Primitive.of("bool").unwrap(val);
-  }
-  get isAbstraction() {
-    return this.is_abstraction;
-  }
-  set isAbstraction(val) {
-    this.is_abstraction = val;
-  }
-
   // Convenience attribute indicating when the module for the from and to are equal.
   get is_local() {
     return Primitive.of("bool").wrap(this._original["is_local"]);
@@ -72,7 +58,6 @@ export class SchemaDependency {
 
 Struct(SchemaDependency, [
   { fieldName: "from", type: ScaffoldReference, optional: false },
-  { fieldName: "is_abstraction", type: Primitive.of("bool"), optional: false },
   { fieldName: "is_local", type: Primitive.of("bool"), optional: false },
   { fieldName: "to", type: ScaffoldReference, optional: false }
 ]);

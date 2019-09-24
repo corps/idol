@@ -39,12 +39,6 @@ class SchemaType(Struct):
     # deserialize / serializeconsume correct logical values.
     tags: MutableSequence[str]
 
-    # For high order kinds (generics) that target other types as arguments, each of these strings
-    # is a local alias for the parameter at that position.
-    # ie: if MyMap.type_vars = ["A", "B"] then MyMap<int, string> will replace all "A" and "B" references
-    # inside of MyMap with int and string.
-    type_vars: MutableSequence[str]
-
     __field_constructors__ = [
         (
             "dependencies",
@@ -69,12 +63,6 @@ class SchemaType(Struct):
         (
             "tags",
             "tags",
-            List.of(Primitive.of(str), dict(atleast_one=False)),
-            dict(optional=False),
-        ),
-        (
-            "type_vars",
-            "type_vars",
             List.of(Primitive.of(str), dict(atleast_one=False)),
             dict(optional=False),
         ),

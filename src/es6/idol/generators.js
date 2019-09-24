@@ -285,7 +285,7 @@ export function getMaterialTypeDeconstructor(
       .getTypeStruct()
       .bind(ts => ts.getScalar())
       .bind(scalar => scalar.getAlias())
-      .map(alias => searchType(new TypeDeconstructor(allTypes.obj[alias.qualifiedName])))
+      .map(alias => searchType(new TypeDeconstructor(allTypes.obj[alias.qualifiedName].withTags(t.tags))))
       .getOr(typeDecon);
   }
 

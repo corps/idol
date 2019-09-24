@@ -275,7 +275,7 @@ def import_expr(exported: Exported, as_ident: str = None) -> "Expression":
 def get_material_type_deconstructor(all_types: OrderedObj[Type], t: Type) -> TypeDeconstructor:
     def search_type(type_decon: TypeDeconstructor) -> TypeDeconstructor:
         return Alt(
-            search_type(TypeDeconstructor(all_types.obj[alias.qualified_name]))
+            search_type(TypeDeconstructor(all_types.obj[alias.qualified_name].with_tags(t.tags)))
             for type_struct in type_decon.get_typestruct()
             for scalar in type_struct.get_scalar()
             for alias in scalar.get_alias()

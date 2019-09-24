@@ -99,27 +99,6 @@ export class SchemaType {
       atleastOne: false
     }).unwrap(val);
   }
-
-  // For high order kinds (generics) that target other types as arguments, each of these strings
-  // is a local alias for the parameter at that position.
-  // ie: if MyMap.type_vars = ["A", "B"] then MyMap<int, string> will replace all "A" and "B" references
-  // inside of MyMap with int and string.
-  get type_vars() {
-    return List.of(Primitive.of("string"), { atleastOne: false }).wrap(
-      this._original["type_vars"]
-    );
-  }
-  set type_vars(val) {
-    this._original["type_vars"] = List.of(Primitive.of("string"), {
-      atleastOne: false
-    }).unwrap(val);
-  }
-  get typeVars() {
-    return this.type_vars;
-  }
-  set typeVars(val) {
-    this.type_vars = val;
-  }
 }
 
 Struct(SchemaType, [
@@ -138,11 +117,6 @@ Struct(SchemaType, [
   },
   {
     fieldName: "tags",
-    type: List.of(Primitive.of("string"), { atleastOne: false }),
-    optional: false
-  },
-  {
-    fieldName: "type_vars",
     type: List.of(Primitive.of("string"), { atleastOne: false }),
     optional: false
   }

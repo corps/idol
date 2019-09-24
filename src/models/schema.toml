@@ -19,8 +19,6 @@ to = "Reference"
 from = "Reference"
 # Convenience attribute indicating when the module for the from and to are equal.
 is_local = "bool"
-# True when the to reference is a higher kinded type (should take type_vars).
-is_abstraction = "bool"
 
 # A reference describes the location of a type in the module system.
 [Reference.fields]
@@ -49,11 +47,6 @@ options = "string[]"
 # In general, however, tags are considred optional and should not be required to
 # deserialize / serializeconsume correct logical values.
 tags = "string[]"
-# For high order kinds (generics) that target other types as arguments, each of these strings
-# is a local alias for the parameter at that position.
-# ie: if MyMap.type_vars = ["A", "B"] then MyMap<int, string> will replace all "A" and "B" references
-# inside of MyMap with int and string.
-type_vars = "string[]"
 # The name and module information of this type's definition.
 named = "Reference"
 # The dependencies found in this type's is_a or fields.
@@ -66,14 +59,12 @@ module_name = "string"
 dependencies = "Dependency[]"
 types_by_name = "Type{}"
 types_dependency_ordering = "string[]"
-abstract_types_by_name = "Type{}"
 
 [TypeStruct.fields]
 struct_kind = "StructKind"
 reference = "Reference"
 primitive_type = "PrimitiveType"
 literal = ["Literal", "optional"]
-parameters = "Reference[]"
 
 [Literal.fields]
 int = "int"

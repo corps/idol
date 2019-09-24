@@ -49,7 +49,7 @@ impl idol::ValidatesJson for FieldDec {
 pub struct TypeDec {
   pub r#enum: Vec<String>,
   pub r#fields: HashMap<String, FieldDec>,
-  pub r#is_a: String,
+  pub r#is_a: Vec<String>,
   pub r#tags: Vec<String>,
   pub r#type_vars: Vec<String>,
 }
@@ -88,7 +88,7 @@ impl idol::ExpandsJson for TypeDec {
       None => (),
     }
 
-    match String::expand_json(&mut value["is_a"]) {
+    match Vec::<String>::expand_json(&mut value["is_a"]) {
       Some(v) => value["is_a"] = v,
       None => (),
     }
@@ -115,7 +115,7 @@ impl idol::ValidatesJson for TypeDec {
 
     Vec::<String>::validate_json(&value["enum"]).map_err(|e| idol::ValidationError(format!("field enum: {}", e)))?;
     HashMap::<String, FieldDec>::validate_json(&value["fields"]).map_err(|e| idol::ValidationError(format!("field fields: {}", e)))?;
-    String::validate_json(&value["is_a"]).map_err(|e| idol::ValidationError(format!("field is_a: {}", e)))?;
+    Vec::<String>::validate_json(&value["is_a"]).map_err(|e| idol::ValidationError(format!("field is_a: {}", e)))?;
     Vec::<String>::validate_json(&value["tags"]).map_err(|e| idol::ValidationError(format!("field tags: {}", e)))?;
     Vec::<String>::validate_json(&value["type_vars"]).map_err(|e| idol::ValidationError(format!("field type_vars: {}", e)))?;
 

@@ -14,9 +14,6 @@ class SchemaDependency(Struct):
     # The information on the type needing the to type.
     from_: ScaffoldReference
 
-    # True when the to reference is a higher kinded type (should take type_vars).
-    is_abstraction: bool
-
     # Convenience attribute indicating when the module for the from and to are equal.
     is_local: bool
 
@@ -25,7 +22,6 @@ class SchemaDependency(Struct):
 
     __field_constructors__ = [
         ("from", "from_", ScaffoldReference, dict(optional=False)),
-        ("is_abstraction", "is_abstraction", Primitive.of(bool), dict(optional=False)),
         ("is_local", "is_local", Primitive.of(bool), dict(optional=False)),
         ("to", "to", ScaffoldReference, dict(optional=False)),
     ]
