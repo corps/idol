@@ -4,6 +4,74 @@ use crate::models::idol;
 use std::convert::TryFrom;
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
+pub enum Variance {
+  Invariant,
+  Covariant,
+  Contravariant,
+}
+
+impl Default for Variance {
+  fn default() -> Variance {
+    Variance::Invariant
+  }
+}
+
+impl From<usize> for Variance {
+  fn from(i: usize) -> Variance {
+    if i >= 3 {
+      Variance::Invariant
+    } else if i == 0 {
+      Variance::Invariant
+    } else if i == 1 {
+      Variance::Covariant
+    } else if i == 2 {
+      Variance::Contravariant
+    } else {
+      unreachable!()
+    }
+  }
+}
+
+impl Into<usize> for Variance {
+  fn into(self) -> usize {
+    match self {
+      Variance::Invariant => 0,
+      Variance::Covariant => 1,
+      Variance::Contravariant => 2,
+    }
+  }
+}
+
+impl idol::ExpandsJson for Variance {
+  fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+
+    match idol::get_list_scalar(value) {
+      Some(mut v) => {
+        return match Variance::expand_json(&mut v) {
+          Some(v_) => Some(v_),
+          None => Some(v),
+        }
+        ;
+      }
+      None => (),
+    }
+    ;
+
+    if value.is_null() {
+      return serde_json::to_value(Variance::default()).ok();
+    }
+
+    None
+  }
+}
+
+impl idol::ValidatesJson for Variance {
+  fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
+    return serde_json::from_value::<Variance>(value.to_owned()).map_err(|_| idol::ValidationError(format!("expected a valid enum value for Variance, but found {}", value))).map(|_| ());
+  }
+}
+
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
 pub struct FieldDec(pub Vec<String>);
 
 impl Default for FieldDec {
@@ -51,7 +119,7 @@ pub struct TypeDec {
   pub r#fields: HashMap<String, FieldDec>,
   pub r#is_a: Vec<String>,
   pub r#tags: Vec<String>,
-  pub r#type_vars: Vec<String>,
+  pub r#variance: Variance,
 }
 
 impl idol::ExpandsJson for TypeDec {
@@ -98,8 +166,8 @@ impl idol::ExpandsJson for TypeDec {
       None => (),
     }
 
-    match Vec::<String>::expand_json(&mut value["type_vars"]) {
-      Some(v) => value["type_vars"] = v,
+    match Variance::expand_json(&mut value["variance"]) {
+      Some(v) => value["variance"] = v,
       None => (),
     }
 
@@ -117,7 +185,7 @@ impl idol::ValidatesJson for TypeDec {
     HashMap::<String, FieldDec>::validate_json(&value["fields"]).map_err(|e| idol::ValidationError(format!("field fields: {}", e)))?;
     Vec::<String>::validate_json(&value["is_a"]).map_err(|e| idol::ValidationError(format!("field is_a: {}", e)))?;
     Vec::<String>::validate_json(&value["tags"]).map_err(|e| idol::ValidationError(format!("field tags: {}", e)))?;
-    Vec::<String>::validate_json(&value["type_vars"]).map_err(|e| idol::ValidationError(format!("field type_vars: {}", e)))?;
+    Variance::validate_json(&value["variance"]).map_err(|e| idol::ValidationError(format!("field variance: {}", e)))?;
 
     Ok(())
   }

@@ -1,9 +1,3 @@
-use crate::dep_mapper::DepMapper;
-use crate::models::declarations::*;
-use crate::schema::*;
-use regex::Regex;
-use std::collections::HashMap;
-use std::collections::HashSet;
 use std::error::Error;
 use std::fmt::Display;
 
@@ -15,6 +9,7 @@ pub enum FieldDecError {
     UnspecifiedType,
     LiteralAnyError,
     LiteralInStructError,
+    CompositionError(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -27,7 +22,6 @@ pub enum TypeDecError {
 #[derive(Debug, PartialEq)]
 pub enum ModuleError {
     TypeDecError(String, TypeDecError),
-    GenericTypeError(String, String),
     BadTypeNameError(String),
     CircularDependency(String),
 }
@@ -77,9 +71,6 @@ impl Display for ModuleError {
             ModuleError::CircularDependency(msg) => {
                 write!(f, "circular dependency between declarations: {}", msg)
             }
-            ModuleError::GenericTypeError(m, msg) => {
-                write!(f, "problem with generic resolution of {}: {}", m, msg)
-            }
         })
     }
 }
@@ -108,7 +99,8 @@ impl Display for FieldDecError {
             FieldDecError::InvalidParameter(s) => {
                 write!(f, "field includes an invalid type parameter: {}", s)
             },
-            FieldDecError::LiteralInStructError => write!(f, "literals in fields must be wrapped in a type alias.  Use is_a and create a new type to wrap the literal.")
+            FieldDecError::LiteralInStructError => write!(f, "literals in fields must be wrapped in a type alias.  Use is_a and create a new type to wrap the literal."),
+            FieldDecError::CompositionError(s) => write!(f, "composition error: {}", s)
         })
     }
 }

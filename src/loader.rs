@@ -1,12 +1,12 @@
 use crate::models::declarations::*;
 use crate::models::idol::{ExpandsJson, ValidatesJson};
 use is_executable::IsExecutable;
+use regex::Regex;
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::collections::HashMap;
-use regex::Regex;
 use std::str;
 
 pub struct Loader {
@@ -61,8 +61,8 @@ impl Display for LoadError {
 
 impl Loader {
     pub fn module_name_from_filename<P>(p: P) -> String
-        where
-            P: AsRef<Path>,
+    where
+        P: AsRef<Path>,
     {
         let path: &Path = p.as_ref();
         return String::from(path.file_stem().unwrap().to_string_lossy());
@@ -70,20 +70,13 @@ impl Loader {
 
     fn find_description_comments(data: &str, comments: &mut HashMap<String, Vec<String>>) {
         lazy_static! {
-            static ref COMMENT_REGEX: Regex =
-                Regex::new(r"^\s*#\s*(.*)$").unwrap();
-
-            static ref TABLE_REGEX: Regex =
-                Regex::new(r"^\s*\[\s*([^\s]*)\s*\].*$").unwrap();
-
-            static ref ASSIGNMENT_REGEX: Regex =
-                Regex::new(r"^\s*([^\s=]*)\s*=.*").unwrap();
-
-            static ref EMPTY_LINE_REGEX: Regex =
-                Regex::new(r"^\s*$").unwrap();
+            static ref COMMENT_REGEX: Regex = Regex::new(r"^\s*#\s*(.*)$").unwrap();
+            static ref TABLE_REGEX: Regex = Regex::new(r"^\s*\[\s*([^\s]*)\s*\].*$").unwrap();
+            static ref ASSIGNMENT_REGEX: Regex = Regex::new(r"^\s*([^\s=]*)\s*=.*").unwrap();
+            static ref EMPTY_LINE_REGEX: Regex = Regex::new(r"^\s*$").unwrap();
         }
 
-        let mut cur_comments: Vec<String> = vec!();
+        let mut cur_comments: Vec<String> = vec![];
         let mut last_key: String = "".to_string();
         for line in data.split('\n') {
             let m: &str = line.trim();
@@ -94,44 +87,80 @@ impl Loader {
                 last_key = captures.get(1).unwrap().as_str().to_string();
                 if cur_comments.len() > 0 {
                     comments.insert(last_key.to_owned(), cur_comments.to_owned());
-                    cur_comments = vec!();
+                    cur_comments = vec![];
                 }
             } else if let Some(captures) = ASSIGNMENT_REGEX.captures(m) {
                 let subkey = captures.get(1).unwrap().as_str().to_string();
                 if cur_comments.len() > 0 {
                     comments.insert(format!("{}.{}", last_key, subkey), cur_comments.to_owned());
-                    cur_comments = vec!();
+                    cur_comments = vec![];
                 }
             } else if EMPTY_LINE_REGEX.captures(m).is_none() {
                 if cur_comments.len() > 0 {
-                    cur_comments = vec!();
+                    cur_comments = vec![];
                 }
             }
         }
     }
 
-    fn apply_description_comments(comments: &HashMap<String, Vec<String>>, module_dec: &mut ModuleDec) {
+    fn apply_description_comments(
+        comments: &HashMap<String, Vec<String>>,
+        module_dec: &mut ModuleDec,
+    ) {
         for (type_name, t) in module_dec.0.iter_mut() {
-            if let Some(description_comments) = comments.get(type_name).or_else(|| comments.get(&format!("{}.fields", type_name).to_string())) {
-                t.tags = t.tags.to_owned().into_iter().chain(description_comments.iter().map(|c| format!("description:{}", c))).collect();
+            if let Some(description_comments) = comments
+                .get(type_name)
+                .or_else(|| comments.get(&format!("{}.fields", type_name).to_string()))
+            {
+                t.tags = t
+                    .tags
+                    .to_owned()
+                    .into_iter()
+                    .chain(
+                        description_comments
+                            .iter()
+                            .map(|c| format!("description:{}", c)),
+                    )
+                    .collect();
             }
 
             for (field_name, field) in t.fields.iter_mut() {
-                if let Some(description_comments) = comments.get(&format!("{}.fields.{}", type_name, field_name)) {
-                    field.0 = field.0.to_owned().into_iter().chain(description_comments.iter().map(|c| format!("description:{}", c))).collect();
+                if let Some(description_comments) =
+                    comments.get(&format!("{}.fields.{}", type_name, field_name))
+                {
+                    field.0 = field
+                        .0
+                        .to_owned()
+                        .into_iter()
+                        .chain(
+                            description_comments
+                                .iter()
+                                .map(|c| format!("description:{}", c)),
+                        )
+                        .collect();
                 }
             }
         }
     }
 
-    fn try_toml_or_json(&self, path: &str, data_bytes: &[u8], comments: &mut HashMap<String, Vec<String>>) -> Result<serde_json::Value, LoadError> {
+    fn try_toml_or_json(
+        &self,
+        path: &str,
+        data_bytes: &[u8],
+        comments: &mut HashMap<String, Vec<String>>,
+    ) -> Result<serde_json::Value, LoadError> {
         serde_json::from_slice(data_bytes)
             .map_err(|e| format!("json parse error: {}", e))
             .or_else(|first_err| {
-                toml::from_slice(data_bytes).map_err(|e| format!("{}, toml parse error: {}", first_err, e)).map(|r| {
-                    Loader::find_description_comments(str::from_utf8(data_bytes).unwrap(), comments);
-                    r
-                })
+                toml::from_slice(data_bytes)
+                    .map_err(|e| format!("{}, toml parse error: {}", first_err, e))
+                    .map(|r| {
+                        Loader::find_description_comments(
+                            str::from_utf8(data_bytes).unwrap(),
+                            comments,
+                        );
+                        r
+                    })
             })
             .map_err(|err_message| LoadError::DeserializationError(path.to_owned(), err_message))
     }
@@ -157,8 +186,7 @@ impl LoadsModules for Loader {
                 let mut data: Vec<u8> = vec![];
                 let path = path.to_str().unwrap();
 
-                file
-                    .read_to_end(&mut data)
+                file.read_to_end(&mut data)
                     .map_err(|e| LoadError::IoError(path.to_owned(), e))?;
 
                 let mut comments: HashMap<String, Vec<String>> = HashMap::new();
@@ -191,8 +219,9 @@ impl LoadsModules for Loader {
                 ModuleDec::validate_json(&value)
                     .map_err(|e| LoadError::ValidationError(path.to_owned(), e))?;
 
-                let mut value: ModuleDec = serde_json::from_value(value)
-                    .map_err(|e| LoadError::DeserializationError(path.to_owned(), format!("{}", e)))?;
+                let mut value: ModuleDec = serde_json::from_value(value).map_err(|e| {
+                    LoadError::DeserializationError(path.to_owned(), format!("{}", e))
+                })?;
 
                 Loader::apply_description_comments(&comments, &mut value);
 
@@ -203,4 +232,3 @@ impl LoadsModules for Loader {
         return Err(LoadError::CouldNotFindError(module_name.to_owned()));
     }
 }
-

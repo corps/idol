@@ -72,7 +72,6 @@ double = "double"
 string = "string"
 bool = "bool"
 
-
 [Field.fields]
 field_name = "string"
 tags = "string[]"
