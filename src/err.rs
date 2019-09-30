@@ -17,6 +17,7 @@ pub enum TypeDecError {
     FieldError(String, FieldDecError),
     BadFieldNameError(String),
     IsAError(FieldDecError),
+    MixedDec(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -81,6 +82,7 @@ impl Display for TypeDecError {
             TypeDecError::FieldError(field, err) => write!(f, "field {}: {}", field, err),
             TypeDecError::IsAError(err) => write!(f, "{}", err),
             TypeDecError::BadFieldNameError(field) => write!(f, "field {}: invalid name", field),
+            TypeDecError::MixedDec(err) => write!(f, "{}", err),
         })
     }
 }
