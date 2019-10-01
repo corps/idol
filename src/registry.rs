@@ -2,222 +2,31 @@ use crate::dep_mapper::DepMapper;
 use crate::err::{FieldDecError, ModuleError, ProcessingError, TypeDecError};
 use crate::models::declarations::*;
 use crate::schema::*;
+use crate::type_builder::TypeBuilder;
 use regex::Regex;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
 #[derive(Debug)]
-pub struct SchemaRegistry {
+pub struct SchemaRegistry<'a> {
     pub modules: HashMap<String, Module>,
+    pub types: HashMap<Reference, Type>,
     pub missing_module_lookups: HashSet<String>,
-    pub missing_type_lookups: HashMap<Reference, Reference>,
-    pub unresolved_compositions: HashMap<Reference, HashSet<Reference>>,
-    pub module_dep_mapper: DepMapper,
+    pub missing_type_lookups: HashMap<Reference, HashSet<Reference>>,
+    pub type_builders: HashMap<Reference, TypeBuilder<'a>>,
     pub type_dep_mapper: DepMapper,
 }
 
 impl SchemaRegistry {
-    pub fn from_modules(modules: HashMap<String, Module>) -> SchemaRegistry {
-        SchemaRegistry {
-            modules,
-            missing_module_lookups: HashSet::new(),
+    pub fn new() -> SchemaRegistry {
+        return SchemaRegistry {
+            modules: HashMap::new(),
+            types: HashMap::new(),
             missing_type_lookups: HashMap::new(),
-            unresolved_compositions: HashMap::new(),
-            module_dep_mapper: DepMapper::new(),
+            missing_module_lookups: HashSet::new(),
+            type_builders: HashMap::new(),
             type_dep_mapper: DepMapper::new(),
-        }
-    }
-
-    fn remove_resolved_missing_dependencies(
-        &mut self,
-        module_name: &String,
-    ) -> Result<(), ProcessingError> {
-        let module = self.modules.get(module_name).unwrap();
-
-        for type_name in module.types_by_name.keys() {
-            let reference =
-                Reference::from(format!("{}.{}", module.module_name, type_name).as_str());
-            self.missing_type_lookups.remove(&reference);
-        }
-
-        Ok(())
-    }
-
-    fn resolve_dependent_abstractions(
-        &mut self,
-        module_name: &String,
-    ) -> Result<(), ProcessingError> {
-        let module = self.modules.get(module_name).unwrap();
-        //        let new_abstract_types = module.abstract_types_by_name.to_owned();
-        let mut resolved_abstraction_modules: HashSet<String> = HashSet::new();
-
-        //        for (type_name, abstract_type) in new_abstract_types.iter() {
-        //            let abstract_reference =
-        //                Reference::from(format!("{}.{}", module_name, type_name).as_str());
-        //
-        //            if let Some(abstraction_references) =
-        //                self.unresolved_compositions.remove(&abstract_reference)
-        //            {
-        //                for abstraction_reference in abstraction_references.iter() {
-        //                    let abstraction = self.resolve(abstraction_reference).unwrap();
-        //
-        //                    let new_type = SchemaRegistry::create_concrete_from(
-        //                        abstraction,
-        //                        abstraction_reference,
-        //                        abstract_type,
-        //                    )?;
-        //
-        //                    let abstraction_module_resolver =
-        //                        ModuleResolver(abstraction_reference.module_name.to_owned());
-        //                    let abstraction_module = self
-        //                        .modules
-        //                        .get_mut(&abstraction_reference.module_name)
-        //                        .unwrap();
-        //
-        //                    SchemaRegistry::add_type_and_replace_dependencies(
-        //                        abstraction_module,
-        //                        &abstraction_module_resolver,
-        //                        new_type,
-        //                    )
-        //                    .map_err(|e| {
-        //                        ProcessingError::ModuleError(abstraction_module.module_name.to_owned(), e)
-        //                    })?;
-        //
-        //                    resolved_abstraction_modules
-        //                        .insert(abstraction_reference.module_name.to_owned());
-        //                }
-        //            }
-        //        }
-
-        // Recalculate any dependencies in need of resolving after pulling the abstraction in.
-        for module_name in resolved_abstraction_modules {
-            self.process_dependencies(&module_name)?;
-        }
-
-        Ok(())
-    }
-
-    fn process_dependencies(&mut self, module_name: &String) -> Result<(), ProcessingError> {
-        self.check_circular_dependencies(module_name)?;
-        self.process_local_abstractions(module_name)?;
-        self.add_missing_lookups(module_name)?;
-
-        Ok(())
-    }
-
-    fn create_concrete_from(
-        abstraction: &Type,
-        abstraction_reference: &Reference,
-        abstract_type: &Type,
-    ) -> Result<Type, ProcessingError> {
-        //        let new_type = abstraction
-        //            .resolve_abstraction(abstract_type)
-        //            .map_err(|msg| {
-        //                ProcessingError::ModuleError(
-        //                    abstraction_reference.module_name.to_owned(),
-        //                    ModuleError::GenericTypeError(abstraction_reference.type_name.to_owned(), msg),
-        //                )
-        //            })?;
-
-        Ok(Type::default())
-    }
-
-    fn process_local_abstractions(&mut self, module_name: &String) -> Result<(), ProcessingError> {
-        let module = self.modules.get(module_name).unwrap();
-        let dependencies = module.dependencies.to_owned();
-        let mut new_types: Vec<(Type, &Reference)> = vec![];
-
-        for dep in dependencies.iter() {
-            //            if dep.is_abstraction {
-            //                if let Some(abstract_type) = self.resolve_abstract_type(&dep.to) {
-            //                    let abstraction = self.resolve(&dep.from).unwrap();
-            //
-            //                    new_types.push((
-            //                        SchemaRegistry::create_concrete_from(
-            //                            abstraction,
-            //                            &dep.from,
-            //                            abstract_type,
-            //                        )?,
-            //                        &dep.from,
-            //                    ));
-            //                } else {
-            //                    self.unresolved_compositions
-            //                        .entry(dep.to.clone())
-            //                        .or_default()
-            //                        .insert(dep.from.clone());
-            //                }
-            //            }
-        }
-
-        let module = self.modules.get_mut(module_name).unwrap();
-        for (new_type, abstraction_reference) in new_types {
-            let abstraction_module_resolver =
-                ModuleResolver(abstraction_reference.module_name.to_owned());
-
-            SchemaRegistry::add_type_and_replace_dependencies(
-                module,
-                &abstraction_module_resolver,
-                new_type,
-            )
-            .map_err(|e| ProcessingError::ModuleError(module.module_name.to_owned(), e))?;
-        }
-
-        Ok(())
-    }
-
-    fn add_missing_lookups(&mut self, module_name: &String) -> Result<(), ProcessingError> {
-        let module = self.modules.get(module_name).unwrap();
-
-        for dep in module.dependencies.iter() {
-            if !self.modules.contains_key(&dep.to.module_name) {
-                self.missing_module_lookups
-                    .insert(dep.to.module_name.clone());
-            }
-
-            //            if !dep.is_abstraction {
-            //                if self.resolve(&dep.to).is_none() {
-            //                    self.missing_type_lookups
-            //                        .insert(dep.to.to_owned(), dep.from.to_owned());
-            //                }
-            //            }
-        }
-
-        Ok(())
-    }
-
-    fn check_circular_dependencies(&mut self, module_name: &String) -> Result<(), ProcessingError> {
-        let module = self.modules.get(module_name).unwrap();
-
-        for dep in module.dependencies.iter() {
-            // Check for cicular dependencies.  For local dependencies, the local ordering has already
-            // performed this check, so we can ignore duplicating effort.
-            if !dep.is_local {
-                // Check for circular imports caused by the concrete types.
-                // A circular module import is ok if it is only caused by abstract dependencies, which
-                // will not be included in output.
-                //                if !dep.is_abstraction {
-                //                    self.module_dep_mapper
-                //                        .add_dependency(
-                //                            dep.from.module_name.to_owned(),
-                //                            dep.to.module_name.to_owned(),
-                //                        )
-                //                        .map_err(|msg| ProcessingError::CircularImportError(msg))?;
-                //                }
-
-                // Abstract types can also cause circular dependencies in the output.
-                // These circular dependencies won't be caught by the local check or the module checker,
-                // since normally a modular level circular dependency via abstract types is not an issue
-                // for the output.
-                self.type_dep_mapper
-                    .add_dependency(
-                        dep.from.qualified_name.to_owned(),
-                        dep.to.qualified_name.to_owned(),
-                    )
-                    .map_err(|msg| ProcessingError::CircularTypeError(msg))?;
-            }
-        }
-
-        Ok(())
+        };
     }
 
     pub fn process_module(
@@ -236,16 +45,13 @@ impl SchemaRegistry {
 
         SchemaRegistry::add_types_to_module(&mut module, module_dec)
             .map_err(|e| ProcessingError::ModuleError(module_name.to_owned(), e))?;
+
         module.order_local_dependencies().map_err(|m| {
             ProcessingError::ModuleError(module_name.to_owned(), ModuleError::CircularDependency(m))
         })?;
 
         self.missing_module_lookups.remove(&module_name);
         self.modules.insert(module.module_name.to_owned(), module);
-
-        self.process_dependencies(&module_name)?;
-        self.resolve_dependent_abstractions(&module_name)?;
-        self.remove_resolved_missing_dependencies(&module_name)?;
 
         Ok(())
     }
@@ -256,45 +62,6 @@ impl SchemaRegistry {
             .and_then(|module| module.types_by_name.get(&model_reference.type_name))
     }
 
-    fn add_type_and_replace_dependencies(
-        module: &mut Module,
-        module_resolver: &ModuleResolver,
-        mut t: Type,
-    ) -> Result<(), ModuleError> {
-        let from = &t.named;
-
-        // remove any existing dependencies from this module.
-        if module.types_by_name.contains_key(&t.named.type_name) {
-            module.dependencies = module
-                .dependencies
-                .iter()
-                .filter(|d| &d.from != from)
-                .cloned()
-                .collect();
-        }
-
-        //        if t.is_abstract() {
-        //            module
-        //                .abstract_types_by_name
-        //                .insert(t.named.type_name.to_owned(), t);
-        //            return Ok(());
-        //        }
-
-        let mut new_type_deps: Vec<Dependency> = vec![];
-        for inner_struct in t.inner_structs().iter() {
-            if let Some(dependency) = inner_struct.as_dependency_from(from) {
-                new_type_deps.push(dependency.to_owned());
-                module.dependencies.push(dependency);
-            }
-        }
-
-        t.dependencies = new_type_deps;
-
-        module.types_by_name.insert(t.named.type_name.to_owned(), t);
-
-        Ok(())
-    }
-
     fn add_types_to_module(module: &mut Module, module_dec: &ModuleDec) -> Result<(), ModuleError> {
         let module_resolver = ModuleResolver(module.module_name.to_owned());
         let mut type_names: Vec<&String> = module_dec.0.keys().collect();
@@ -302,21 +69,63 @@ impl SchemaRegistry {
 
         for next in type_names {
             let t = module_resolver.type_from_dec(next, &module_dec.0[next])?;
-            SchemaRegistry::add_type_and_replace_dependencies(module, &module_resolver, t)?;
         }
 
         Ok(())
     }
 
-    pub fn new() -> SchemaRegistry {
-        return SchemaRegistry {
-            modules: HashMap::new(),
-            missing_type_lookups: HashMap::new(),
-            missing_module_lookups: HashSet::new(),
-            unresolved_compositions: HashMap::new(),
-            module_dep_mapper: DepMapper::new(),
-            type_dep_mapper: DepMapper::new(),
-        };
+    fn prepare_type_builder(
+        &self,
+        module_name: &str,
+        type_name: &str,
+        t: TypeDec,
+    ) -> Result<TypeBuilder, ModuleError> {
+        TypeBuilder::validate_type_name(type_name)?;
+        let reference = Reference::from(format!("{}.{}", module_name, type_name).as_str());
+        Ok(TypeBuilder::new(&reference, t, &self.types))
+    }
+
+    fn process_type_builder(
+        &mut self,
+        type_builder: &TypeBuilder,
+        secondary_dependents: &mut HashSet<Reference>,
+    ) -> Result<(), ModuleError> {
+        // attempt to build this type
+        let result = type_builder.process().map_err(|te| {
+            ModuleError::TypeDecError(type_builder.reference.type_name.to_owned(), te)
+        })?;
+
+        if let Ok(t) = result {
+            self.modules.get_mut(&reference.module_name).map(|m| {
+                m.types_by_name
+                    .insert(type_builder.reference.type_name.to_owned(), t.to_owned())
+            });
+
+            self.types
+                .insert(type_builder.reference.to_owned(), t.to_owned());
+
+            let dependents = self.missing_type_lookups.get(&type_builder.reference);
+            if let Some(dependents) = dependents {
+                secondary_dependents.extend(dependents);
+            }
+
+            self.missing_type_lookups.remove(&type_builder.reference);
+            Ok(())
+        } else {
+            let missing_dependency = result.unwrap_err();
+
+            if !self.modules.contains_key(&missing_dependency.module_name) {
+                self.missing_module_lookups
+                    .insert(missing_dependency.module_name.to_owned());
+            }
+
+            self.missing_type_lookups
+                .entry(missing_dependency.to_owned())
+                .or_default()
+                .insert(type_builder.reference.to_owned());
+
+            Ok(())
+        }
     }
 }
 

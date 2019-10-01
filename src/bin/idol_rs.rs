@@ -48,10 +48,8 @@ fn main() -> Result<(), i32> {
         1
     })?;
 
-    let registry = SchemaRegistry::from_modules(modules);
-
     let build_env = BuildEnv::new(opt.module);
-    for entry in registry.modules.iter() {
+    for entry in modules.iter() {
         build_env.build_module(entry.1).map_err(|e| {
             eprintln!("Problem building rust file: {}", e);
             1

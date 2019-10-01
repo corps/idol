@@ -31,17 +31,21 @@ pub enum AnonymousType {
     Fields(HashMap<String, Box<DenormalizedType>>),
     Enum(Vec<String>),
 
-    Repeated(Box<DenormalizedType>),
-    Map(Box<DenormalizedType>),
+    Repeated(Box<AnonymousType>),
+    Map(Box<AnonymousType>),
 }
 
 #[derive(Clone)]
 pub enum DenormalizedType {
-    Annotated(AnonymousType, Vec<String>, bool),
+    Annotated(AnonymousType, Vec<String>, bool, Vec<Reference>),
     Anonymous(AnonymousType),
 }
 
 impl DenormalizedType {
+    pub fn has_specialization(tags: &Vec<String>) -> bool {
+        tags.iter().any(|i| !i.contains(":"))
+    }
+
     pub fn from_type_struct(
         is_a: &TypeStruct,
         tags: &Vec<String>,
@@ -67,23 +71,24 @@ impl DenormalizedType {
 
         return Ok(DenormalizedType::wrap_with_annotations(
             match is_a.struct_kind {
-                StructKind::Map => {
-                    (AnonymousType::Map(Box::new(DenormalizedType::Anonymous(scalar_kind))))
-                }
-                StructKind::Repeated => {
-                    (AnonymousType::Repeated(Box::new(DenormalizedType::Anonymous(scalar_kind))))
-                }
+                StructKind::Map => (AnonymousType::Map(Box::new(scalar_kind))),
+                StructKind::Repeated => (AnonymousType::Repeated(Box::new(scalar_kind))),
                 StructKind::Scalar => scalar_kind,
             },
             tags,
         ));
     }
 
-    fn wrap_with_annotations(anon_type: AnonymousType, tags: &Vec<String>) -> DenormalizedType {
+    fn wrap_with_annotations(
+        anon_type: AnonymousType,
+        tags: &Vec<String>,
+        dependencies: &Vec<Reference>,
+    ) -> DenormalizedType {
         DenormalizedType::Annotated(
             anon_type,
             tags.to_owned(),
             DenormalizedType::has_specialization(tags),
+            dependencies.to_owned(),
         )
     }
 
@@ -125,47 +130,47 @@ impl DenormalizedType {
         }
     }
 
-    fn as_type_struct(&self) -> Result<(TypeStruct, Vec<String>), FieldDecError> {
+    pub fn as_type_struct(&self) -> Result<(TypeStruct, Vec<String>), FieldDecError> {
         let (anon_type, tags) = match self {
-            DenormalizedType::Annotated(inner, tags, _) => (inner, tags),
+            DenormalizedType::Annotated(inner, tags, _, _) => (inner, tags.to_owned()),
             DenormalizedType::Anonymous(inner) => (inner, Vec::new()),
         };
 
         let (struct_kind, anon_type) = match anon_type {
-            AnonymousType::Map(inner) => (StructKind::Map, inner),
-            AnonymousType::Repeated(inner) => (StructKind::Repeated, inner),
+            AnonymousType::Map(inner) => (StructKind::Map, inner.deref()),
+            AnonymousType::Repeated(inner) => (StructKind::Repeated, inner.deref()),
             _ => (StructKind::Scalar, anon_type),
         };
 
         Ok((
             match anon_type {
-                AnonymousType::Reference(reference, _) => TypeStruct {
+                AnonymousType::Reference(reference, _) => Ok(TypeStruct {
                     reference: reference.to_owned(),
                     struct_kind,
                     ..TypeStruct::default()
-                },
-                AnonymousType::Primitive(pt) => TypeStruct {
+                }),
+                AnonymousType::Primitive(pt) => Ok(TypeStruct {
                     primitive_type: pt.to_owned(),
                     struct_kind,
                     ..TypeStruct::default()
-                },
-                AnonymousType::Literal(lit, pt) => TypeStruct {
+                }),
+                AnonymousType::Literal(lit, pt) => Ok(TypeStruct {
                     literal: Some(lit.to_owned()),
                     primitive_type: pt.to_owned(),
                     struct_kind,
                     ..TypeStruct::default()
-                },
-                _ => FieldDecError::CompositionError(format!(
+                }),
+                _ => Err(FieldDecError::CompositionError(format!(
                     "Composition would result in a new complex type, but a field is expected."
-                )),
-            },
+                ))),
+            }?,
             tags.to_owned(),
         ))
     }
 
-    fn as_fields(&self) -> Result<(HashMap<String, Field>, Vec<String>), TypeDecError> {
+    pub fn as_fields(&self) -> Result<(HashMap<String, Field>, Vec<String>), TypeDecError> {
         let (anon_type, tags) = match self {
-            DenormalizedType::Annotated(inner, tags, _) => (inner, tags),
+            DenormalizedType::Annotated(inner, tags, _, _) => (inner, tags.to_owned()),
             DenormalizedType::Anonymous(inner) => (inner, Vec::new()),
         };
 
@@ -183,7 +188,7 @@ impl DenormalizedType {
                             type_struct,
                             tags,
                         },
-                    )
+                    );
                 }
                 return Ok((result, tags.to_owned()));
             }
@@ -195,9 +200,9 @@ impl DenormalizedType {
         }
     }
 
-    fn as_enum(&self) -> Result<(Vec<String>, Vec<String>), TypeDecError> {
+    pub fn as_enum(&self) -> Result<(Vec<String>, Vec<String>), TypeDecError> {
         let (anon_type, tags) = match self {
-            DenormalizedType::Annotated(inner, tags, _) => (inner, tags),
+            DenormalizedType::Annotated(inner, tags, _, _) => (inner, tags.to_owned()),
             DenormalizedType::Anonymous(inner) => (inner, Vec::new()),
         };
 

@@ -9,17 +9,6 @@ enum = ["Scalar", "Repeated", "Map"]
 [PrimitiveType]
 enum = ["int", "double", "string", "bool", "any"]
 
-# A structure describing a dependency relationship between two types.
-# Usually this comes from the types inside of a Structure, but it can also
-# come from a TypeStruct that builds a container from some other structure.
-[Dependency.fields]
-# The external type name required by the from type
-to = "Reference"
-# The information on the type needing the to type.
-from = "Reference"
-# Convenience attribute indicating when the module for the from and to are equal.
-is_local = "bool"
-
 # A reference describes the location of a type in the module system.
 [Reference.fields]
 # The module_name.type_name string
@@ -49,14 +38,11 @@ options = "string[]"
 tags = "string[]"
 # The name and module information of this type's definition.
 named = "Reference"
-# The dependencies found in this type's is_a or fields.
-dependencies = "Dependency[]"
 
 
 # Metadata contained about a module.
 [Module.fields]
 module_name = "string"
-dependencies = "Dependency[]"
 types_by_name = "Type{}"
 types_dependency_ordering = "string[]"
 

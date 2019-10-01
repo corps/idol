@@ -418,72 +418,7 @@ impl idol::ValidatesJson for Field {
 }
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
-pub struct Dependency {
-  pub r#from: Reference,
-  pub r#is_local: bool,
-  pub r#to: Reference,
-}
-
-impl idol::ExpandsJson for Dependency {
-  fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
-
-    match idol::get_list_scalar(value) {
-      Some(mut v) => {
-        return match Dependency::expand_json(&mut v) {
-          Some(v_) => Some(v_),
-          None => Some(v),
-        }
-        ;
-      }
-      None => (),
-    }
-    ;
-
-
-    if value.is_null() {
-      return Some(serde_json::value::to_value(Dependency::default()).unwrap());
-    }
-
-    if !value.is_object() {
-      return None;
-    }
-
-    match Reference::expand_json(&mut value["from"]) {
-      Some(v) => value["from"] = v,
-      None => (),
-    }
-
-    match bool::expand_json(&mut value["is_local"]) {
-      Some(v) => value["is_local"] = v,
-      None => (),
-    }
-
-    match Reference::expand_json(&mut value["to"]) {
-      Some(v) => value["to"] = v,
-      None => (),
-    }
-
-    None
-  }
-}
-
-impl idol::ValidatesJson for Dependency {
-  fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
-    if !value.is_object() {
-      return Err(idol::ValidationError(format!("expected an object but found {}", value)));
-    }
-
-    Reference::validate_json(&value["from"]).map_err(|e| idol::ValidationError(format!("field from: {}", e)))?;
-    bool::validate_json(&value["is_local"]).map_err(|e| idol::ValidationError(format!("field is_local: {}", e)))?;
-    Reference::validate_json(&value["to"]).map_err(|e| idol::ValidationError(format!("field to: {}", e)))?;
-
-    Ok(())
-  }
-}
-
-#[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Type {
-  pub r#dependencies: Vec<Dependency>,
   pub r#fields: HashMap<String, Field>,
   pub r#is_a: Option<TypeStruct>,
   pub r#named: Reference,
@@ -513,11 +448,6 @@ impl idol::ExpandsJson for Type {
 
     if !value.is_object() {
       return None;
-    }
-
-    match Vec::<Dependency>::expand_json(&mut value["dependencies"]) {
-      Some(v) => value["dependencies"] = v,
-      None => (),
     }
 
     match HashMap::<String, Field>::expand_json(&mut value["fields"]) {
@@ -555,7 +485,6 @@ impl idol::ValidatesJson for Type {
       return Err(idol::ValidationError(format!("expected an object but found {}", value)));
     }
 
-    Vec::<Dependency>::validate_json(&value["dependencies"]).map_err(|e| idol::ValidationError(format!("field dependencies: {}", e)))?;
     HashMap::<String, Field>::validate_json(&value["fields"]).map_err(|e| idol::ValidationError(format!("field fields: {}", e)))?;
     Option::<TypeStruct>::validate_json(&value["is_a"]).map_err(|e| idol::ValidationError(format!("field is_a: {}", e)))?;
     Reference::validate_json(&value["named"]).map_err(|e| idol::ValidationError(format!("field named: {}", e)))?;
@@ -568,7 +497,6 @@ impl idol::ValidatesJson for Type {
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Module {
-  pub r#dependencies: Vec<Dependency>,
   pub r#module_name: String,
   pub r#types_by_name: HashMap<String, Type>,
   pub r#types_dependency_ordering: Vec<String>,
@@ -598,11 +526,6 @@ impl idol::ExpandsJson for Module {
       return None;
     }
 
-    match Vec::<Dependency>::expand_json(&mut value["dependencies"]) {
-      Some(v) => value["dependencies"] = v,
-      None => (),
-    }
-
     match String::expand_json(&mut value["module_name"]) {
       Some(v) => value["module_name"] = v,
       None => (),
@@ -628,7 +551,6 @@ impl idol::ValidatesJson for Module {
       return Err(idol::ValidationError(format!("expected an object but found {}", value)));
     }
 
-    Vec::<Dependency>::validate_json(&value["dependencies"]).map_err(|e| idol::ValidationError(format!("field dependencies: {}", e)))?;
     String::validate_json(&value["module_name"]).map_err(|e| idol::ValidationError(format!("field module_name: {}", e)))?;
     HashMap::<String, Type>::validate_json(&value["types_by_name"]).map_err(|e| idol::ValidationError(format!("field types_by_name: {}", e)))?;
     Vec::<String>::validate_json(&value["types_dependency_ordering"]).map_err(|e| idol::ValidationError(format!("field types_dependency_ordering: {}", e)))?;

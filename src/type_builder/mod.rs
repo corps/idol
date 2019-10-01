@@ -5,6 +5,9 @@ use crate::err::{FieldDecError, ModuleError, TypeDecError};
 use crate::models::declarations::*;
 use crate::schema::*;
 use crate::type_builder::denormalized::AnonymousType::Primitive;
+use crate::type_builder::denormalized::ComposeResult::{
+    ComposeFields, TakeEither, TakeLeft, TakeRight, WidenTo,
+};
 use crate::type_builder::denormalized::DenormalizedType::Anonymous;
 use crate::type_builder::denormalized::{AnonymousType, ComposeResult, DenormalizedType};
 use regex::Regex;
@@ -15,6 +18,7 @@ use std::ops::Deref;
 pub struct TypeBuilder<'a> {
     resolver: ModuleResolver,
     type_dec: TypeDec,
+    pub reference: Reference,
     types_map: &'a HashMap<Reference, Type>,
 }
 
@@ -36,13 +40,14 @@ impl ModuleResolver {
 
 impl<'a> TypeBuilder<'a> {
     pub fn new(
-        module_name: &str,
+        reference: &Reference,
         type_dec: TypeDec,
         types_map: &'a HashMap<Reference, Type>,
     ) -> TypeBuilder<'a> {
         TypeBuilder {
             type_dec,
-            resolver: ModuleResolver(module_name.to_string()),
+            reference: reference.to_owned(),
+            resolver: ModuleResolver(reference.module_name.to_owned()),
             types_map,
         }
     }
@@ -60,15 +65,13 @@ impl<'a> TypeBuilder<'a> {
         Ok(())
     }
 
-    pub fn process(&mut self, type_name: &str) -> Result<Result<Type, Reference>, TypeDecError> {
+    pub fn process(&self) -> Result<Result<Type, Reference>, TypeDecError> {
         lazy_static! {
             static ref FIELD_NAME_REGEX: Regex = Regex::new(r"^[a-zA-Z_]+[0123456789]*$").unwrap();
         }
 
         let mut t = Type::default();
-
-        //        TypeBuilder::validate_type_name(type_name)?;
-        t.named = Reference::from(self.resolver.qualify(type_name).as_ref());
+        t.named = self.reference.to_owned();
         t.tags = self.type_dec.tags.to_owned();
 
         let mut has_head_type = false;
@@ -122,17 +125,6 @@ impl<'a> TypeBuilder<'a> {
             }
         }
 
-        if !has_head_type {
-            if self.type_dec.is_a.len() == 1 {
-                t.is_a = Some(
-                    self.parse_type_struct(self.type_dec.is_a[0].as_str())
-                        .map_err(|fe| TypeDecError::IsAError(fe))?,
-                );
-
-                return Ok(Ok(t));
-            }
-        }
-
         let is_a_kind = self.compose_is_a_kind()?;
         if let Err(missing_reference) = is_a_kind {
             return Ok(Err(missing_reference.to_owned()));
@@ -154,41 +146,43 @@ impl<'a> TypeBuilder<'a> {
                 );
 
                 if t.options.len() > 0 {
-                    match composed {
-                        (ComposeResult::TakeLeft, _) => {}
-                        (ComposeResult::TakeEither, _) => {}
-                        (
-                            ComposeResult::TakeRight,
-                            DenormalizedType::Anonymous(AnonymousType::Enum(options)),
-                        ) => {
-                            t.options = options.to_owned();
-                        }
-                        (ComposeResult::WidenTo(AnonymousType::Enum(options)), _) => {
-                            t.options = options.to_owned();
-                        }
-                        _ => {
-                            return Err(TypeDecError::MixedDec(format!(
-                                "Declaration was for an enum but types of is_a differ"
-                            )));
-                        }
-                    }
+                    let (options, _) = kind.as_enum()?;
+                    t.options = options;
                 }
 
                 if t.fields.len() > 0 {
-                    //                    match composed {
-                    //                        (ComposeResult::TakeLeft, _) => {}
-                    //                        (ComposeResult::TakeEither, _) => {}
-                    //                        (
-                    //                            ComposeResult::TakeRight,
-                    //                            Kind::Unspecialized(UnspecializedKind::Fields(fields)),
-                    //                        ) => {
-                    //                            let new_fields: HashMap<String, Field> = HashMap::new();
-                    //                        }
-                    //                    }
+                    let (fields, _) = kind.as_fields()?;
+                    t.fields = fields;
                 }
             }
         } else {
+            if is_a_kind.is_none() {
+                return Err(TypeDecError::IsAError(FieldDecError::UnspecifiedType));
+            }
 
+            let is_a_kind = is_a_kind.unwrap();
+
+            is_a_kind
+                .as_enum()
+                .map(|(options, tags)| {
+                    t.options = options;
+                    t.tags = tags;
+                })
+                .or_else(|_| {
+                    is_a_kind.as_fields().map(|(fields, tags)| {
+                        t.fields = fields;
+                        t.tags = tags;
+                    })
+                })
+                .or_else(|_| {
+                    is_a_kind
+                        .as_type_struct()
+                        .map(|(ts, tags)| {
+                            t.is_a = Some(ts);
+                            t.tags = tags;
+                        })
+                        .map_err(|fe| TypeDecError::IsAError(fe))
+                })?;
         }
 
         Ok(Ok(t.to_owned()))
@@ -223,49 +217,77 @@ impl<'a> TypeBuilder<'a> {
                 .parse_type_struct(type_dec)
                 .map_err(|fe| TypeDecError::IsAError(fe))?;
 
-            let next_kind = DenormalizedType::from_type_struct(&ts, self.types_map);
+            let next_kind = DenormalizedType::from_type_struct(&ts, &Vec::new(), self.types_map);
             if let Err(missing_ref) = next_kind {
                 return Ok(Err(missing_ref));
             }
             let next_kind = next_kind.unwrap();
 
-            match cur_kind.clone() {
-                None => {
+            if cur_kind.is_none() {
+                cur_kind = Some(next_kind);
+                continue;
+            }
+
+            let left_kind = cur_kind.clone().unwrap();
+            let compose_result = left_kind
+                .compose(&next_kind, &self.type_dec.variance)
+                .map_err(|s| TypeDecError::IsAError(FieldDecError::CompositionError(s)))?;
+
+            match compose_result {
+                ComposeResult::TakeEither => {}
+                ComposeResult::TakeLeft => {}
+                ComposeResult::WidenTo(k) => {
+                    cur_kind = Some(DenormalizedType::Anonymous(k));
+                }
+                ComposeResult::TakeRight => {
                     cur_kind = Some(next_kind);
                 }
-                Some(left_kind) => {
-                    let compose_result = cur_kind
-                        .clone()
-                        .unwrap()
-                        .compose(&next_kind, &self.type_dec.variance)
-                        .map_err(|s| TypeDecError::IsAError(FieldDecError::CompositionError(s)))?;
-
-                    match compose_result {
-                        ComposeResult::TakeEither => {
-                            continue;
-                        }
-                        ComposeResult::TakeLeft => {
-                            continue;
-                        }
-                        ComposeResult::WidenTo(k) => {
-                            cur_kind = Some(DenormalizedType::Anonymous(k));
-                        }
-                        ComposeResult::TakeRight => {
-                            cur_kind = Some(next_kind);
-                        }
-                        ComposeResult::ComposeFields(fields_result) => {
-                            cur_kind = Some(DenormalizedType::apply_compose_fields(
-                                &left_kind,
-                                &next_kind,
-                                &fields_result,
-                            )?);
-                        }
-                    }
+                ComposeResult::ComposeFields(fields_result) => {
+                    cur_kind = Some(TypeBuilder::apply_compose_fields(
+                        &left_kind,
+                        &next_kind,
+                        &fields_result,
+                    )?);
                 }
             }
         }
 
         return Ok(Ok(cur_kind));
+    }
+
+    fn apply_compose_fields(
+        left: &DenormalizedType,
+        right: &DenormalizedType,
+        fields_result: &HashMap<String, Box<ComposeResult>>,
+    ) -> Result<DenormalizedType, TypeDecError> {
+        match (left, right) {
+            (Anonymous(AnonymousType::Fields(left_fields)), Anonymous(AnonymousType::Fields(right_fields))) => {
+                let mut result_fields: HashMap<String, Box<DenormalizedType>> = HashMap::new();
+
+                for (k, v) in fields_result.iter() {
+                    match v.deref() {
+                        TakeLeft => {
+                            result_fields.insert(k.to_owned(), left_fields.get(k).unwrap().to_owned());
+                        }
+                        TakeEither => {
+                            result_fields.insert(k.to_owned(), left_fields.get(k).unwrap().to_owned());
+                        }
+                        TakeRight => {
+                            result_fields.insert(k.to_owned(), right_fields.get(k).unwrap().to_owned());
+                        }
+                        WidenTo(t) => {
+                            result_fields.insert(k.to_owned(), Box::new(Anonymous(t.to_owned())));
+                        }
+                        ComposeFields(_) => {
+                            return Err(TypeDecError::FieldError(k.to_owned(), FieldDecError::CompositionError(format!("field requires further struct merging, but recursive struct merging is not allowed."))));
+                        }
+                    }
+                }
+
+                Ok(Anonymous(AnonymousType::Fields(result_fields)))
+            }
+            _ => unreachable!("ComposeFields result should only have been returned from composing two fields kinds!"),
+        }
     }
 
     pub fn parse_type_struct(&self, field_val: &str) -> Result<TypeStruct, FieldDecError> {
