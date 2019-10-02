@@ -77,12 +77,11 @@ impl SchemaRegistry {
         }
 
         self.missing_module_lookups.remove(&module_name);
-        self.modules.insert(module_name.to_owned(), module);
 
-        let mut module = self.modules.get_mut(modul_name).unwrap();
         self.add_types_to_module(&mut module, module_dec)
             .map_err(|e| ProcessingError::ModuleError(module_name.to_owned(), e))?;
 
+        self.modules.insert(module_name.to_owned(), module);
         Ok(())
     }
 
@@ -108,11 +107,14 @@ impl SchemaRegistry {
             let type_dec = module_dec.0.get(type_name).unwrap();
             let type_builder_result =
                 self.run_type_builder(&module.module_name, type_name, type_dec.to_owned())?;
-            self.process_type_builder_result(
+
+            if let Some(t) = self.process_type_builder_result(
                 type_dec,
                 &Reference::from(format!("{}.{}", module.module_name, type_name).as_ref()),
                 type_builder_result,
-            )?;
+            )? {
+                module.types_by_name.insert(type_name.to_owned(), t);
+            }
         }
 
         Ok(())
@@ -148,7 +150,7 @@ impl SchemaRegistry {
         type_dec: &TypeDec,
         reference: &Reference,
         result: Result<Type, Reference>,
-    ) -> Result<(), ModuleError> {
+    ) -> Result<Option<Type>, ModuleError> {
         if let Ok(t) = result {
             eprintln!("Going to add {:?}", reference);
             self.modules.get_mut(&reference.module_name).map(|m| {
@@ -177,7 +179,7 @@ impl SchemaRegistry {
                 }
             }
 
-            Ok(())
+            Ok(Some(t.to_owned()))
         } else {
             let missing_dependency = result.unwrap_err();
 
@@ -198,7 +200,7 @@ impl SchemaRegistry {
             self.incomplete_types
                 .insert(reference.to_owned(), type_dec.to_owned());
 
-            Ok(())
+            Ok(None)
         }
     }
 }
