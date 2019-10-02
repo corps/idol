@@ -13,7 +13,7 @@ use std::ops::Deref;
 impl DenormalizedType {
     fn unwrap_compose_params(&self) -> (&AnonymousType, bool) {
         match self {
-            (Annotated(inner, _, specialized, _)) => (inner, specialized.to_owned()),
+            (Annotated(inner, _, specialized)) => (inner, specialized.to_owned()),
             (Anonymous(inner)) => (inner, false),
         }
     }

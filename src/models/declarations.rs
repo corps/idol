@@ -5,25 +5,25 @@ use std::convert::TryFrom;
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
 pub enum Variance {
-  Invariant,
   Covariant,
+  Invariant,
   Contravariant,
 }
 
 impl Default for Variance {
   fn default() -> Variance {
-    Variance::Invariant
+    Variance::Covariant
   }
 }
 
 impl From<usize> for Variance {
   fn from(i: usize) -> Variance {
     if i >= 3 {
-      Variance::Invariant
-    } else if i == 0 {
-      Variance::Invariant
-    } else if i == 1 {
       Variance::Covariant
+    } else if i == 0 {
+      Variance::Covariant
+    } else if i == 1 {
+      Variance::Invariant
     } else if i == 2 {
       Variance::Contravariant
     } else {
@@ -35,8 +35,8 @@ impl From<usize> for Variance {
 impl Into<usize> for Variance {
   fn into(self) -> usize {
     match self {
-      Variance::Invariant => 0,
-      Variance::Covariant => 1,
+      Variance::Covariant => 0,
+      Variance::Invariant => 1,
       Variance::Contravariant => 2,
     }
   }

@@ -379,7 +379,11 @@ impl<'a> TypeBuilder<'a> {
     }
 
     pub fn is_model_ref<'x>(type_val: &'x str) -> bool {
-        return type_val.find(".").is_some()
-            || type_val.chars().next().unwrap_or(' ').is_ascii_uppercase();
+        return type_val.chars().next().unwrap_or(' ').is_ascii_uppercase()
+            || type_val.find('.').is_some();
+    }
+
+    pub fn is_local_model_ref<'x>(type_val: &'x str) -> bool {
+        return TypeBuilder::is_model_ref(type_val) && type_val.find('.').is_none();
     }
 }

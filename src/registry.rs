@@ -4,18 +4,26 @@ use crate::models::declarations::*;
 use crate::schema::*;
 use crate::type_builder::TypeBuilder;
 use regex::Regex;
-use std::collections::HashMap;
 use std::collections::HashSet;
+use std::collections::{BTreeSet, HashMap};
 
-#[derive(Debug)]
-pub struct SchemaRegistry<'a> {
+pub struct SchemaRegistry {
     pub modules: HashMap<String, Module>,
+
     pub types: HashMap<Reference, Type>,
+
     pub missing_module_lookups: HashSet<String>,
-    pub missing_type_lookups: HashMap<Reference, HashSet<Reference>>,
-    pub type_builders: HashMap<Reference, TypeBuilder<'a>>,
+    // Added after attempting to build a type
+    // BTreeSet here is used for the consistent ordering property.
+    pub missing_type_lookups: HashMap<Reference, BTreeSet<Reference>>,
+    pub incomplete_types: HashMap<Reference, TypeDec>,
+
+    // These are updated on every pass of a module, and not just when a type is fully resolved.
     pub type_dep_mapper: DepMapper,
+    pub module_dep_mapper: DepMapper,
 }
+
+// in order of their local dependency (so no dependencies in self module)
 
 impl SchemaRegistry {
     pub fn new() -> SchemaRegistry {
@@ -24,8 +32,11 @@ impl SchemaRegistry {
             types: HashMap::new(),
             missing_type_lookups: HashMap::new(),
             missing_module_lookups: HashSet::new(),
-            type_builders: HashMap::new(),
+
+            incomplete_types: HashMap::new(),
+
             type_dep_mapper: DepMapper::new(),
+            module_dep_mapper: DepMapper::new(),
         };
     }
 
@@ -42,15 +53,31 @@ impl SchemaRegistry {
 
         let mut module = Module::default();
         module.module_name = module_name.to_owned();
+        module
+            .order_local_dependencies(module_dec)
+            .map_err(|m| ProcessingError::CircularTypeError(m))?;
 
-        SchemaRegistry::add_types_to_module(&mut module, module_dec)
-            .map_err(|e| ProcessingError::ModuleError(module_name.to_owned(), e))?;
+        // TODO: OMG DRY this up.
+        for (from_dep, to_dep) in module.get_all_declaration_dependencies(module_dec) {
+            self.module_dep_mapper
+                .add_dependency(
+                    from_dep.module_name.to_owned(),
+                    to_dep.module_name.to_owned(),
+                )
+                .map_err(|msg| ProcessingError::CircularImportError(msg))?;
 
-        module.order_local_dependencies().map_err(|m| {
-            ProcessingError::ModuleError(module_name.to_owned(), ModuleError::CircularDependency(m))
-        })?;
+            self.type_dep_mapper
+                .add_dependency(
+                    from_dep.qualified_name.to_owned(),
+                    to_dep.qualified_name.to_owned(),
+                )
+                .map_err(|msg| ProcessingError::CircularTypeError(msg))?;
+        }
 
         self.missing_module_lookups.remove(&module_name);
+        self.add_types_to_module(&mut module, module_dec)
+            .map_err(|e| ProcessingError::ModuleError(module_name.to_owned(), e))?;
+
         self.modules.insert(module.module_name.to_owned(), module);
 
         Ok(())
@@ -62,54 +89,84 @@ impl SchemaRegistry {
             .and_then(|module| module.types_by_name.get(&model_reference.type_name))
     }
 
-    fn add_types_to_module(module: &mut Module, module_dec: &ModuleDec) -> Result<(), ModuleError> {
-        let module_resolver = ModuleResolver(module.module_name.to_owned());
-        let mut type_names: Vec<&String> = module_dec.0.keys().collect();
-        type_names.sort();
+    fn add_types_to_module(
+        &mut self,
+        module: &mut Module,
+        module_dec: &ModuleDec,
+    ) -> Result<(), ModuleError> {
+        let mut types = self.types.to_owned();
 
-        for next in type_names {
-            let t = module_resolver.type_from_dec(next, &module_dec.0[next])?;
+        for type_name in module.types_dependency_ordering.iter() {
+            let type_dec = module_dec.0.get(type_name).unwrap();
+            let type_builder_result =
+                self.run_type_builder(&module.module_name, type_name, type_dec.to_owned())?;
+            self.process_type_builder_result(
+                type_dec,
+                &Reference::from(format!("{}.{}", module.module_name, type_name).as_ref()),
+                type_builder_result,
+            )?;
         }
 
         Ok(())
     }
 
-    fn prepare_type_builder(
+    fn run_type_builder(
         &self,
+        module_name: &String,
+        type_name: &String,
+        type_dec: TypeDec,
+    ) -> Result<Result<Type, Reference>, ModuleError> {
+        let type_builder =
+            SchemaRegistry::prepare_type_builder(&self.types, module_name, type_name, type_dec)?;
+
+        Ok(type_builder.process().map_err(|te| {
+            ModuleError::TypeDecError(type_builder.reference.type_name.to_owned(), te)
+        })?)
+    }
+
+    fn prepare_type_builder<'a>(
+        types: &'a HashMap<Reference, Type>,
         module_name: &str,
         type_name: &str,
         t: TypeDec,
-    ) -> Result<TypeBuilder, ModuleError> {
+    ) -> Result<TypeBuilder<'a>, ModuleError> {
         TypeBuilder::validate_type_name(type_name)?;
         let reference = Reference::from(format!("{}.{}", module_name, type_name).as_str());
-        Ok(TypeBuilder::new(&reference, t, &self.types))
+        Ok(TypeBuilder::new(&reference, t, types))
     }
 
-    fn process_type_builder(
+    fn process_type_builder_result(
         &mut self,
-        type_builder: &TypeBuilder,
-        secondary_dependents: &mut HashSet<Reference>,
+        type_dec: &TypeDec,
+        reference: &Reference,
+        result: Result<Type, Reference>,
     ) -> Result<(), ModuleError> {
-        // attempt to build this type
-        let result = type_builder.process().map_err(|te| {
-            ModuleError::TypeDecError(type_builder.reference.type_name.to_owned(), te)
-        })?;
-
         if let Ok(t) = result {
             self.modules.get_mut(&reference.module_name).map(|m| {
                 m.types_by_name
-                    .insert(type_builder.reference.type_name.to_owned(), t.to_owned())
+                    .insert(reference.type_name.to_owned(), t.to_owned())
             });
 
-            self.types
-                .insert(type_builder.reference.to_owned(), t.to_owned());
+            self.types.insert(reference.to_owned(), t.to_owned());
 
-            let dependents = self.missing_type_lookups.get(&type_builder.reference);
+            let dependents = self.missing_type_lookups.remove(&reference);
+            self.incomplete_types.remove(&reference);
+
             if let Some(dependents) = dependents {
-                secondary_dependents.extend(dependents);
+                for dependent in dependents.iter() {
+                    let type_dec = self.incomplete_types.get(dependent).unwrap().to_owned();
+
+                    let type_builder_result = self.run_type_builder(
+                        &dependent.module_name,
+                        &dependent.type_name,
+                        type_dec.to_owned(),
+                    )?;
+
+                    // I'd love to just avoid recursion here and use a processing queue instead.
+                    self.process_type_builder_result(&type_dec, dependent, type_builder_result)?;
+                }
             }
 
-            self.missing_type_lookups.remove(&type_builder.reference);
             Ok(())
         } else {
             let missing_dependency = result.unwrap_err();
@@ -122,122 +179,13 @@ impl SchemaRegistry {
             self.missing_type_lookups
                 .entry(missing_dependency.to_owned())
                 .or_default()
-                .insert(type_builder.reference.to_owned());
+                .insert(reference.to_owned());
+
+            self.incomplete_types
+                .insert(reference.to_owned(), type_dec.to_owned());
 
             Ok(())
         }
-    }
-}
-
-struct ModuleResolver(String);
-
-impl ModuleResolver {
-    fn qualify(&self, name: &str) -> String {
-        if name.find(".").is_some() {
-            return name.to_owned();
-        }
-
-        if name.chars().next().unwrap_or(' ').is_ascii_uppercase() {
-            return format!("{}.{}", self.0, name);
-        }
-
-        return name.to_owned();
-    }
-
-    fn type_from_dec(&self, type_name: &str, type_dec: &TypeDec) -> Result<Type, ModuleError> {
-        lazy_static! {
-            static ref TYPE_NAME_REGEX: Regex =
-                Regex::new(r"^[A-Z]+[a-zA-Z_]*[0123456789]*$").unwrap();
-        }
-
-        if !TYPE_NAME_REGEX.is_match(type_name) {
-            return Err(ModuleError::BadTypeNameError(type_name.to_owned()));
-        }
-
-        let type_resolver = TypeResolver {
-            module_resolver: &self,
-        };
-
-        let named = Reference::from(self.qualify(type_name).as_ref());
-
-        Ok(Type {
-            named,
-            ..type_resolver
-                .type_of_dec(type_dec)
-                .map_err(|fe| ModuleError::TypeDecError(type_name.to_owned(), fe))?
-        })
-    }
-}
-
-struct TypeResolver<'a> {
-    module_resolver: &'a ModuleResolver,
-}
-
-impl<'a> TypeResolver<'a> {
-    fn qualify(&self, name: &str) -> String {
-        return self.module_resolver.qualify(name);
-    }
-
-    fn type_of_dec(&self, type_dec: &TypeDec) -> Result<Type, TypeDecError> {
-        lazy_static! {
-            static ref FIELD_NAME_REGEX: Regex = Regex::new(r"^[a-zA-Z_]+[0123456789]*$").unwrap();
-        }
-
-        let mut result = Type::default();
-        result.tags = type_dec.tags.to_owned();
-
-        return Ok(result);
-        //        if type_dec.is_a.len() > 0 {
-        //            result.is_a = Some(
-        //                self.type_struct_of_dec(&type_dec.is_a)
-        //                    .map_err(|e| TypeDecError::IsAError(e))?,
-        //            );
-        //            return Ok(result);
-        //        }
-        //
-        //        if type_dec.r#enum.len() > 0 {
-        //            result.options = type_dec.r#enum.to_owned();
-        //            return Ok(result);
-        //        }
-        //
-        //        for field in type_dec.fields.iter() {
-        //            let field_name = field.0.to_owned();
-        //
-        //            if !FIELD_NAME_REGEX.is_match(&field_name) {
-        //                return Err(TypeDecError::BadFieldNameError(field_name.to_owned()));
-        //            }
-        //
-        //            let field_dec = field.1;
-        //            let tags = Vec::from(&field_dec.0[1..]);
-        //            if field_dec.0.len() < 1 {
-        //                return Err(TypeDecError::FieldError(
-        //                    field_name.to_owned(),
-        //                    FieldDecError::UnspecifiedType,
-        //                ));
-        //            }
-        //
-        //            let type_struct = self
-        //                .type_struct_of_dec(&field_dec.0[0])
-        //                .map_err(|e| TypeDecError::FieldError(field_name.to_owned(), e))?;
-        //
-        //            if type_struct.literal.is_some() {
-        //                return Err(TypeDecError::FieldError(
-        //                    field_name.to_owned(),
-        //                    FieldDecError::LiteralInStructError,
-        //                ));
-        //            }
-        //
-        //            result.fields.insert(
-        //                field_name.to_owned(),
-        //                Field {
-        //                    field_name,
-        //                    tags,
-        //                    type_struct,
-        //                },
-        //            );
-        //        }
-        //
-        //        return Ok(result);
     }
 }
 
@@ -279,16 +227,16 @@ mod tests {
         assert_eq!(result, Ok(()));
         assert_eq!(
             registry.missing_module_lookups,
-            HashSet::from_iter(vec!["b".to_owned()])
+            HashSet::from_iter(vec!["b".to_owned(), "c".to_owned()])
         );
-        assert_eq!(
-            registry
-                .missing_type_lookups
-                .keys()
-                .map(|r| r.qualified_name.to_owned())
-                .collect::<Vec<String>>(),
-            vec!["b.B".to_owned()]
-        );
+
+        let mut missing_type_names = registry
+            .missing_type_lookups
+            .keys()
+            .map(|r| r.qualified_name.to_owned())
+            .collect::<Vec<String>>();
+        missing_type_names.sort();
+        assert_eq!(missing_type_names, vec!["b.B".to_owned(), "c.C".to_owned()]);
     }
 
     #[test]
@@ -426,13 +374,14 @@ mod tests {
             ..TypeDec::default()
         };
         module_dec.0.insert("A".to_owned(), type_dec);
+
         let result = registry.process_module("c".to_owned(), &module_dec);
 
-        assert!(result.is_err());
-
-        match result {
-            Err(ProcessingError::CircularImportError(desc)) => assert_eq!(desc, "b <- c <- a <- b"),
-            _ => assert!(false),
-        }
+        assert_eq!(
+            result,
+            Err(ProcessingError::CircularImportError(
+                "b <- c <- a <- b".to_string()
+            ))
+        );
     }
 }

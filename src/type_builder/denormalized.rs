@@ -5,7 +5,8 @@ use crate::type_builder::denormalized::AnonymousType::Primitive;
 use crate::type_builder::denormalized::DenormalizedType::{Annotated, Anonymous};
 use regex::Regex;
 use std::cmp::Ordering;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
+use std::iter::FromIterator;
 use std::ops::Deref;
 
 // A denormalized form of Type that contains resolved dependency information and is designed
@@ -37,7 +38,7 @@ pub enum AnonymousType {
 
 #[derive(Clone)]
 pub enum DenormalizedType {
-    Annotated(AnonymousType, Vec<String>, bool, Vec<Reference>),
+    Annotated(AnonymousType, Vec<String>, bool),
     Anonymous(AnonymousType),
 }
 
@@ -79,16 +80,11 @@ impl DenormalizedType {
         ));
     }
 
-    fn wrap_with_annotations(
-        anon_type: AnonymousType,
-        tags: &Vec<String>,
-        dependencies: &Vec<Reference>,
-    ) -> DenormalizedType {
+    fn wrap_with_annotations(anon_type: AnonymousType, tags: &Vec<String>) -> DenormalizedType {
         DenormalizedType::Annotated(
             anon_type,
             tags.to_owned(),
             DenormalizedType::has_specialization(tags),
-            dependencies.to_owned(),
         )
     }
 
@@ -132,7 +128,7 @@ impl DenormalizedType {
 
     pub fn as_type_struct(&self) -> Result<(TypeStruct, Vec<String>), FieldDecError> {
         let (anon_type, tags) = match self {
-            DenormalizedType::Annotated(inner, tags, _, _) => (inner, tags.to_owned()),
+            DenormalizedType::Annotated(inner, tags, _) => (inner, tags.to_owned()),
             DenormalizedType::Anonymous(inner) => (inner, Vec::new()),
         };
 
@@ -170,7 +166,7 @@ impl DenormalizedType {
 
     pub fn as_fields(&self) -> Result<(HashMap<String, Field>, Vec<String>), TypeDecError> {
         let (anon_type, tags) = match self {
-            DenormalizedType::Annotated(inner, tags, _, _) => (inner, tags.to_owned()),
+            DenormalizedType::Annotated(inner, tags, _) => (inner, tags.to_owned()),
             DenormalizedType::Anonymous(inner) => (inner, Vec::new()),
         };
 
@@ -202,7 +198,7 @@ impl DenormalizedType {
 
     pub fn as_enum(&self) -> Result<(Vec<String>, Vec<String>), TypeDecError> {
         let (anon_type, tags) = match self {
-            DenormalizedType::Annotated(inner, tags, _, _) => (inner, tags.to_owned()),
+            DenormalizedType::Annotated(inner, tags, _) => (inner, tags.to_owned()),
             DenormalizedType::Anonymous(inner) => (inner, Vec::new()),
         };
 

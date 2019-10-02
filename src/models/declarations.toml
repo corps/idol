@@ -41,4 +41,4 @@ fields.variance = "Variance"
 #   Covariant will allow fields to belong to anys.
 #   Contravariant will widen to an any.
 [Variance]
-enum = ["Invariant", "Covariant", "Contravariant"]
+enum = ["Covariant", "Invariant", "Contravariant"]

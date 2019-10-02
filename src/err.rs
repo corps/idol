@@ -24,7 +24,6 @@ pub enum TypeDecError {
 pub enum ModuleError {
     TypeDecError(String, TypeDecError),
     BadTypeNameError(String),
-    CircularDependency(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -50,11 +49,9 @@ impl Display for ProcessingError {
             ProcessingError::CircularImportError(desc) => {
                 write!(f, "circular module dependency found: {}", desc)
             }
-            ProcessingError::CircularTypeError(desc) => write!(
-                f,
-                "circular dependency found via an abstract type: {}",
-                desc
-            ),
+            ProcessingError::CircularTypeError(desc) => {
+                write!(f, "circular type dependency found: {}", desc)
+            }
             ProcessingError::DuplicateImportError(m) => write!(
                 f,
                 "module {}: process_module was called twice for same module!",
@@ -69,9 +66,6 @@ impl Display for ModuleError {
         (match self {
             ModuleError::TypeDecError(m, err) => write!(f, "declaration {}: {}", m, err),
             ModuleError::BadTypeNameError(m) => write!(f, "declaration {}", m),
-            ModuleError::CircularDependency(msg) => {
-                write!(f, "circular dependency between declarations: {}", msg)
-            }
         })
     }
 }
