@@ -152,9 +152,7 @@ impl SchemaRegistry {
         result: Result<Type, Reference>,
     ) -> Result<Option<Type>, ModuleError> {
         if let Ok(t) = result {
-            eprintln!("Going to add {:?}", reference);
             self.modules.get_mut(&reference.module_name).map(|m| {
-                eprintln!("Added it to types by name");
                 m.types_by_name
                     .insert(reference.type_name.to_owned(), t.to_owned())
             });

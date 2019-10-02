@@ -57,6 +57,7 @@ impl<'a> TypeBuilder<'a> {
         let mut t = Type::default();
         t.named = self.reference.to_owned();
         t.tags = self.type_dec.tags.to_owned();
+        eprintln!("Tags were {:?}", t.tags);
 
         let mut has_head_type = false;
 
@@ -163,6 +164,7 @@ impl<'a> TypeBuilder<'a> {
                         .map(|(ts, tags)| {
                             t.is_a = Some(ts);
                             t.tags = tags;
+                            eprintln!("Unwrapped tags were {:?}", t.tags);
                         })
                         .map_err(|fe| TypeDecError::IsAError(fe))
                 })?;
