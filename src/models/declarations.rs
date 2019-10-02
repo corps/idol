@@ -119,6 +119,7 @@ pub struct TypeDec {
   pub r#fields: HashMap<String, FieldDec>,
   pub r#is_a: Vec<String>,
   pub r#tags: Vec<String>,
+  pub r#trim: bool,
   pub r#variance: Variance,
 }
 
@@ -166,6 +167,11 @@ impl idol::ExpandsJson for TypeDec {
       None => (),
     }
 
+    match bool::expand_json(&mut value["trim"]) {
+      Some(v) => value["trim"] = v,
+      None => (),
+    }
+
     match Variance::expand_json(&mut value["variance"]) {
       Some(v) => value["variance"] = v,
       None => (),
@@ -185,6 +191,7 @@ impl idol::ValidatesJson for TypeDec {
     HashMap::<String, FieldDec>::validate_json(&value["fields"]).map_err(|e| idol::ValidationError(format!("field fields: {}", e)))?;
     Vec::<String>::validate_json(&value["is_a"]).map_err(|e| idol::ValidationError(format!("field is_a: {}", e)))?;
     Vec::<String>::validate_json(&value["tags"]).map_err(|e| idol::ValidationError(format!("field tags: {}", e)))?;
+    bool::validate_json(&value["trim"]).map_err(|e| idol::ValidationError(format!("field trim: {}", e)))?;
     Variance::validate_json(&value["variance"]).map_err(|e| idol::ValidationError(format!("field variance: {}", e)))?;
 
     Ok(())

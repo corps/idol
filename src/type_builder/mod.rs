@@ -214,11 +214,11 @@ impl<'a> TypeBuilder<'a> {
 
             match compose_result {
                 ComposeResult::TakeEither => {}
-                ComposeResult::TakeLeft => {}
+                ComposeResult::TakeLeft(_) => {}
                 ComposeResult::WidenTo(k) => {
                     cur_kind = Some(DenormalizedType::Anonymous(k));
                 }
-                ComposeResult::TakeRight => {
+                ComposeResult::TakeRight(_) => {
                     cur_kind = Some(next_kind);
                 }
                 ComposeResult::ComposeFields(fields_result) => {
@@ -234,6 +234,27 @@ impl<'a> TypeBuilder<'a> {
         return Ok(Ok(cur_kind));
     }
 
+    fn apply_optionality(t: DenormalizedType, optionality: bool) -> DenormalizedType {
+        if !optionality {
+            return t;
+        }
+
+        match t {
+            DenormalizedType::Anonymous(anon) => {
+                DenormalizedType::Annotated(anon, vec!["optional".to_owned()], true)
+            }
+            DenormalizedType::Annotated(anon, tags, specialized) => {
+                if !tags.contains(&"optional".to_string()) {
+                    let mut new_tags = tags.clone();
+                    new_tags.push("optional".to_owned());
+                    DenormalizedType::Annotated(anon, new_tags, true)
+                } else {
+                    DenormalizedType::Annotated(anon, tags, specialized)
+                }
+            }
+        }
+    }
+
     fn apply_compose_fields(
         left: &DenormalizedType,
         right: &DenormalizedType,
@@ -245,14 +266,18 @@ impl<'a> TypeBuilder<'a> {
 
                 for (k, v) in fields_result.iter() {
                     match v.deref() {
-                        TakeLeft => {
-                            result_fields.insert(k.to_owned(), left_fields.get(k).unwrap().to_owned());
+                        TakeLeft(optional) => {
+                            let t = left_fields.get(k).unwrap().deref().to_owned();
+                            let t = TypeBuilder::apply_optionality(t, optional.to_owned());
+                            result_fields.insert(k.to_owned(), Box::new(t));
                         }
                         TakeEither => {
                             result_fields.insert(k.to_owned(), left_fields.get(k).unwrap().to_owned());
                         }
-                        TakeRight => {
-                            result_fields.insert(k.to_owned(), right_fields.get(k).unwrap().to_owned());
+                        TakeRight(optional) => {
+                            let t = right_fields.get(k).unwrap().deref().to_owned();
+                            let t = TypeBuilder::apply_optionality(t, optional.to_owned());
+                            result_fields.insert(k.to_owned(), Box::new(t));
                         }
                         WidenTo(t) => {
                             result_fields.insert(k.to_owned(), Box::new(Anonymous(t.to_owned())));

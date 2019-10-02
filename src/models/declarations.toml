@@ -14,31 +14,11 @@ fields.tags = "string[]"
 # is_a with a an enum or fields, idol will attempt to widen, narrow, or enforce type 'specifity'
 # based on this variance value.  See the Variance enum for more information.
 fields.variance = "Variance"
+# When true, any fields marked optional are dropped from the resulting construction.  This is
+# most useful in combination with Contravariant type composition to create slices of an original
+# model.
+fields.trim = "bool"
 
 # A type which changes the behavior of type composition in TypeDec's.
-# When combining two scalar or homogenous container types,
-#  Invariant will enforce that all types match exactly.
-#  Covariant will ensure that the specifity of the types is in increasing (narrow to wide) ordering,
-#    and will result in the most narrow type.  This ensures that the resulting type is read compatible
-#    with its adjacents.
-#  Contraviant will ensure that the specifity of the types is in decreasing (wide to narrow) ordering,
-#    and will result in the most wide type.  This ensures that the resulting types is write compatible
-#    with its adjacents.
-# When combining an enum with a scalar
-#   Invariant will block this composition.
-#   Covariant will allow an enum to belong to anys.
-#   Contravariant will widen to an any.
-# When combining an enum with an enum
-#   Invariant will enforce that the inhabitants of the two enums are the same, and have the same lead value.
-#   Covariant will enforce that the inhabitants of each successive enum all exist in the following enum,
-#     and results in the narrowest enum, preserving that narrowest enum's lead value.  This preserves
-#     read compatibility.
-#   Contravariant will enforce that the inhabitants of each successive enum also existed in the previous,
-#     and results in the widest enum, preserving that widest enum's lead value.  This preserves
-#     write compatibility.
-# When combining fields with a scalar
-#   Invariant will block this composition
-#   Covariant will allow fields to belong to anys.
-#   Contravariant will widen to an any.
 [Variance]
 enum = ["Covariant", "Invariant", "Contravariant"]

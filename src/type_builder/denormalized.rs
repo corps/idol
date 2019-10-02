@@ -2,6 +2,7 @@ use crate::err::{FieldDecError, ModuleError, TypeDecError};
 use crate::models::declarations::*;
 use crate::schema::*;
 use crate::type_builder::denormalized::AnonymousType::Primitive;
+use crate::type_builder::denormalized::ComposeResult::{TakeEither, TakeLeft, TakeRight};
 use crate::type_builder::denormalized::DenormalizedType::{Annotated, Anonymous};
 use regex::Regex;
 use std::cmp::Ordering;
@@ -11,12 +12,30 @@ use std::ops::Deref;
 
 // A denormalized form of Type that contains resolved dependency information and is designed
 // for handling idol's type system.
+#[derive(Clone)]
 pub enum ComposeResult {
-    TakeLeft,
-    TakeRight,
+    TakeLeft(bool),
+    TakeRight(bool),
     TakeEither,
     WidenTo(AnonymousType),
     ComposeFields(HashMap<String, Box<ComposeResult>>),
+}
+
+impl ComposeResult {
+    pub fn flip_sides(&self) -> ComposeResult {
+        match self {
+            TakeLeft(b) => TakeRight(b.to_owned()),
+            TakeRight(b) => TakeLeft(b.to_owned()),
+            r => r.clone(),
+        }
+    }
+
+    pub fn flip_and_prefer_left(&self) -> ComposeResult {
+        match self.flip_sides() {
+            TakeEither => TakeLeft(false),
+            result => result,
+        }
+    }
 }
 
 #[derive(Clone)]

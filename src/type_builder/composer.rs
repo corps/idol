@@ -51,14 +51,14 @@ impl DenormalizedType {
                             // int' int => int'
                             // int' any => int'
                             // int' lit:int => None
-                            TakeEither => Ok(TakeLeft),
-                            TakeLeft => Ok(TakeLeft),
+                            TakeEither => Ok(TakeLeft(false)),
+                            TakeLeft(b) => Ok(TakeLeft(b)),
                             ComposeFields(x) => Ok(ComposeFields(x)),
                             _ => Err("Specialized type cannot be safely narrowed because it wasn't already narrow enough.".to_string())
                         }
                     }
                     Contravariant => match anon.compose(&other_anon, variance)? {
-                        TakeRight => Ok(ComposeResult::TakeRight),
+                        TakeRight(b) => Ok(TakeRight(b)),
                         ComposeFields(x) => Ok(ComposeResult::ComposeFields(x)),
                         _ => Ok(WidenTo(AnonymousType::Primitive(PrimitiveType::any))),
                     },
@@ -73,16 +73,16 @@ impl DenormalizedType {
                     Invariant => Err("specialized types cannot be invariant".to_string()),
                     Covariant => {
                         match anon.compose(&other_anon, variance)? {
-                            TakeEither => Ok(TakeRight),
-                            TakeRight => Ok(TakeRight),
+                            TakeEither => Ok(TakeRight(false)),
+                            TakeRight(b) => Ok(TakeRight(b)),
                             ComposeFields(x) => Ok(ComposeFields(x)),
                             _ => Err("Specialized type cannot be safely narrowed because it wasn't already narrow enough.".to_string())
                         }
                     }
                     Contravariant => {
                         match anon.compose(&other_anon, variance)? {
-                            TakeLeft => {
-                                Ok(TakeLeft)
+                            TakeLeft(b) => {
+                                Ok(TakeLeft(b))
                             }
                             ComposeFields(x) => Ok(ComposeFields(x)),
                             _ => {
@@ -104,7 +104,7 @@ impl AnonymousType {
         match (self, other, variance.to_owned()) {
             (AnonymousType::Literal(v, p), AnonymousType::Literal(v2, p2), _) => {
                 if p == p2 && v == v2 {
-                    return Ok(ComposeResult::TakeEither);
+                    return Ok(TakeEither);
                 }
 
                 Err("Two literals with differing values cannot compose".to_string())
@@ -115,8 +115,8 @@ impl AnonymousType {
                 Variance::Covariant,
             ) => {
                 match AnonymousType::Primitive(p.to_owned()).compose(&other, variance)? {
-                    ComposeResult::TakeRight => Ok(ComposeResult::TakeLeft),
-                    ComposeResult::TakeEither => Ok(ComposeResult::TakeLeft),
+                    TakeRight(b) => Ok(TakeLeft(b)),
+                    TakeEither => Ok(TakeLeft(false)),
                     _ =>
                         Err(format!(
                             "No narrower covariant type can be given between Literal primitive type {:?} and {:?}",
@@ -130,7 +130,7 @@ impl AnonymousType {
                 Variance::Contravariant,
             ) => {
                 if p == p2 {
-                    return Ok(ComposeResult::TakeRight);
+                    return Ok(TakeRight(false));
                 }
 
                 Ok(ComposeResult::WidenTo(AnonymousType::Primitive(
@@ -138,11 +138,7 @@ impl AnonymousType {
                 )))
             }
             (AnonymousType::Primitive(p2), AnonymousType::Literal(_, p), _) => {
-                match other.compose(&self, variance)? {
-                    ComposeResult::TakeLeft => Ok(ComposeResult::TakeRight),
-                    ComposeResult::TakeRight => Ok(ComposeResult::TakeLeft),
-                    c => Ok(c),
-                }
+                Ok(other.compose(&self, variance)?.flip_sides())
             }
             (
                 AnonymousType::Primitive(p),
@@ -150,8 +146,8 @@ impl AnonymousType {
                 Variance::Covariant,
             ) => match (p, p2) {
                 (PrimitiveType::any, PrimitiveType::any) => Ok(ComposeResult::TakeEither),
-                (PrimitiveType::any, _) => Ok(ComposeResult::TakeRight),
-                (_, PrimitiveType::any) => Ok(ComposeResult::TakeLeft),
+                (PrimitiveType::any, _) => Ok(TakeRight(false)),
+                (_, PrimitiveType::any) => Ok(TakeLeft(false)),
                 _ => {
                     if p == p2 {
                         return Ok(ComposeResult::TakeEither);
@@ -169,14 +165,14 @@ impl AnonymousType {
                 Variance::Contravariant,
             ) => match (p, p2) {
                 (PrimitiveType::any, PrimitiveType::any) => Ok(ComposeResult::TakeEither),
-                (PrimitiveType::any, _) => Ok(ComposeResult::TakeLeft),
-                (_, PrimitiveType::any) => Ok(ComposeResult::TakeRight),
+                (PrimitiveType::any, _) => Ok(TakeLeft(false)),
+                (_, PrimitiveType::any) => Ok(TakeRight(false)),
                 _ => {
                     if p == p2 {
-                        return Ok(ComposeResult::TakeEither);
+                        return Ok(TakeEither);
                     }
 
-                    Ok(ComposeResult::WidenTo(AnonymousType::Primitive(
+                    Ok(WidenTo(AnonymousType::Primitive(
                         PrimitiveType::any,
                     )))
                 }
@@ -187,7 +183,7 @@ impl AnonymousType {
                 Variance::Invariant,
             ) => {
                 if p == p2 {
-                    return Ok(ComposeResult::TakeEither);
+                    return Ok(TakeEither);
                 }
 
                 Err(format!(
@@ -196,16 +192,16 @@ impl AnonymousType {
                 ))
             }
             (AnonymousType::Primitive(PrimitiveType::any), _, Variance::Contravariant) => {
-                Ok(ComposeResult::TakeLeft)
+                Ok(TakeLeft(false))
             }
             (_, AnonymousType::Primitive(PrimitiveType::any), Variance::Contravariant) => {
-                Ok(ComposeResult::TakeRight)
+                Ok(TakeRight(false))
             }
             (AnonymousType::Primitive(PrimitiveType::any), _, Variance::Covariant) => {
-                Ok(ComposeResult::TakeRight)
+                Ok(TakeRight(false))
             }
             (_, AnonymousType::Primitive(PrimitiveType::any), Variance::Covariant) => {
-                Ok(ComposeResult::TakeLeft)
+                Ok(TakeLeft(false))
             }
             (
                 AnonymousType::Enum(options),
@@ -214,8 +210,8 @@ impl AnonymousType {
             ) => {
                 if (options.len() > other_options.len()) {
                     match other.compose(self, variance)? {
-                        ComposeResult::TakeLeft => Ok(ComposeResult::TakeRight),
-                        ComposeResult::TakeRight => {
+                        TakeLeft(b) => Ok(TakeRight(b)),
+                        TakeRight(_) => {
                             unreachable!("enum compose branch should not include TakeRight!")
                         }
                         result => Ok(result),
@@ -227,12 +223,12 @@ impl AnonymousType {
                         .collect();
                     if missing_options.len() == 0 {
                         if options.len() < other_options.len() {
-                            return Ok(ComposeResult::TakeLeft);
+                            return Ok(TakeLeft(false));
                         }
 
                         options.get(0).and_then(|head| {
                             other_options.get(0).map(|other_head| if head == other_head {
-                                Ok(ComposeResult::TakeEither)
+                                Ok(TakeEither)
                             } else {
                                 // When the default enum value does not match, the length is required
                                 // to canonically determine whose 
@@ -252,8 +248,8 @@ impl AnonymousType {
             ) => {
                 if options.len() < other_options.len() {
                     match other.compose(self, variance)? {
-                        ComposeResult::TakeLeft => Ok(ComposeResult::TakeRight),
-                        ComposeResult::TakeRight => {
+                        TakeLeft(b) => Ok(TakeRight(b)),
+                        TakeRight(_) => {
                             unreachable!("enum compose branch should not include TakeRight!")
                         }
                         result => Ok(result),
@@ -266,16 +262,16 @@ impl AnonymousType {
                                 other_options.get(0).and_then(|other_head| {
                                     if head == other_head {
                                         if options.len() == other_options.len() {
-                                            Some(Ok(ComposeResult::TakeEither))
+                                            Some(Ok(TakeEither))
                                         } else {
-                                            Some(Ok(ComposeResult::TakeLeft))
+                                            Some(Ok(TakeLeft(false)))
                                         }
                                     } else {
                                         None
                                     }
                                 })
                             })
-                            .unwrap_or(Ok(ComposeResult::WidenTo(AnonymousType::Primitive(
+                            .unwrap_or(Ok(WidenTo(AnonymousType::Primitive(
                                 PrimitiveType::any,
                             ))))
                     } else {
@@ -286,9 +282,9 @@ impl AnonymousType {
                                 .cloned()
                                 .collect();
                             all_options.sort();
-                            Ok(ComposeResult::WidenTo(AnonymousType::Enum(all_options)))
+                            Ok(WidenTo(AnonymousType::Enum(all_options)))
                         } else {
-                            Ok(ComposeResult::WidenTo(AnonymousType::Primitive(
+                            Ok(WidenTo(AnonymousType::Primitive(
                                 PrimitiveType::any,
                             )))
                         }
@@ -306,7 +302,7 @@ impl AnonymousType {
                     other_options.get(0).and_then(|other_head| {
                         if head == other_head {
                             if options.len() == other_options.len() {
-                                Some(Ok(ComposeResult::TakeEither))
+                                Some(Ok(TakeEither))
                             } else {
                                 None
                             }
@@ -330,9 +326,9 @@ impl AnonymousType {
                 let inner_kind = inner_kind_box.deref();
                 let other_inner_kind = other_inner_kind_box.deref();
                 match inner_kind.compose(other_inner_kind, variance)? {
-                    ComposeResult::TakeLeft => Ok(ComposeResult::TakeLeft),
-                    ComposeResult::TakeRight => Ok(ComposeResult::TakeRight),
-                    ComposeResult::TakeEither => Ok(ComposeResult::TakeEither),
+                    TakeLeft(b) => Ok(TakeLeft(b)),
+                    TakeRight(b) => Ok(TakeRight(b)),
+                    TakeEither => Ok(TakeEither),
                     _ => Err(format!(
                         "Cannot compose container repeated if inner type would change"
                     )),
@@ -346,9 +342,9 @@ impl AnonymousType {
                 let inner_kind = inner_kind_box.deref();
                 let other_inner_kind = other_inner_kind_box.deref();
                 match inner_kind.compose(other_inner_kind, variance)? {
-                    ComposeResult::TakeLeft => Ok(ComposeResult::TakeLeft),
-                    ComposeResult::TakeRight => Ok(ComposeResult::TakeRight),
-                    ComposeResult::TakeEither => Ok(ComposeResult::TakeEither),
+                    TakeLeft(b) => Ok(TakeLeft(b)),
+                    TakeRight(b) => Ok(TakeRight(b)),
+                    TakeEither => Ok(TakeEither),
                     _ => Err(format!(
                         "Cannot compose container map if inner type would change"
                     )),
@@ -362,10 +358,10 @@ impl AnonymousType {
                 let inner_kind = inner_kind_box.deref();
                 let other_inner_kind = other_inner_kind_box.deref();
                 match inner_kind.compose(other_inner_kind, variance)? {
-                    ComposeResult::TakeLeft => Ok(ComposeResult::TakeLeft),
-                    ComposeResult::TakeRight => Ok(ComposeResult::TakeRight),
-                    ComposeResult::TakeEither => Ok(ComposeResult::TakeEither),
-                    _ => Ok(ComposeResult::WidenTo(AnonymousType::Repeated(
+                    TakeLeft(b) => Ok(TakeLeft(b)),
+                    TakeRight(b) => Ok(TakeRight(b)),
+                    TakeEither => Ok(TakeEither),
+                    _ => Ok(WidenTo(AnonymousType::Repeated(
                         Box::new(AnonymousType::Primitive(
                             PrimitiveType::any,
                         )),
@@ -374,15 +370,15 @@ impl AnonymousType {
             }
             (
                 AnonymousType::Map(inner_kind_box),
-                AnonymousType::Map( other_inner_kind_box),
+                AnonymousType::Map(other_inner_kind_box),
                 Variance::Contravariant,
             ) => {
                 let inner_kind = inner_kind_box.deref();
                 let other_inner_kind = other_inner_kind_box.deref();
                 match inner_kind.compose(other_inner_kind, variance)? {
-                    ComposeResult::TakeLeft => Ok(ComposeResult::TakeLeft),
-                    ComposeResult::TakeRight => Ok(ComposeResult::TakeRight),
-                    ComposeResult::TakeEither => Ok(ComposeResult::TakeEither),
+                    TakeLeft(b) => Ok(TakeLeft(b)),
+                    TakeRight(b) => Ok(TakeRight(b)),
+                    TakeEither => Ok(TakeEither),
                     _ => Ok(ComposeResult::WidenTo(AnonymousType::Map(
                         Box::new(AnonymousType::Primitive(
                             PrimitiveType::any,
@@ -411,103 +407,34 @@ impl AnonymousType {
             (
                 AnonymousType::Fields(fields),
                 AnonymousType::Fields(other_fields),
-                Covariant,
+                _,
             ) => {
-                // covariance in fields will add new fields and select the narrowest of one
-                // side.  however, it will fail if the variance between fields is inconsistently
-                // the left or right operand
-                let mut field_changes: HashMap<String, Box<ComposeResult>> = HashMap::new();
-                let mut first_left_preference: Option<String> = None;
-                let mut first_right_preference: Option<String> = None;
-
-                for (k, v) in fields.iter() {
-                    let v = v.deref();
-                    let other_v = other_fields[k].deref();
-                    let composed = v.compose(other_v, variance)?;
-
-                    match composed {
-                        TakeLeft => {
-                            if let Some(first_right_preference) = first_right_preference.clone() {
-                                Err(format!("Could not narrow structure, field {} on right hand side is narrower than left, but field {} on left hand side is narrower than right", first_right_preference, k))?;
-                            } else {
-                                first_left_preference =
-                                    first_left_preference.or_else(|| Some(k.to_owned()));
-                                field_changes
-                                    .insert(k.to_owned(), Box::new(ComposeResult::TakeLeft));
-                            }
-                        }
-                        TakeRight => {
-                            if let Some(first_left_preference) = first_left_preference.clone() {
-                                Err(format!("Could not narrow structure, field {} on left hand side is narrower than right, but field {} on right hand side is narrower than left", first_left_preference, k))?;
-                            } else {
-                                first_right_preference =
-                                    first_right_preference.or_else(|| Some(k.to_owned()));
-                                field_changes
-                                    .insert(k.to_owned(), Box::new(ComposeResult::TakeRight));
-                            }
-                        }
-                        _ => {
-                            field_changes.insert(k.to_owned(), Box::new(composed));
-                        }
-                    }
-                }
-
-                for (k, v) in other_fields.iter() {
-                    if fields.contains_key(k) {
-                        continue;
-                    }
-
-                    let v = v.deref();
-                    let other_v = fields[k].deref();
-                    let composed = other_v.compose(v, variance)?;
-
-                    match composed {
-                        TakeLeft => {
-                            if let Some(first_right_preference) = first_right_preference {
-                                return Err(format!("Could not narrow structure, field {} on right hand side is narrower than left, but field {} on left hand side is narrower than right", first_right_preference, k));
-                            } else {
-                                first_left_preference =
-                                    first_left_preference.or_else(|| Some(k.to_owned()));
-                                field_changes
-                                    .insert(k.to_owned(), Box::new(ComposeResult::TakeLeft));
-                            }
-                        }
-                        TakeRight => {
-                            if let Some(first_left_preference) = first_left_preference {
-                                return Err(format!("Could not narrow structure, field {} on left hand side is narrower than right, but field {} on right hand side is narrower than left", first_left_preference, k));
-                            } else {
-                                first_right_preference =
-                                    first_right_preference.or_else(|| Some(k.to_owned()));
-                                field_changes
-                                    .insert(k.to_owned(), Box::new(ComposeResult::TakeRight));
-                            }
-                        }
-                        _ => {
-                            field_changes.insert(k.to_owned(), Box::new(composed));
-                        }
-                    }
-                }
+                let mut field_composer = FieldComposer::default();
+                field_composer.compose_fields(fields, other_fields, variance)?;
 
                 if fields.len() == other_fields.len()
                     && fields.keys().all(|k| other_fields.contains_key(k))
                 {
-                    if first_left_preference.is_some() {
-                        Ok(TakeLeft)
-                    } else if first_right_preference.is_some() {
-                        Ok(TakeRight)
+                    if field_composer.left_preference.is_some() {
+                        Ok(TakeLeft(false))
+                    } else if field_composer.right_preference.is_some() {
+                        Ok(TakeRight(false))
                     } else {
                         Ok(TakeEither)
                     }
                 } else {
-                    Ok(ComposeFields(field_changes))
+                    match variance {
+                        Invariant => Err(format!("Existing fields were compatible, but new disjoint fields are not allowed in Invariant struct")),
+                        _ => Ok(ComposeFields(field_composer.field_changes))
+                    }
                 }
             }
             (AnonymousType::Reference(_, inner), other, _) => {
                 inner.compose(&DenormalizedType::Anonymous(other.to_owned()), variance)
-            },
-            (_, AnonymousType::Reference(_, other_inner),  _) => {
+            }
+            (_, AnonymousType::Reference(_, other_inner), _) => {
                 DenormalizedType::Anonymous(self.to_owned()).compose(other_inner, variance)
-            },
+            }
             (_, _, Covariant) => Err(format!(
                 "Could not select narrow covariant amongst these types"
             )),
@@ -516,5 +443,113 @@ impl AnonymousType {
                 AnonymousType::Primitive(PrimitiveType::any),
             )),
         }
+    }
+}
+
+#[derive(Default)]
+struct FieldComposer {
+    left_preference: Option<String>,
+    right_preference: Option<String>,
+    field_changes: HashMap<String, Box<ComposeResult>>,
+}
+
+impl FieldComposer {
+    fn compose_field(
+        k: &String,
+        left: &HashMap<String, Box<DenormalizedType>>,
+        right: &HashMap<String, Box<DenormalizedType>>,
+        variance: &Variance,
+    ) -> Result<ComposeResult, String> {
+        let v = left.get(k);
+        if v.is_none() {
+            match variance {
+                Invariant => {
+                    return Err(format!("Key {} was present in right, but not left type", k));
+                }
+                Contravariant => {
+                    return Ok(ComposeResult::TakeRight(true));
+                }
+                Covariant => {
+                    return Ok(ComposeResult::TakeRight(false));
+                }
+            }
+        }
+
+        let other_v = right.get(k);
+        if other_v.is_none() {
+            match variance {
+                Invariant => {
+                    return Err(format!("Key {} was present in left, but not right type", k));
+                }
+                Contravariant => {
+                    return Ok(ComposeResult::TakeLeft(true));
+                }
+                Covariant => {
+                    return Ok(ComposeResult::TakeLeft(false));
+                }
+            }
+        }
+
+        let v = v.unwrap().deref();
+        let other_v = other_v.unwrap().deref();
+        return v.compose(other_v, variance);
+    }
+
+    fn apply_field_composition(
+        &mut self,
+        k: &String,
+        result: Result<ComposeResult, String>,
+    ) -> Result<(), String> {
+        let result = result?;
+
+        match result {
+            TakeLeft(false) => {
+                if self.right_preference.is_some() {
+                    return Err(format!("field {} on right hand side has different variance than field {} on the left.  Fields are not compatible", self.right_preference.to_owned().unwrap(), k));
+                } else {
+                    self.left_preference = Some(k.to_owned());
+                }
+            }
+            TakeRight(false) => {
+                if self.left_preference.is_some() {
+                    return Err(format!("field {} on left hand side has different variance than field {} on the right.  Fields are not compatible", self.left_preference.to_owned().unwrap(), k));
+                } else {
+                    self.right_preference = Some(k.to_owned());
+                }
+            }
+            _ => {}
+        }
+
+        self.field_changes.insert(k.to_owned(), Box::new(result));
+        return Ok(());
+    }
+
+    fn compose_fields(
+        &mut self,
+        left: &HashMap<String, Box<DenormalizedType>>,
+        right: &HashMap<String, Box<DenormalizedType>>,
+        variance: &Variance,
+    ) -> Result<(), String> {
+        for k in left.keys().collect::<Vec<&String>>().iter().cloned() {
+            self.apply_field_composition(
+                k,
+                FieldComposer::compose_field(k, left, right, variance),
+            )?;
+        }
+
+        for k in right
+            .keys()
+            .cloned()
+            .filter(|k| !left.contains_key(k))
+            .collect::<Vec<String>>()
+            .iter()
+        {
+            self.apply_field_composition(
+                k,
+                FieldComposer::compose_field(k, left, right, variance),
+            )?;
+        }
+
+        return Ok(());
     }
 }
