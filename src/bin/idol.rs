@@ -5,6 +5,7 @@ extern crate structopt;
 use idol::loader::{Loader, LoadsModules};
 use idol::models::declarations::ModuleDec;
 use idol::registry::SchemaRegistry;
+use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::PathBuf;
@@ -120,10 +121,10 @@ fn main() -> Result<(), i32> {
     if let Some(output_normalized) = opt.output_normalized {
         let mut path_buf = PathBuf::from(output_normalized);
         for (module_name, types) in registry.as_type_decs().iter() {
-            path_buf.push(format!("{}.toml", module_name));
+            path_buf.push(format!("{}.json", module_name));
             let path = path_buf.as_path();
 
-            let output = toml::to_string_pretty(types).map_err(|err| {
+            let output = serde_json::to_string_pretty(types).map_err(|err| {
                 eprintln!(
                     "Error serializing normalized type declaration files! {}",
                     err
@@ -131,16 +132,23 @@ fn main() -> Result<(), i32> {
                 1
             })?;
 
-            let mut file = OpenOptions::new().write(true).open(path).map_err(|err| {
-                eprintln!(
-                    "Error opening file {}: {}",
-                    path.as_os_str().to_string_lossy(),
-                    err
-                );
+            let mut file = OpenOptions::new()
+                .write(true)
+                .create(true)
+                .open(path)
+                .map_err(|err| {
+                    eprintln!(
+                        "Error opening file {}: {}",
+                        path.as_os_str().to_string_lossy(),
+                        err
+                    );
+                    1
+                })?;
+
+            file.write_all(output.as_bytes()).map_err(|err| {
+                eprintln!("Error writing output: {}", err);
                 1
             })?;
-
-            file.write_all(output.as_bytes());
 
             path_buf.pop();
         }

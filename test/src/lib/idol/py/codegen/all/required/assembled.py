@@ -32,16 +32,27 @@ from .triplet_of_side_import2 import (
 
 class AllRequiredAssembled(Struct):
     test_atleast_one: CodegenTestsBasicTestAtleastOne
+
     test_enum: CodegenTestsBasicTestEnum
+
     test_kind: CodegenTestsBasicTestKind
+
     test_list_of: CodegenAllRequiredListOfTestKind
+
     test_list_of_list_struct: CodegenTestsBasicTestListOfListStruct
+
     test_literal_struct: CodegenTestsBasicTestLiteralStruct
+
     test_literal_top: CodegenTestsBasicTestLiteralTop
+
     test_map: CodegenTestsBasicTestMap
+
     test_optional_field: CodegenTestsBasicTestOptionalField
+
     test_struct: CodegenTestsBasicTestStruct
+
     test_triplet: CodegenAllRequiredTripletOfSideImport2
+
     __field_constructors__ = [
         (
             "test_atleast_one",

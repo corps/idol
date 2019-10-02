@@ -2,7 +2,8 @@ MODELS       = $(shell find src/models -type f | grep ".*\.toml")
 SOURCE_FILES = $(shell find src -type f | egrep ".*\.rs" | grep -v "bin/")
 
 test: clean test_bins models
-	./run_tests.sh
+	./run_generator_tests.sh
+	./run_composition_tests.sh
 
 test_bins: target/debug/expand target/debug/validate
 
@@ -14,6 +15,7 @@ target/debug/validate: $(SOURCE_FILES) src/bin/validate.rs models ../target/debu
 
 clean:
 	rm -rf src/lib/idol
+	rm -rf composed
 
 models: $(MODELS)
 	../target/debug/idol $? > build.json

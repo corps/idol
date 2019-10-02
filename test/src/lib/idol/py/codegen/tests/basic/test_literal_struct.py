@@ -11,10 +11,15 @@ from .literal_hello import TestsBasicLiteralHello as CodegenTestsBasicLiteralHel
 
 class TestsBasicTestLiteralStruct(Struct):
     five: Optional[CodegenTestsBasicLiteralFive]
+
     four: CodegenTestsBasicLiteralTrue
+
     one: CodegenTestsBasicLiteral1
+
     three: CodegenTestsBasicLiteralThreeO
+
     two: CodegenTestsBasicLiteralHello
+
     __field_constructors__ = [
         ("five", "five", CodegenTestsBasicLiteralFive, dict(optional=True)),
         ("four", "four", CodegenTestsBasicLiteralTrue, dict(optional=False)),

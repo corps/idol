@@ -9,6 +9,7 @@ from .test_atleast_one import (
 
 class TestsBasicTestListOfListStruct(Struct):
     list_of_list: MutableSequence[CodegenTestsBasicTestAtleastOne]
+
     __field_constructors__ = [
         (
             "list_of_list",

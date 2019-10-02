@@ -147,14 +147,12 @@ export class IdolJsCodegenFile extends GeneratorFileContext<IdolJs> {
 
 export class IdolJsScaffoldFile extends GeneratorFileContext<IdolJs> {
   typeDecon: TypeDeconstructor;
+  type: Type;
 
   constructor(idolJs: IdolJs, path: Path, type: Type) {
     super(idolJs, path);
     this.typeDecon = getMaterialTypeDeconstructor(idolJs.config.params.allTypes, type);
-  }
-
-  get type(): Type {
-    return this.typeDecon.t;
+    this.type = type;
   }
 
   get defaultTypeName(): string {

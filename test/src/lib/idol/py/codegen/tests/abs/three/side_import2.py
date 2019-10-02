@@ -5,6 +5,7 @@ from ....__idol__ import Struct, Primitive
 
 class TestsAbsThreeSideImport2(Struct):
     side_import2: int
+
     __field_constructors__ = [
         ("side_import2", "side_import2", Primitive.of(int), dict(optional=False))
     ]

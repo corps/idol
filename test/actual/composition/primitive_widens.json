@@ -1,0 +1,72 @@
+{
+  "BiggerWidens": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "string"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "AnyAlias": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "any"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "StaysNarrow": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "string"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "IntAlias": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "int"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "ReferenceRemainsRight": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "int"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "ReferenceRemains": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "primitive_widens.IntAlias"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "Widens": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "string"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  }
+}

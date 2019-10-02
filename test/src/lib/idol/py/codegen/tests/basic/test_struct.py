@@ -8,8 +8,11 @@ from .test_struct_inner import (
 
 class TestsBasicTestStruct(Struct):
     a: str
+
     b: int
+
     c: CodegenTestsBasicTestStructInner
+
     __field_constructors__ = [
         ("a", "a", Primitive.of(str), dict(optional=False)),
         ("b", "b", Primitive.of(int), dict(optional=False)),

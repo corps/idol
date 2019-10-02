@@ -111,11 +111,6 @@ impl SchemaRegistry {
     ) -> Result<(), ModuleError> {
         let mut types = self.types.to_owned();
 
-        eprintln!(
-            "dependency ordering was {:?}",
-            module.types_dependency_ordering
-        );
-
         for type_name in module.types_dependency_ordering.iter() {
             let type_dec = module_dec.0.get(type_name).unwrap();
             let type_builder_result =

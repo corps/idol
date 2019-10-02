@@ -237,15 +237,11 @@ function (_GeneratorFileContext2) {
 
     _this10 = _possibleConstructorReturn(this, _getPrototypeOf(IdolJsScaffoldFile).call(this, idolJs, path));
     _this10.typeDecon = (0, _generators.getMaterialTypeDeconstructor)(idolJs.config.params.allTypes, type);
+    _this10.type = type;
     return _this10;
   }
 
   _createClass(IdolJsScaffoldFile, [{
-    key: "type",
-    get: function get() {
-      return this.typeDecon.t;
-    }
-  }, {
     key: "defaultTypeName",
     get: function get() {
       return this.type.named.typeName;

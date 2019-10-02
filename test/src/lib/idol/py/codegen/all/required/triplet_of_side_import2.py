@@ -11,16 +11,15 @@ from ...tests.basic.test_literal_top import (
 from ...tests.basic.test_struct import (
     TestsBasicTestStruct as CodegenTestsBasicTestStruct,
 )
-from ...tests.abs.two.side_import import (
-    TestsAbsTwoSideImport as CodegenTestsAbsTwoSideImport,
-)
 
 
 class AllRequiredTripletOfSideImport2(Struct):
     a: CodegenTestsAbsThreeSideImport2
+
     b: MutableSequence[CodegenTestsBasicTestLiteralTop]
+
     c: MutableMapping[str, CodegenTestsBasicTestStruct]
-    side_import: CodegenTestsAbsTwoSideImport
+
     __field_constructors__ = [
         ("a", "a", CodegenTestsAbsThreeSideImport2, dict(optional=False)),
         (
@@ -33,12 +32,6 @@ class AllRequiredTripletOfSideImport2(Struct):
             "c",
             "c",
             Map.of(CodegenTestsBasicTestStruct, dict(atleast_one=False)),
-            dict(optional=False),
-        ),
-        (
-            "side_import",
-            "side_import",
-            CodegenTestsAbsTwoSideImport,
             dict(optional=False),
         ),
     ]

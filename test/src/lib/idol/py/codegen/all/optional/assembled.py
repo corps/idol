@@ -33,16 +33,27 @@ from ..required.triplet_of_side_import2 import (
 
 class AllOptionalAssembled(Struct):
     test_atleast_one: Optional[CodegenTestsBasicTestAtleastOne]
+
     test_enum: Optional[CodegenTestsBasicTestEnum]
+
     test_kind: Optional[CodegenTestsBasicTestKind]
+
     test_list_of: Optional[CodegenAllRequiredListOfTestKind]
+
     test_list_of_list_struct: Optional[CodegenTestsBasicTestListOfListStruct]
+
     test_literal_struct: Optional[CodegenTestsBasicTestLiteralStruct]
+
     test_literal_top: Optional[CodegenTestsBasicTestLiteralTop]
+
     test_map: Optional[CodegenTestsBasicTestMap]
+
     test_optional_field: Optional[CodegenTestsBasicTestOptionalField]
+
     test_struct: Optional[CodegenTestsBasicTestStruct]
+
     test_triplet: Optional[CodegenAllRequiredTripletOfSideImport2]
+
     __field_constructors__ = [
         (
             "test_atleast_one",
