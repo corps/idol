@@ -89,22 +89,20 @@ fn main() -> Result<(), i32> {
             process_module(&missing_module, &loader, &mut registry)?;
         }
 
-        if registry.missing_type_lookups.is_empty() && registry.unresolved_abstractions.is_empty() {
+        if registry.missing_type_lookups.is_empty() {
             continue;
-        }
-
-        for entry in registry.unresolved_abstractions.iter() {
-            eprintln!(
-                "Could not find abstract model definition {} which was required by {:?}.",
-                entry.0,
-                entry.1.iter().next()
-            );
         }
 
         for entry in registry.missing_type_lookups.iter() {
             eprintln!(
                 "Could not find model definition {} which was required by {}.",
-                entry.0, entry.1
+                entry.0,
+                entry
+                    .1
+                    .iter()
+                    .map(|r| r.qualified_name.to_owned())
+                    .collect::<Vec<String>>()
+                    .join(", ")
             );
         }
         return Err(1);
