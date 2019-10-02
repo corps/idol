@@ -158,10 +158,15 @@ impl Module {
                         }),
                     )
                     .filter(|dec| is_model_ref(dec))
-                    .map(|s| {
+                    .filter_map(|dec| {
+                        parse_type_struct(&qualifier, dec)
+                            .ok()
+                            .map(|ts| ts.reference)
+                    })
+                    .map(|to_name| {
                         (
                             Reference::from(qualifier.qualify(from_name).as_str()),
-                            Reference::from(qualifier.qualify(s).as_str()),
+                            to_name,
                         )
                     })
                     .collect::<Vec<(Reference, Reference)>>()
