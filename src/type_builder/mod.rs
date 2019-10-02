@@ -165,6 +165,20 @@ impl<'a> TypeBuilder<'a> {
                 })?;
         }
 
+        if self.type_dec.trim {
+            let keys_to_remove = t
+                .fields
+                .iter()
+                .filter(|(_, field)| !field.tags.contains(&"optional".to_string()))
+                .map(|(k, _)| k)
+                .cloned()
+                .collect::<Vec<String>>();
+
+            for key in keys_to_remove.iter() {
+                t.fields.remove(key);
+            }
+        }
+
         Ok(Ok(t.to_owned()))
     }
 
