@@ -57,7 +57,6 @@ impl<'a> TypeBuilder<'a> {
         let mut t = Type::default();
         t.named = self.reference.to_owned();
         t.tags = self.type_dec.tags.to_owned();
-        eprintln!("Tags were {:?}", t.tags);
 
         let mut has_head_type = false;
 
@@ -150,12 +149,10 @@ impl<'a> TypeBuilder<'a> {
                 .as_enum()
                 .map(|(options, tags)| {
                     t.options = options;
-                    t.tags = tags;
                 })
                 .or_else(|_| {
                     is_a_kind.as_fields().map(|(fields, tags)| {
                         t.fields = fields;
-                        t.tags = tags;
                     })
                 })
                 .or_else(|_| {
@@ -163,8 +160,6 @@ impl<'a> TypeBuilder<'a> {
                         .as_type_struct()
                         .map(|(ts, tags)| {
                             t.is_a = Some(ts);
-                            t.tags = tags;
-                            eprintln!("Unwrapped tags were {:?}", t.tags);
                         })
                         .map_err(|fe| TypeDecError::IsAError(fe))
                 })?;
