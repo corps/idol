@@ -59,12 +59,14 @@ impl SchemaRegistry {
 
         // TODO: OMG DRY this up.
         for (from_dep, to_dep) in module.get_all_declaration_dependencies(module_dec) {
-            self.module_dep_mapper
-                .add_dependency(
-                    from_dep.module_name.to_owned(),
-                    to_dep.module_name.to_owned(),
-                )
-                .map_err(|msg| ProcessingError::CircularImportError(msg))?;
+            if from_dep.module_name != to_dep.module_name {
+                self.module_dep_mapper
+                    .add_dependency(
+                        from_dep.module_name.to_owned(),
+                        to_dep.module_name.to_owned(),
+                    )
+                    .map_err(|msg| ProcessingError::CircularImportError(msg))?;
+            }
 
             self.type_dep_mapper
                 .add_dependency(
@@ -95,6 +97,11 @@ impl SchemaRegistry {
         module_dec: &ModuleDec,
     ) -> Result<(), ModuleError> {
         let mut types = self.types.to_owned();
+
+        eprintln!(
+            "dependency ordering was {:?}",
+            module.types_dependency_ordering
+        );
 
         for type_name in module.types_dependency_ordering.iter() {
             let type_dec = module_dec.0.get(type_name).unwrap();
@@ -172,6 +179,10 @@ impl SchemaRegistry {
             let missing_dependency = result.unwrap_err();
 
             if !self.modules.contains_key(&missing_dependency.module_name) {
+                eprintln!(
+                    "While looking up {} was missing {}",
+                    reference, missing_dependency
+                );
                 self.missing_module_lookups
                     .insert(missing_dependency.module_name.to_owned());
             }

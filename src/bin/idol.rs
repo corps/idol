@@ -50,6 +50,8 @@ fn process_module(
     loader: &dyn LoadsModules,
     registry: &mut SchemaRegistry,
 ) -> Result<(), i32> {
+    eprintln!("Processing {}...", module_name);
+
     let module_def = match loader.load_module(&module_name) {
         Ok(value) => Ok(value),
         Err(err) => {

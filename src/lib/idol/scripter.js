@@ -94,10 +94,6 @@ function comment(comment) {
   return comment.split("\n").map(function (l) {
     return "// ".concat(l);
   }).join("\n");
-  /*
-    if (comment.indexOf("\n") === -1) return `// ${comment}`;
-    return `/!*\n${comment}\n*!/\n`;
-  */
 }
 
 function propDec(prop, expr) {

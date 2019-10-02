@@ -53,10 +53,6 @@ export function comment(comment: string): string {
   if (!comment) return comment;
   comment = comment.replace(/\//g, "\\/");
   return comment.split("\n").map(l => `// ${l}`).join("\n");
-/*
-  if (comment.indexOf("\n") === -1) return `// ${comment}`;
-  return `/!*\n${comment}\n*!/\n`;
-*/
 }
 
 export function propDec(prop: string, expr: string): string {

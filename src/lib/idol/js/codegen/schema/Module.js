@@ -9,8 +9,6 @@ var _idol__ = require("../__idol__");
 
 var _Type = require("../../schema/Type");
 
-var _Dependency = require("../../schema/Dependency");
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
@@ -29,34 +27,6 @@ function () {
 
 
   _createClass(SchemaModule, [{
-    key: "abstract_types_by_name",
-    get: function get() {
-      return _idol__.Map.of(_Type.Type, {}).wrap(this._original["abstract_types_by_name"]);
-    },
-    set: function set(val) {
-      this._original["abstract_types_by_name"] = _idol__.Map.of(_Type.Type, {}).unwrap(val);
-    }
-  }, {
-    key: "abstractTypesByName",
-    get: function get() {
-      return this.abstract_types_by_name;
-    },
-    set: function set(val) {
-      this.abstract_types_by_name = val;
-    }
-  }, {
-    key: "dependencies",
-    get: function get() {
-      return _idol__.List.of(_Dependency.Dependency, {
-        atleastOne: false
-      }).wrap(this._original["dependencies"]);
-    },
-    set: function set(val) {
-      this._original["dependencies"] = _idol__.List.of(_Dependency.Dependency, {
-        atleastOne: false
-      }).unwrap(val);
-    }
-  }, {
     key: "module_name",
     get: function get() {
       return _idol__.Primitive.of("string").wrap(this._original["module_name"]);
@@ -138,16 +108,6 @@ function () {
 
 exports.SchemaModule = SchemaModule;
 (0, _idol__.Struct)(SchemaModule, [{
-  fieldName: "abstract_types_by_name",
-  type: _idol__.Map.of(_Type.Type, {}),
-  optional: false
-}, {
-  fieldName: "dependencies",
-  type: _idol__.List.of(_Dependency.Dependency, {
-    atleastOne: false
-  }),
-  optional: false
-}, {
   fieldName: "module_name",
   type: _idol__.Primitive.of("string"),
   optional: false

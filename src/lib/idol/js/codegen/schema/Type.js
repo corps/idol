@@ -7,8 +7,6 @@ exports.SchemaType = void 0;
 
 var _idol__ = require("../__idol__");
 
-var _Dependency = require("../../schema/Dependency");
-
 var _Field = require("../../schema/Field");
 
 var _TypeStruct = require("../../schema/TypeStruct");
@@ -33,35 +31,16 @@ function () {
 
 
   _createClass(SchemaType, [{
-    key: "dependencies",
-    // The dependencies found in this type's is_a or fields.
-    get: function get() {
-      return _idol__.List.of(_Dependency.Dependency, {
-        atleastOne: false
-      }).wrap(this._original["dependencies"]);
-    },
-    set: function set(val) {
-      this._original["dependencies"] = _idol__.List.of(_Dependency.Dependency, {
-        atleastOne: false
-      }).unwrap(val);
-    }
-    /*
-    When this type is a struct, each of its fields and the type of that field is included
-    Exclusive with is_a and options
-    */
-
-  }, {
     key: "fields",
+    // When this type is a struct, each of its fields and the type of that field is included
+    // Exclusive with is_a and options
     get: function get() {
       return _idol__.Map.of(_Field.Field, {}).wrap(this._original["fields"]);
     },
     set: function set(val) {
       this._original["fields"] = _idol__.Map.of(_Field.Field, {}).unwrap(val);
-    }
-    /*
-    Set when this is type is an alias or simply an type expression (such as a generic).
-    Exclusive with having values for options or fields.
-    */
+    } // Set when this is type is an alias or simply an type expression (such as a generic).
+    // Exclusive with having values for options or fields.
 
   }, {
     key: "is_a",
@@ -87,13 +66,10 @@ function () {
     },
     set: function set(val) {
       this._original["named"] = _Reference.Reference.unwrap(val);
-    }
-    /*
-    When this type is an enum includes the string values for each enum entry.  Note that each
-    target language may have different rules for the enum constant names, but these entries are
-    canonical resident values.
-    Exclusive with is_a and fields.
-    */
+    } // When this type is an enum includes the string values for each enum entry.  Note that each
+    // target language may have different rules for the enum constant names, but these entries are
+    // canonical resident values.
+    // Exclusive with is_a and fields.
 
   }, {
     key: "options",
@@ -106,13 +82,10 @@ function () {
       this._original["options"] = _idol__.List.of(_idol__.Primitive.of("string"), {
         atleastOne: false
       }).unwrap(val);
-    }
-    /*
-    General metadata given to a type.  Currently, atleast_one for Repeated types is supported.
-    Custom codegen can use these tags to implement semantic types on top of simple logic types.
-    In general, however, tags are considred optional and should not be required to
-    deserialize \/ serializeconsume correct logical values.
-    */
+    } // General metadata given to a type.  Currently, atleast_one for Repeated types is supported.
+    // Custom codegen can use these tags to implement semantic types on top of simple logic types.
+    // In general, however, tags are considred optional and should not be required to
+    // deserialize \/ serializeconsume correct logical values.
 
   }, {
     key: "tags",
@@ -125,33 +98,6 @@ function () {
       this._original["tags"] = _idol__.List.of(_idol__.Primitive.of("string"), {
         atleastOne: false
       }).unwrap(val);
-    }
-    /*
-    For high order kinds (generics) that target other types as arguments, each of these strings
-    is a local alias for the parameter at that position.
-    ie: if MyMap.type_vars = ["A", "B"] then MyMap<int, string> will replace all "A" and "B" references
-    inside of MyMap with int and string.
-    */
-
-  }, {
-    key: "type_vars",
-    get: function get() {
-      return _idol__.List.of(_idol__.Primitive.of("string"), {
-        atleastOne: false
-      }).wrap(this._original["type_vars"]);
-    },
-    set: function set(val) {
-      this._original["type_vars"] = _idol__.List.of(_idol__.Primitive.of("string"), {
-        atleastOne: false
-      }).unwrap(val);
-    }
-  }, {
-    key: "typeVars",
-    get: function get() {
-      return this.type_vars;
-    },
-    set: function set(val) {
-      this.type_vars = val;
     }
   }], [{
     key: "validate",
@@ -183,12 +129,6 @@ function () {
 
 exports.SchemaType = SchemaType;
 (0, _idol__.Struct)(SchemaType, [{
-  fieldName: "dependencies",
-  type: _idol__.List.of(_Dependency.Dependency, {
-    atleastOne: false
-  }),
-  optional: false
-}, {
   fieldName: "fields",
   type: _idol__.Map.of(_Field.Field, {}),
   optional: false
@@ -208,12 +148,6 @@ exports.SchemaType = SchemaType;
   optional: false
 }, {
   fieldName: "tags",
-  type: _idol__.List.of(_idol__.Primitive.of("string"), {
-    atleastOne: false
-  }),
-  optional: false
-}, {
-  fieldName: "type_vars",
   type: _idol__.List.of(_idol__.Primitive.of("string"), {
     atleastOne: false
   }),

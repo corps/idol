@@ -1,7 +1,9 @@
 use crate::dep_mapper::DepMapper;
+use crate::err::FieldDecError;
 use crate::models::declarations::ModuleDec;
 pub use crate::models::schema::*;
 use crate::type_builder::TypeBuilder;
+use regex::Regex;
 use std::cmp::Ordering;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
@@ -133,6 +135,7 @@ impl Module {
         &self,
         module_dec: &ModuleDec,
     ) -> Vec<(Reference, Reference)> {
+        let qualifier = ModuleQualifier(self.module_name.to_owned());
         let mut model_names: Vec<&String> = module_dec.0.keys().collect();
         model_names.sort();
 
@@ -154,11 +157,11 @@ impl Module {
                             type_dec.fields.get(name).and_then(|dec| dec.0.get(0))
                         }),
                     )
-                    .filter(|dec| TypeBuilder::is_model_ref(dec))
+                    .filter(|dec| is_model_ref(dec))
                     .map(|s| {
                         (
-                            Reference::from(format!("{}.{}", self.module_name, from_name).as_str()),
-                            Reference::from(s.as_str()),
+                            Reference::from(qualifier.qualify(from_name).as_str()),
+                            Reference::from(qualifier.qualify(s).as_str()),
                         )
                     })
                     .collect::<Vec<(Reference, Reference)>>()
@@ -170,7 +173,7 @@ impl Module {
         let mut dep_mapper = DepMapper::new();
 
         for r in self.get_all_declaration_dependencies(module_dec).iter() {
-            if r.0.module_name == r.1.module_name {
+            if r.0.module_name == self.module_name && r.0.module_name == r.1.module_name {
                 dep_mapper.add_dependency(r.0.type_name.to_owned(), r.1.type_name.to_owned())?;
             }
         }
@@ -181,7 +184,7 @@ impl Module {
         model_names.sort();
 
         for model_name in model_names.iter().cloned() {
-            if ordered.contains(model_name) {
+            if ordered.contains(model_name) || !module_dec.0.contains_key(model_name) {
                 continue;
             }
             self.types_dependency_ordering.push(model_name.to_owned());
@@ -192,5 +195,117 @@ impl Module {
         }
 
         Ok(())
+    }
+}
+
+pub(crate) fn parse_type_struct(
+    qualifier: &ModuleQualifier,
+    field_val: &str,
+) -> Result<TypeStruct, FieldDecError> {
+    let (mut type_struct, unused) = parse_type_annotation(field_val)?;
+
+    if let Some(field_val) = unused {
+        if is_model_ref(field_val) {
+            type_struct.reference = Reference::from(qualifier.qualify(field_val).as_ref());
+        } else {
+            type_struct.primitive_type = parse_primitive_type(field_val)?;
+        }
+    }
+
+    return Ok(type_struct);
+}
+
+pub(crate) fn parse_type_annotation(
+    field_val: &str,
+) -> Result<(TypeStruct, Option<&str>), FieldDecError> {
+    lazy_static! {
+        static ref TYPE_ANNOTATION_REGEX: Regex =
+            Regex::new(r"^literal:(.*):(.*)$|(.+)\{\}$|(.+)\[\]$").unwrap();
+    }
+
+    TYPE_ANNOTATION_REGEX
+        .captures(field_val)
+        .and_then(|c| {
+            c.get(1)
+                .map(|t| {
+                    parse_literal_annotation(t.as_str(), c.get(2).unwrap().as_str())
+                        .map(|s| (s, None))
+                })
+                .or_else(|| {
+                    c.get(3).map(|t| {
+                        Ok((
+                            TypeStruct {
+                                struct_kind: StructKind::Map,
+                                ..TypeStruct::default()
+                            },
+                            Some(t.as_str()),
+                        ))
+                    })
+                })
+                .or_else(|| {
+                    c.get(4).map(|t| {
+                        Ok((
+                            TypeStruct {
+                                struct_kind: StructKind::Repeated,
+                                ..TypeStruct::default()
+                            },
+                            Some(t.as_str()),
+                        ))
+                    })
+                })
+        })
+        .or_else(|| Some(Ok((TypeStruct::default(), Some(field_val)))))
+        .unwrap()
+}
+
+pub(crate) fn parse_literal_annotation<'x>(
+    lit_type: &'x str,
+    val: &'x str,
+) -> Result<TypeStruct, FieldDecError> {
+    let mut result = TypeStruct::default();
+    result.struct_kind = StructKind::Scalar;
+    result.primitive_type = parse_primitive_type(lit_type)?;
+
+    let mut literal = Literal::default();
+
+    match result.primitive_type {
+        PrimitiveType::int => literal.int = serde_json::from_str(val)?,
+        PrimitiveType::string => literal.string = val.to_owned(),
+        PrimitiveType::double => literal.double = serde_json::from_str(val)?,
+        PrimitiveType::bool => literal.bool = serde_json::from_str(val)?,
+        PrimitiveType::any => return Err(FieldDecError::LiteralAnyError),
+    }
+
+    result.literal = Some(literal);
+    return Ok(result);
+}
+
+pub(crate) fn parse_primitive_type(prim_kind: &str) -> Result<PrimitiveType, FieldDecError> {
+    serde_json::from_value(serde_json::Value::String(prim_kind.to_owned()))
+        .map_err(|e| FieldDecError::UnknownPrimitiveType(e.to_string()))
+}
+
+pub fn is_model_ref(type_val: &str) -> bool {
+    return type_val.chars().next().unwrap_or(' ').is_ascii_uppercase()
+        || type_val.find('.').is_some();
+}
+
+pub fn is_local_model_ref(type_val: &str) -> bool {
+    return is_model_ref(type_val) && type_val.find('.').is_none();
+}
+
+pub(crate) struct ModuleQualifier(pub String);
+
+impl ModuleQualifier {
+    pub fn qualify(&self, name: &str) -> String {
+        if name.find(".").is_some() {
+            return name.to_owned();
+        }
+
+        if name.chars().next().unwrap_or(' ').is_ascii_uppercase() {
+            return format!("{}.{}", self.0, name);
+        }
+
+        return name.to_owned();
     }
 }

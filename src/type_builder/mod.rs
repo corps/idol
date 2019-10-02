@@ -16,26 +16,10 @@ use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 
 pub struct TypeBuilder<'a> {
-    resolver: ModuleResolver,
+    qualifier: ModuleQualifier,
     type_dec: TypeDec,
     pub reference: Reference,
     types_map: &'a HashMap<Reference, Type>,
-}
-
-struct ModuleResolver(String);
-
-impl ModuleResolver {
-    fn qualify(&self, name: &str) -> String {
-        if name.find(".").is_some() {
-            return name.to_owned();
-        }
-
-        if name.chars().next().unwrap_or(' ').is_ascii_uppercase() {
-            return format!("{}.{}", self.0, name);
-        }
-
-        return name.to_owned();
-    }
 }
 
 impl<'a> TypeBuilder<'a> {
@@ -47,7 +31,7 @@ impl<'a> TypeBuilder<'a> {
         TypeBuilder {
             type_dec,
             reference: reference.to_owned(),
-            resolver: ModuleResolver(reference.module_name.to_owned()),
+            qualifier: ModuleQualifier(reference.module_name.to_owned()),
             types_map,
         }
     }
@@ -103,8 +87,7 @@ impl<'a> TypeBuilder<'a> {
                     ));
                 }
 
-                let type_struct = self
-                    .parse_type_struct(&field_dec.0[0])
+                let type_struct = parse_type_struct(&self.qualifier, &field_dec.0[0])
                     .map_err(|e| TypeDecError::FieldError(field_name.to_owned(), e))?;
 
                 if type_struct.literal.is_some() {
@@ -213,8 +196,7 @@ impl<'a> TypeBuilder<'a> {
         let mut cur_kind: Option<DenormalizedType> = None;
 
         for type_dec in self.type_dec.is_a.iter() {
-            let ts = self
-                .parse_type_struct(type_dec)
+            let ts = parse_type_struct(&self.qualifier, type_dec)
                 .map_err(|fe| TypeDecError::IsAError(fe))?;
 
             let next_kind = DenormalizedType::from_type_struct(&ts, &Vec::new(), self.types_map);
@@ -288,102 +270,5 @@ impl<'a> TypeBuilder<'a> {
             }
             _ => unreachable!("ComposeFields result should only have been returned from composing two fields kinds!"),
         }
-    }
-
-    pub fn parse_type_struct(&self, field_val: &str) -> Result<TypeStruct, FieldDecError> {
-        let (mut type_struct, unused) = self.parse_type_annotation(field_val)?;
-
-        if let Some(field_val) = unused {
-            if TypeBuilder::is_model_ref(field_val) {
-                type_struct.reference = Reference::from(self.resolver.qualify(field_val).as_ref());
-            } else {
-                type_struct.primitive_type = TypeBuilder::parse_primitive_type(field_val)?;
-            }
-        }
-
-        return Ok(type_struct);
-    }
-
-    fn parse_type_annotation<'b>(
-        &self,
-        field_val: &'b str,
-    ) -> Result<(TypeStruct, Option<&'b str>), FieldDecError> {
-        lazy_static! {
-            static ref TYPE_ANNOTATION_REGEX: Regex =
-                Regex::new(r"^literal:(.*):(.*)$|(.+)\{\}$|(.+)\[\]$").unwrap();
-        }
-
-        TYPE_ANNOTATION_REGEX
-            .captures(field_val)
-            .and_then(|c| {
-                c.get(1)
-                    .map(|t| {
-                        TypeBuilder::parse_literal_annotation(
-                            t.as_str(),
-                            c.get(2).unwrap().as_str(),
-                        )
-                        .map(|s| (s, None))
-                    })
-                    .or_else(|| {
-                        c.get(3).map(|t| {
-                            Ok((
-                                TypeStruct {
-                                    struct_kind: StructKind::Map,
-                                    ..TypeStruct::default()
-                                },
-                                Some(t.as_str()),
-                            ))
-                        })
-                    })
-                    .or_else(|| {
-                        c.get(4).map(|t| {
-                            Ok((
-                                TypeStruct {
-                                    struct_kind: StructKind::Repeated,
-                                    ..TypeStruct::default()
-                                },
-                                Some(t.as_str()),
-                            ))
-                        })
-                    })
-            })
-            .or_else(|| Some(Ok((TypeStruct::default(), Some(field_val)))))
-            .unwrap()
-    }
-
-    pub fn parse_literal_annotation<'x>(
-        lit_type: &'x str,
-        val: &'x str,
-    ) -> Result<TypeStruct, FieldDecError> {
-        let mut result = TypeStruct::default();
-        result.struct_kind = StructKind::Scalar;
-        result.primitive_type = TypeBuilder::parse_primitive_type(lit_type)?;
-
-        let mut literal = Literal::default();
-
-        match result.primitive_type {
-            PrimitiveType::int => literal.int = serde_json::from_str(val)?,
-            PrimitiveType::string => literal.string = val.to_owned(),
-            PrimitiveType::double => literal.double = serde_json::from_str(val)?,
-            PrimitiveType::bool => literal.bool = serde_json::from_str(val)?,
-            PrimitiveType::any => return Err(FieldDecError::LiteralAnyError),
-        }
-
-        result.literal = Some(literal);
-        return Ok(result);
-    }
-
-    pub fn parse_primitive_type(prim_kind: &str) -> Result<PrimitiveType, FieldDecError> {
-        serde_json::from_value(serde_json::Value::String(prim_kind.to_owned()))
-            .map_err(|e| FieldDecError::UnknownPrimitiveType(e.to_string()))
-    }
-
-    pub fn is_model_ref<'x>(type_val: &'x str) -> bool {
-        return type_val.chars().next().unwrap_or(' ').is_ascii_uppercase()
-            || type_val.find('.').is_some();
-    }
-
-    pub fn is_local_model_ref<'x>(type_val: &'x str) -> bool {
-        return TypeBuilder::is_model_ref(type_val) && type_val.find('.').is_none();
     }
 }

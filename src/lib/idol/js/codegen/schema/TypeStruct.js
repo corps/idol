@@ -7,13 +7,13 @@ exports.SchemaTypeStruct = void 0;
 
 var _Literal = require("../../schema/Literal");
 
-var _idol__ = require("../__idol__");
+var _PrimitiveType = require("../../schema/PrimitiveType");
 
 var _Reference = require("../../schema/Reference");
 
-var _PrimitiveType = require("../../schema/PrimitiveType");
-
 var _StructKind = require("../../schema/StructKind");
+
+var _idol__ = require("../__idol__");
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -38,18 +38,6 @@ function () {
     },
     set: function set(val) {
       this._original["literal"] = _Literal.Literal.unwrap(val);
-    }
-  }, {
-    key: "parameters",
-    get: function get() {
-      return _idol__.List.of(_Reference.Reference, {
-        atleastOne: false
-      }).wrap(this._original["parameters"]);
-    },
-    set: function set(val) {
-      this._original["parameters"] = _idol__.List.of(_Reference.Reference, {
-        atleastOne: false
-      }).unwrap(val);
     }
   }, {
     key: "primitive_type",
@@ -124,12 +112,6 @@ exports.SchemaTypeStruct = SchemaTypeStruct;
   fieldName: "literal",
   type: _Literal.Literal,
   optional: true
-}, {
-  fieldName: "parameters",
-  type: _idol__.List.of(_Reference.Reference, {
-    atleastOne: false
-  }),
-  optional: false
 }, {
   fieldName: "primitive_type",
   type: _PrimitiveType.PrimitiveType,

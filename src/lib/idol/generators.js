@@ -402,7 +402,7 @@ function getMaterialTypeDeconstructor(allTypes, t) {
     }).bind(function (scalar) {
       return scalar.getAlias();
     }).map(function (alias) {
-      return searchType(new TypeDeconstructor(allTypes.obj[alias.qualifiedName]));
+      return searchType(new TypeDeconstructor(allTypes.obj[alias.qualifiedName].withTags(t.tags)));
     }).getOr(typeDecon);
   }
 
