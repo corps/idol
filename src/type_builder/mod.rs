@@ -169,7 +169,7 @@ impl<'a> TypeBuilder<'a> {
             let keys_to_remove = t
                 .fields
                 .iter()
-                .filter(|(_, field)| !field.tags.contains(&"optional".to_string()))
+                .filter(|(_, field)| field.tags.contains(&"optional".to_string()))
                 .map(|(k, _)| k)
                 .cloned()
                 .collect::<Vec<String>>();

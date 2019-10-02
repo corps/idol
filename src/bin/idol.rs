@@ -5,6 +5,8 @@ extern crate structopt;
 use idol::loader::{Loader, LoadsModules};
 use idol::models::declarations::ModuleDec;
 use idol::registry::SchemaRegistry;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -17,6 +19,9 @@ struct Opt {
     /// Which extensions to search modules by.  This is in addition to those on any src files.
     #[structopt(long = "extension", short = "x")]
     extensions: Vec<String>,
+    /// output the resulting types as normalized declarations
+    #[structopt(long = "output-normalized", short = "N")]
+    output_normalized: Option<String>,
     src_files: Vec<String>,
 }
 
@@ -111,6 +116,35 @@ fn main() -> Result<(), i32> {
     }
 
     println!("{}", serde_json::to_string(&registry.modules).unwrap());
+
+    if let Some(output_normalized) = opt.output_normalized {
+        let mut path_buf = PathBuf::from(output_normalized);
+        for (module_name, types) in registry.as_type_decs().iter() {
+            path_buf.push(format!("{}.toml", module_name));
+            let path = path_buf.as_path();
+
+            let output = toml::to_string_pretty(types).map_err(|err| {
+                eprintln!(
+                    "Error serializing normalized type declaration files! {}",
+                    err
+                );
+                1
+            })?;
+
+            let mut file = OpenOptions::new().write(true).open(path).map_err(|err| {
+                eprintln!(
+                    "Error opening file {}: {}",
+                    path.as_os_str().to_string_lossy(),
+                    err
+                );
+                1
+            })?;
+
+            file.write_all(output.as_bytes());
+
+            path_buf.pop();
+        }
+    }
 
     return Ok(());
 }

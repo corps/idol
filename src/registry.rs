@@ -40,6 +40,19 @@ impl SchemaRegistry {
         };
     }
 
+    pub fn as_type_decs(&self) -> Vec<(String, HashMap<String, TypeDec>)> {
+        self.modules
+            .iter()
+            .map(|(module_name, module)| {
+                let mut types: HashMap<String, TypeDec> = HashMap::new();
+                for t in module.types_by_name.values() {
+                    types.insert(t.named.type_name.to_owned(), t.as_typedec());
+                }
+                return (module_name.to_owned(), types);
+            })
+            .collect()
+    }
+
     pub fn process_module(
         &mut self,
         module_name: String,

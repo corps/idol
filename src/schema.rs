@@ -1,6 +1,6 @@
 use crate::dep_mapper::DepMapper;
 use crate::err::FieldDecError;
-use crate::models::declarations::ModuleDec;
+use crate::models::declarations::{FieldDec, ModuleDec, TypeDec};
 pub use crate::models::schema::*;
 use crate::type_builder::TypeBuilder;
 use regex::Regex;
@@ -91,6 +91,36 @@ impl TypeStruct {
             PrimitiveType::string => serde_json::Value::from(literal.string.to_owned()),
         })
     }
+
+    pub fn as_type_dec_str(&self) -> String {
+        let mut ts_string = "".to_string();
+        if !self.reference.empty() {
+            ts_string += self.reference.qualified_name.as_str();
+        } else if let Some(lit) = self.literal.clone() {
+            ts_string += (match self.primitive_type {
+                PrimitiveType::bool => format!("literal:bool:{}", lit.bool),
+                PrimitiveType::int => format!("literal:int:{}", lit.int),
+                PrimitiveType::double => format!("literal:double:{}", lit.double),
+                PrimitiveType::string => format!("literal:string:{}", lit.string),
+                _ => unreachable!("any is not allowed in a literal type struct"),
+            })
+            .as_str();
+        } else {
+            ts_string += format!("{:?}", self.primitive_type).as_str();
+        }
+
+        match self.struct_kind {
+            StructKind::Repeated => {
+                ts_string += "[]";
+            }
+            StructKind::Map => {
+                ts_string += "[]";
+            }
+            _ => {}
+        }
+
+        return ts_string;
+    }
 }
 
 impl Type {
@@ -102,6 +132,25 @@ impl Type {
     }
     pub fn is_struct(&self) -> bool {
         return !self.is_type_alias() && !self.is_enum();
+    }
+
+    pub fn as_typedec(&self) -> TypeDec {
+        let mut result = TypeDec::default();
+
+        if let Some(type_struct) = self.is_a.clone() {
+            result.is_a = vec![type_struct.as_type_dec_str()];
+        }
+
+        for (k, v) in self.fields.iter() {
+            let mut field_parts = vec![v.type_struct.as_type_dec_str()];
+            field_parts.extend(v.tags.iter().cloned());
+            result.fields.insert(k.to_owned(), FieldDec(field_parts));
+        }
+
+        result.r#enum = self.options.clone();
+        result.tags = self.tags.clone();
+
+        return result;
     }
 }
 
