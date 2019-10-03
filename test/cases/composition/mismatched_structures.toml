@@ -1,0 +1,2 @@
+[ButNotOtherStructKind]
+is_a = ["primitive_widens.IntAlias[]", "int{}"]

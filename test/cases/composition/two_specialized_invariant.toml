@@ -1,0 +1,10 @@
+[SpecializedInt]
+is_a = "primitive_specialized.SpecializedInt"
+
+[TwoSpecializedInvariant]
+is_a = ["primitive_specialized.SpecializedInt", "primitive_specialized.SpecializedInt"]
+variance = "Invariant"
+
+[TwoSpecializedInvariantDifferentAlias]
+is_a = ["primitive_specialized.SpecializedInt", "SpecializedInt"]
+variance = "Invariant"

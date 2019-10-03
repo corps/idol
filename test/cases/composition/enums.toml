@@ -1,0 +1,12 @@
+[EnumOne]
+enum = ["one"]
+
+[EnumTwo]
+enum = ["two"]
+
+[EnumOneTwo]
+is_a = ["EnumOne", "EnumTwo"]
+variance = "Contravariant"
+
+[EnumOneWithCo]
+is_a = ["EnumOneTwo", "EnumOne"]

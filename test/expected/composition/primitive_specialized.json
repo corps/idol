@@ -1,5 +1,5 @@
 {
-  "Widens": {
+  "SpecializedContravariantInt": {
     "enum": [],
     "fields": {},
     "is_a": [
@@ -9,63 +9,59 @@
     "trim": false,
     "variance": "Covariant"
   },
-  "ReferenceRemainsRight": {
+  "SpecializedCovariantInt": {
     "enum": [],
     "fields": {},
     "is_a": [
-      "primitive_widens.IntAlias"
+      "primitive_specialized.SpecializedInt"
     ],
     "tags": [],
     "trim": false,
     "variance": "Covariant"
   },
-  "IntAlias": {
+  "SpecializedInt": {
     "enum": [],
     "fields": {},
     "is_a": [
       "int"
     ],
-    "tags": [],
-    "trim": false,
-    "variance": "Covariant"
-  },
-  "AnyAlias": {
-    "enum": [],
-    "fields": {},
-    "is_a": [
-      "primitive_widens.BiggerWidens"
+    "tags": [
+      "thing"
     ],
-    "tags": [],
     "trim": false,
     "variance": "Covariant"
   },
-  "ReferenceRemains": {
-    "enum": [],
-    "fields": {},
-    "is_a": [
-      "primitive_widens.IntAlias"
-    ],
-    "tags": [],
-    "trim": false,
-    "variance": "Covariant"
-  },
-  "StaysNarrow": {
+  "SpecializedString": {
     "enum": [],
     "fields": {},
     "is_a": [
       "string"
     ],
-    "tags": [],
+    "tags": [
+      "thing"
+    ],
     "trim": false,
     "variance": "Covariant"
   },
-  "BiggerWidens": {
+  "TwoSpecializedContravariant": {
     "enum": [],
     "fields": {},
     "is_a": [
       "any"
     ],
     "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "UnspecializedInt": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "primitive_widens.IntAlias"
+    ],
+    "tags": [
+      "description:hello"
+    ],
     "trim": false,
     "variance": "Covariant"
   }

@@ -1,15 +1,15 @@
 {
-  "AnyAlias": {
+  "AliasStructFits": {
     "enum": [],
     "fields": {},
     "is_a": [
-      "primitive_widens.BiggerWidens"
+      "primitive_widens.IntAlias[]"
     ],
     "tags": [],
     "trim": false,
     "variance": "Covariant"
   },
-  "BiggerWidens": {
+  "ContraOtherStruct": {
     "enum": [],
     "fields": {},
     "is_a": [
@@ -19,51 +19,31 @@
     "trim": false,
     "variance": "Covariant"
   },
-  "IntAlias": {
+  "IntoAny": {
     "enum": [],
     "fields": {},
     "is_a": [
-      "int"
+      "primitive_widens.IntAlias[]"
     ],
     "tags": [],
     "trim": false,
     "variance": "Covariant"
   },
-  "ReferenceRemains": {
+  "IntoAnyStruct": {
     "enum": [],
     "fields": {},
     "is_a": [
-      "primitive_widens.IntAlias"
+      "primitive_widens.IntAlias[]"
     ],
     "tags": [],
     "trim": false,
     "variance": "Covariant"
   },
-  "ReferenceRemainsRight": {
+  "IntoContraAnyStruct": {
     "enum": [],
     "fields": {},
     "is_a": [
-      "primitive_widens.IntAlias"
-    ],
-    "tags": [],
-    "trim": false,
-    "variance": "Covariant"
-  },
-  "StaysNarrow": {
-    "enum": [],
-    "fields": {},
-    "is_a": [
-      "string"
-    ],
-    "tags": [],
-    "trim": false,
-    "variance": "Covariant"
-  },
-  "Widens": {
-    "enum": [],
-    "fields": {},
-    "is_a": [
-      "any"
+      "any[]"
     ],
     "tags": [],
     "trim": false,

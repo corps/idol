@@ -1,0 +1,22 @@
+[SpecializedInt]
+is_a = "int"
+tags = ["thing"]
+
+[UnspecializedInt]
+is_a = ["int", "primitive_widens.IntAlias"]
+tags = ["description:hello"]
+
+[SpecializedString]
+is_a = "string"
+tags = ["thing"]
+
+[SpecializedCovariantInt]
+is_a = ["UnspecializedInt", "SpecializedInt"]
+
+[SpecializedContravariantInt]
+is_a = ["UnspecializedInt", "SpecializedInt"]
+variance = "Contravariant"
+
+[TwoSpecializedContravariant]
+is_a = ["SpecializedInt", "SpecializedString"]
+variance = "Contravariant"

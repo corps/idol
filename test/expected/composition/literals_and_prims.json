@@ -1,0 +1,44 @@
+{
+  "LitContraPrim": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "string"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "LitFitIntoPrim": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "literal:string:my words"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "LitWithTags": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "literal:double:2.4"
+    ],
+    "tags": [
+      "abc"
+    ],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "LitWithTagsContraPrim": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "double"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  }
+}

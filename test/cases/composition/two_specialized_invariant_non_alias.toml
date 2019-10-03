@@ -1,0 +1,7 @@
+[SpecializedInt]
+is_a = "primitive_specialized.SpecializedInt"
+tags = ["thing"]
+
+[TwoSpecializedInvariant]
+is_a = ["primitive_specialized.SpecializedInt", "SpecializedInt"]
+variance = "Invariant"
