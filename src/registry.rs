@@ -89,125 +89,81 @@ impl SchemaRegistry {
                 .map_err(|msg| ProcessingError::CircularTypeError(msg))?;
         }
 
-        self.missing_module_lookups.remove(&module_name);
-
-        self.add_types_to_module(&mut module, module_dec)
-            .map_err(|e| ProcessingError::ModuleError(module_name.to_owned(), e))?;
-
-        self.modules.insert(module_name.to_owned(), module);
+        let queue = self.prepare_resolution_queue(module, module_dec);
+        self.run_resolution_queue(queue)
+            .map_err(|me| ProcessingError::ModuleError(module_name.to_owned(), me))?;
         Ok(())
     }
 
-    pub fn resolve(&self, model_reference: &Reference) -> Option<&Type> {
-        self.modules
-            .get(&model_reference.module_name)
-            .and_then(|module| module.types_by_name.get(&model_reference.type_name))
-    }
-
-    fn add_types_to_module(
+    fn prepare_resolution_queue(
         &mut self,
-        module: &mut Module,
+        module: Module,
         module_dec: &ModuleDec,
-    ) -> Result<(), ModuleError> {
-        let mut types = self.types.to_owned();
+    ) -> Vec<Reference> {
+        let queue: Vec<Reference> = module
+            .types_dependency_ordering
+            .iter()
+            .map(|type_name| {
+                let named = Reference::from((&module.module_name, type_name));
+                self.incomplete_types.insert(
+                    named.to_owned(),
+                    module_dec.0.get(type_name).unwrap().to_owned(),
+                );
+                named
+            })
+            .collect();
 
-        for type_name in module.types_dependency_ordering.iter() {
-            let type_dec = module_dec.0.get(type_name).unwrap();
-            let type_builder_result =
-                self.run_type_builder(&module.module_name, type_name, type_dec.to_owned())?;
+        self.missing_module_lookups.remove(&module.module_name);
+        self.modules.insert(module.module_name.to_owned(), module);
 
-            if let Some(t) = self.process_type_builder_result(
-                type_dec,
-                &Reference::from(format!("{}.{}", module.module_name, type_name).as_ref()),
-                type_builder_result,
-            )? {
-                module.types_by_name.insert(type_name.to_owned(), t);
+        return queue;
+    }
+
+    fn run_resolution_queue(&mut self, queue: Vec<Reference>) -> Result<(), ModuleError> {
+        let mut queue = queue;
+        while let Some(next) = queue.pop() {
+            if self.types.contains_key(&next) {
+                continue;
+            }
+
+            TypeBuilder::validate_type_name(&next.type_name)?;
+            let type_dec = self.incomplete_types.get(&next).unwrap();
+
+            let result = {
+                let type_builder = TypeBuilder::new(&next, type_dec.to_owned(), &self.types);
+                type_builder
+                    .process()
+                    .map_err(|te| ModuleError::TypeDecError(next.type_name.to_owned(), te))?
+            };
+
+            if let Ok(t) = result {
+                self.modules.get_mut(&next.module_name).map(|m| {
+                    m.types_by_name
+                        .insert(next.type_name.to_owned(), t.to_owned())
+                });
+                self.types.insert(next.to_owned(), t.to_owned());
+                self.incomplete_types.remove(&next);
+                let dependents = self.missing_type_lookups.remove(&next);
+                queue.extend(dependents.iter().flat_map(|d| d.iter().cloned()));
+            } else {
+                let missing_dependency = result.unwrap_err();
+
+                if !self.modules.contains_key(&missing_dependency.module_name) {
+                    self.missing_module_lookups
+                        .insert(missing_dependency.module_name.to_owned());
+                }
+
+                self.missing_type_lookups
+                    .entry(missing_dependency.to_owned())
+                    .or_default()
+                    .insert(next.to_owned());
+
+                self.incomplete_types
+                    .insert(next.to_owned(), type_dec.to_owned());
             }
         }
 
         Ok(())
-    }
-
-    fn run_type_builder(
-        &self,
-        module_name: &String,
-        type_name: &String,
-        type_dec: TypeDec,
-    ) -> Result<Result<Type, Reference>, ModuleError> {
-        let type_builder =
-            SchemaRegistry::prepare_type_builder(&self.types, module_name, type_name, type_dec)?;
-
-        Ok(type_builder.process().map_err(|te| {
-            ModuleError::TypeDecError(type_builder.reference.type_name.to_owned(), te)
-        })?)
-    }
-
-    fn prepare_type_builder<'a>(
-        types: &'a HashMap<Reference, Type>,
-        module_name: &str,
-        type_name: &str,
-        t: TypeDec,
-    ) -> Result<TypeBuilder<'a>, ModuleError> {
-        TypeBuilder::validate_type_name(type_name)?;
-        let reference = Reference::from(format!("{}.{}", module_name, type_name).as_str());
-        Ok(TypeBuilder::new(&reference, t, types))
-    }
-
-    fn process_type_builder_result(
-        &mut self,
-        type_dec: &TypeDec,
-        reference: &Reference,
-        result: Result<Type, Reference>,
-    ) -> Result<Option<Type>, ModuleError> {
-        if let Ok(t) = result {
-            self.modules.get_mut(&reference.module_name).map(|m| {
-                m.types_by_name
-                    .insert(reference.type_name.to_owned(), t.to_owned())
-            });
-
-            self.types.insert(reference.to_owned(), t.to_owned());
-
-            let dependents = self.missing_type_lookups.remove(&reference);
-            self.incomplete_types.remove(&reference);
-
-            if let Some(dependents) = dependents {
-                for dependent in dependents.iter() {
-                    let type_dec = self.incomplete_types.get(dependent).unwrap().to_owned();
-
-                    let type_builder_result = self.run_type_builder(
-                        &dependent.module_name,
-                        &dependent.type_name,
-                        type_dec.to_owned(),
-                    )?;
-
-                    // I'd love to just avoid recursion here and use a processing queue instead.
-                    self.process_type_builder_result(&type_dec, dependent, type_builder_result)?;
-                }
-            }
-
-            Ok(Some(t.to_owned()))
-        } else {
-            let missing_dependency = result.unwrap_err();
-
-            if !self.modules.contains_key(&missing_dependency.module_name) {
-                eprintln!(
-                    "While looking up {} was missing {}",
-                    reference, missing_dependency
-                );
-                self.missing_module_lookups
-                    .insert(missing_dependency.module_name.to_owned());
-            }
-
-            self.missing_type_lookups
-                .entry(missing_dependency.to_owned())
-                .or_default()
-                .insert(reference.to_owned());
-
-            self.incomplete_types
-                .insert(reference.to_owned(), type_dec.to_owned());
-
-            Ok(None)
-        }
     }
 }
 

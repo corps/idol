@@ -20,7 +20,7 @@ impl DenormalizedType {
 
     pub fn compose(&self, other: &Self, variance: &Variance) -> Result<ComposeResult, String> {
         let (anon, specialized) = self.unwrap_compose_params();
-        let (other_anon, other_specialized) = self.unwrap_compose_params();
+        let (other_anon, other_specialized) = other.unwrap_compose_params();
 
         return match (specialized, other_specialized) {
             (true, true) => {
@@ -430,10 +430,16 @@ impl AnonymousType {
                 }
             }
             (AnonymousType::Reference(_, inner), other, _) => {
-                inner.compose(&DenormalizedType::Anonymous(other.to_owned()), variance)
+                match inner.compose(&DenormalizedType::Anonymous(other.to_owned()), variance)? {
+                    TakeEither => Ok(TakeLeft(false)),
+                    result => Ok(result)
+                }
             }
             (_, AnonymousType::Reference(_, other_inner), _) => {
-                DenormalizedType::Anonymous(self.to_owned()).compose(other_inner, variance)
+                match DenormalizedType::Anonymous(self.to_owned()).compose(other_inner, variance)? {
+                    TakeEither => Ok(TakeRight(false)),
+                    result => Ok(result)
+                }
             }
             (_, _, Covariant) => Err(format!(
                 "Could not select narrow covariant amongst these types"

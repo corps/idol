@@ -226,14 +226,14 @@ impl<'a> TypeBuilder<'a> {
                 .compose(&next_kind, &self.type_dec.variance)
                 .map_err(|s| TypeDecError::IsAError(FieldDecError::CompositionError(s)))?;
 
-            match compose_result {
+            match compose_result.to_owned() {
                 ComposeResult::TakeEither => {}
                 ComposeResult::TakeLeft(_) => {}
                 ComposeResult::WidenTo(k) => {
                     cur_kind = Some(DenormalizedType::Anonymous(k));
                 }
                 ComposeResult::TakeRight(_) => {
-                    cur_kind = Some(next_kind);
+                    cur_kind = Some(next_kind.to_owned());
                 }
                 ComposeResult::ComposeFields(fields_result) => {
                     cur_kind = Some(TypeBuilder::apply_compose_fields(
@@ -243,7 +243,16 @@ impl<'a> TypeBuilder<'a> {
                     )?);
                 }
             }
+
+            println!(
+                "left_kind {:?} + next_kind {:?} = cur_kind {:?} because {:?}",
+                left_kind.to_owned(),
+                next_kind.to_owned(),
+                cur_kind.to_owned(),
+                compose_result.to_owned(),
+            )
         }
+        println!("");
 
         return Ok(Ok(cur_kind));
     }

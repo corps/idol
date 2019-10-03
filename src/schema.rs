@@ -167,6 +167,22 @@ impl From<&str> for Reference {
     }
 }
 
+impl From<String> for Reference {
+    fn from(reference_label: String) -> Reference {
+        Reference::from(reference_label.as_str())
+    }
+}
+
+impl From<(&String, &String)> for Reference {
+    fn from(parts: (&String, &String)) -> Reference {
+        Reference {
+            qualified_name: format!("{}.{}", parts.0, parts.1),
+            module_name: parts.0.to_owned(),
+            type_name: parts.1.to_owned(),
+        }
+    }
+}
+
 impl Reference {
     pub fn empty(&self) -> bool {
         return self.type_name.len() == 0;

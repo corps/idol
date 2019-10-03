@@ -16,9 +16,9 @@ $output"
       exit 1
     fi
   else
-    if [[ "$(cat $expected.json)" != "$(cat $actual.json)" ]]; then
+    if [[ "$(cat $expected.json | jq -S)" != "$(cat $actual.json | jq -S)" ]]; then
       echo "$file composition did not match expectation!"
-      diff <(cat $expected.json) <(cat $actual.json)
+      diff <(cat $expected.json | jq -S) <(cat $actual.json | jq -S)
       exit 1
     fi
   fi

@@ -10,9 +10,7 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 use std::iter::FromIterator;
 use std::ops::Deref;
 
-// A denormalized form of Type that contains resolved dependency information and is designed
-// for handling idol's type system.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum ComposeResult {
     TakeLeft(bool),
     TakeRight(bool),
@@ -38,7 +36,7 @@ impl ComposeResult {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum AnonymousType {
     Literal(Literal, PrimitiveType),
     Primitive(PrimitiveType),
@@ -55,7 +53,7 @@ pub enum AnonymousType {
     Map(Box<AnonymousType>),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum DenormalizedType {
     Annotated(AnonymousType, Vec<String>, bool),
     Anonymous(AnonymousType),
