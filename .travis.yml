@@ -28,7 +28,6 @@ addons:
 script:
 - |
   set -e
-  set -x
   export PATH="$PWD/test:$PATH"
   export PATH="/usr/local/opt/node@8/bin:$PATH"
   export PATH="$PWD/node_modules/.bin:$PATH"
@@ -64,6 +63,7 @@ script:
   export TRAVIS_TAG=${TRAVIS_TAG:-v$(./bin/idol --version | cut -d' ' -f2).$(git log --format=%h -1)}
   echo $TRAVIS_TAG
   git tag $TRAVIS_TAG || git fetch --tags
+  ls release/
 deploy:
 - provider: releases
   api_key:
