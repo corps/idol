@@ -32,7 +32,7 @@ script:
   export PATH="$PWD/node_modules/.bin:$PATH"
 
   curl https://bootstrap.pypa.io/get-pip.py | sudo -H python3
-  pip install setuptools
+  python3 -m pip install setuptools
 
   npm install
   make test

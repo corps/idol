@@ -29,10 +29,9 @@ models: $(MODELS)
 	./target/debug/idol $? > build.json
 	python3 --version
 	node --version
-	pip --version
-	pip3 --version
+	python3 -m pip --version
 	npm install
-	pip3 install -e ./src/lib
+	python3 -m pip install -e ./src/lib
 
 	cat build.json | ./target/debug/idol_rs --output src/models/ --mod "crate::models"
 	cat build.json | ./src/lib/idol/idol_py --output src/lib/idol/py --target schema
