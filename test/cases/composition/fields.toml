@@ -1,0 +1,28 @@
+[BasicStructOne]
+fields.a = "enums.EnumOneTwo"
+fields.b = "primitive_widens.IntAlias"
+
+[BasicStructCoSelf]
+is_a = ["BasicStruct", "BasicStruct"]
+
+[BasicStructContraSelf]
+is_a = ["BasicStruct", "BasicStruct"]
+
+[BasicStructTwo]
+fields.a = "enums.EnumOneTwo"
+fields.c = "int"
+
+[BasicStructOneTwoCo]
+is_a = ["BasicStructOne", "BasicStructTwo"]
+fields.d = "string[]"
+
+[BasicStructOneTwoContra]
+is_a = ["BasicStructOne", "BasicStructTwo"]
+fields.d = "string[]"
+variance = "Contravariant"
+
+[BasicStructOneTwoContraTrim]
+is_a = ["BasicStructOne", "BasicStructTwo"]
+fields.d = "string[]"
+variance = "Contravariant"
+trim = true

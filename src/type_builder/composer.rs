@@ -430,16 +430,10 @@ impl AnonymousType {
                 }
             }
             (AnonymousType::Reference(_, inner), other, _) => {
-                match inner.compose(&DenormalizedType::Anonymous(other.to_owned()), variance)? {
-                    TakeEither => Ok(TakeLeft(false)),
-                    result => Ok(result)
-                }
+                inner.compose(&DenormalizedType::Anonymous(other.to_owned()), variance)
             }
             (_, AnonymousType::Reference(_, other_inner), _) => {
-                match DenormalizedType::Anonymous(self.to_owned()).compose(other_inner, variance)? {
-                    TakeEither => Ok(TakeRight(false)),
-                    result => Ok(result)
-                }
+                DenormalizedType::Anonymous(self.to_owned()).compose(other_inner, variance)
             }
             (_, _, Covariant) => Err(format!(
                 "Could not select narrow covariant amongst these types"

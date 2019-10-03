@@ -1,5 +1,6 @@
 #! /usr/bin/env bash
 idol=../target/debug/idol
+export RUST_BACKTRACE=1
 
 rm -rf actual
 mkdir -p actual/composition/

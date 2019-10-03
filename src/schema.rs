@@ -261,6 +261,9 @@ impl Module {
         }
 
         for model_name in ordered {
+            if !module_dec.0.contains_key(&model_name) {
+                continue;
+            }
             self.types_dependency_ordering.push(model_name);
         }
 

@@ -57,7 +57,7 @@
     "enum": [],
     "fields": {},
     "is_a": [
-      "primitive_widens.IntAlias"
+      "int"
     ],
     "tags": [
       "description:hello"

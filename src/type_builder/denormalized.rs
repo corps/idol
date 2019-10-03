@@ -53,6 +53,16 @@ pub enum AnonymousType {
     Map(Box<AnonymousType>),
 }
 
+impl AnonymousType {
+    pub fn find_fields(&self) -> Option<&HashMap<String, Box<DenormalizedType>>> {
+        match self {
+            AnonymousType::Reference(_, inner) => inner.deref().find_fields(),
+            AnonymousType::Fields(f) => Some(f),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum DenormalizedType {
     Annotated(AnonymousType, Vec<String>, bool),
@@ -62,6 +72,13 @@ pub enum DenormalizedType {
 impl DenormalizedType {
     pub fn has_specialization(tags: &Vec<String>) -> bool {
         tags.iter().any(|i| !i.contains(":"))
+    }
+
+    pub fn find_fields(&self) -> Option<&HashMap<String, Box<DenormalizedType>>> {
+        match self {
+            Annotated(inner, _, _) => inner.find_fields(),
+            Anonymous(inner) => inner.find_fields(),
+        }
     }
 
     pub fn from_type_struct(

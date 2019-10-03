@@ -8,7 +8,7 @@ use crate::type_builder::denormalized::AnonymousType::Primitive;
 use crate::type_builder::denormalized::ComposeResult::{
     ComposeFields, TakeEither, TakeLeft, TakeRight, WidenTo,
 };
-use crate::type_builder::denormalized::DenormalizedType::Anonymous;
+use crate::type_builder::denormalized::DenormalizedType::{Annotated, Anonymous};
 use crate::type_builder::denormalized::{AnonymousType, ComposeResult, DenormalizedType};
 use regex::Regex;
 use std::cmp::Ordering;
@@ -274,37 +274,35 @@ impl<'a> TypeBuilder<'a> {
         right: &DenormalizedType,
         fields_result: &HashMap<String, Box<ComposeResult>>,
     ) -> Result<DenormalizedType, TypeDecError> {
-        match (left, right) {
-            (Anonymous(AnonymousType::Fields(left_fields)), Anonymous(AnonymousType::Fields(right_fields))) => {
-                let mut result_fields: HashMap<String, Box<DenormalizedType>> = HashMap::new();
+        let mut result_fields: HashMap<String, Box<DenormalizedType>> = HashMap::new();
 
-                for (k, v) in fields_result.iter() {
-                    match v.deref() {
-                        TakeLeft(optional) => {
-                            let t = left_fields.get(k).unwrap().deref().to_owned();
-                            let t = TypeBuilder::apply_optionality(t, optional.to_owned());
-                            result_fields.insert(k.to_owned(), Box::new(t));
-                        }
-                        TakeEither => {
-                            result_fields.insert(k.to_owned(), left_fields.get(k).unwrap().to_owned());
-                        }
-                        TakeRight(optional) => {
-                            let t = right_fields.get(k).unwrap().deref().to_owned();
-                            let t = TypeBuilder::apply_optionality(t, optional.to_owned());
-                            result_fields.insert(k.to_owned(), Box::new(t));
-                        }
-                        WidenTo(t) => {
-                            result_fields.insert(k.to_owned(), Box::new(Anonymous(t.to_owned())));
-                        }
-                        ComposeFields(_) => {
-                            return Err(TypeDecError::FieldError(k.to_owned(), FieldDecError::CompositionError(format!("field requires further struct merging, but recursive struct merging is not allowed."))));
-                        }
-                    }
+        let left_fields = left.find_fields().unwrap();
+        let right_fields = right.find_fields().unwrap();
+
+        for (k, v) in fields_result.iter() {
+            match v.deref() {
+                TakeLeft(optional) => {
+                    let t = left_fields.get(k).unwrap().deref().to_owned();
+                    let t = TypeBuilder::apply_optionality(t, optional.to_owned());
+                    result_fields.insert(k.to_owned(), Box::new(t));
                 }
-
-                Ok(Anonymous(AnonymousType::Fields(result_fields)))
+                TakeEither => {
+                    result_fields.insert(k.to_owned(), left_fields.get(k).unwrap().to_owned());
+                }
+                TakeRight(optional) => {
+                    let t = right_fields.get(k).unwrap().deref().to_owned();
+                    let t = TypeBuilder::apply_optionality(t, optional.to_owned());
+                    result_fields.insert(k.to_owned(), Box::new(t));
+                }
+                WidenTo(t) => {
+                    result_fields.insert(k.to_owned(), Box::new(Anonymous(t.to_owned())));
+                }
+                ComposeFields(_) => {
+                    return Err(TypeDecError::FieldError(k.to_owned(), FieldDecError::CompositionError(format!("field requires further struct merging, but recursive struct merging is not allowed."))));
+                }
             }
-            _ => unreachable!("ComposeFields result should only have been returned from composing two fields kinds!"),
         }
+
+        Ok(Anonymous(AnonymousType::Fields(result_fields)))
     }
 }
