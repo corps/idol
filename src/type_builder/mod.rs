@@ -122,19 +122,24 @@ impl<'a> TypeBuilder<'a> {
                 }
                 let kind = kind.unwrap();
 
-                let composed = (
-                    kind.compose(&is_a_kind, &self.type_dec.variance)
-                        .map_err(|e| TypeDecError::IsAError(FieldDecError::CompositionError(e)))?,
-                    &is_a_kind,
-                );
+                let compose_result = kind
+                    .compose(&is_a_kind, &self.type_dec.variance)
+                    .map_err(|e| TypeDecError::IsAError(FieldDecError::CompositionError(e)))?;
+
+                let composed = TypeBuilder::apply_compose_result(
+                    kind,
+                    is_a_kind,
+                    &compose_result,
+                    &self.type_dec.variance,
+                )?;
 
                 if t.options.len() > 0 {
-                    let (options, _) = kind.as_enum()?;
+                    let (options, _) = composed.as_enum()?;
                     t.options = options;
                 }
 
                 if t.fields.len() > 0 {
-                    let (fields, _) = kind.as_fields()?;
+                    let (fields, _) = composed.as_fields()?;
                     t.fields = fields;
                 }
             }
@@ -201,6 +206,23 @@ impl<'a> TypeBuilder<'a> {
         })
     }
 
+    fn apply_compose_result(
+        left_kind: DenormalizedType,
+        right_kind: DenormalizedType,
+        compose_result: &ComposeResult,
+        variance: &Variance,
+    ) -> Result<DenormalizedType, TypeDecError> {
+        match compose_result {
+            ComposeResult::TakeEither => Ok(left_kind),
+            ComposeResult::TakeLeft(_) => Ok(left_kind),
+            ComposeResult::TakeRight(_) => Ok(right_kind),
+            ComposeResult::WidenTo(k) => Ok(DenormalizedType::Anonymous(k.to_owned())),
+            ComposeResult::ComposeFields(fields_result) => {
+                TypeBuilder::apply_compose_fields(&left_kind, &right_kind, &fields_result, variance)
+            }
+        }
+    }
+
     fn compose_is_a_kind(
         &self,
     ) -> Result<Result<Option<DenormalizedType>, Reference>, TypeDecError> {
@@ -226,38 +248,29 @@ impl<'a> TypeBuilder<'a> {
                 .compose(&next_kind, &self.type_dec.variance)
                 .map_err(|s| TypeDecError::IsAError(FieldDecError::CompositionError(s)))?;
 
-            match compose_result.to_owned() {
-                ComposeResult::TakeEither => {}
-                ComposeResult::TakeLeft(_) => {}
-                ComposeResult::WidenTo(k) => {
-                    cur_kind = Some(DenormalizedType::Anonymous(k));
-                }
-                ComposeResult::TakeRight(_) => {
-                    cur_kind = Some(next_kind.to_owned());
-                }
-                ComposeResult::ComposeFields(fields_result) => {
-                    cur_kind = Some(TypeBuilder::apply_compose_fields(
-                        &left_kind,
-                        &next_kind,
-                        &fields_result,
-                    )?);
-                }
-            }
+            cur_kind = Some(TypeBuilder::apply_compose_result(
+                left_kind,
+                next_kind,
+                &compose_result,
+                &self.type_dec.variance,
+            )?);
         }
 
         return Ok(Ok(cur_kind));
     }
 
-    fn apply_optionality(t: DenormalizedType, optionality: bool) -> DenormalizedType {
-        if !optionality {
-            return t;
-        }
-
-        match t {
-            DenormalizedType::Anonymous(anon) => {
+    fn apply_optionality(
+        t: DenormalizedType,
+        inheritted: bool,
+        variance: &Variance,
+    ) -> DenormalizedType {
+        match (t, inheritted, variance) {
+            (t, false, _) => t,
+            (t, _, Variance::Invariant) => t,
+            (DenormalizedType::Anonymous(anon), _, _) => {
                 DenormalizedType::Annotated(anon, vec!["optional".to_owned()], true)
             }
-            DenormalizedType::Annotated(anon, tags, specialized) => {
+            (DenormalizedType::Annotated(anon, tags, specialized), _, _) => {
                 if !tags.contains(&"optional".to_string()) {
                     let mut new_tags = tags.clone();
                     new_tags.push("optional".to_owned());
@@ -273,6 +286,7 @@ impl<'a> TypeBuilder<'a> {
         left: &DenormalizedType,
         right: &DenormalizedType,
         fields_result: &HashMap<String, Box<ComposeResult>>,
+        variance: &Variance,
     ) -> Result<DenormalizedType, TypeDecError> {
         let mut result_fields: HashMap<String, Box<DenormalizedType>> = HashMap::new();
 
@@ -281,17 +295,17 @@ impl<'a> TypeBuilder<'a> {
 
         for (k, v) in fields_result.iter() {
             match v.deref() {
-                TakeLeft(optional) => {
+                TakeLeft(inheritted) => {
                     let t = left_fields.get(k).unwrap().deref().to_owned();
-                    let t = TypeBuilder::apply_optionality(t, optional.to_owned());
+                    let t = TypeBuilder::apply_optionality(t, inheritted.to_owned(), variance);
                     result_fields.insert(k.to_owned(), Box::new(t));
                 }
                 TakeEither => {
                     result_fields.insert(k.to_owned(), left_fields.get(k).unwrap().to_owned());
                 }
-                TakeRight(optional) => {
+                TakeRight(inheritted) => {
                     let t = right_fields.get(k).unwrap().deref().to_owned();
-                    let t = TypeBuilder::apply_optionality(t, optional.to_owned());
+                    let t = TypeBuilder::apply_optionality(t, inheritted.to_owned(), variance);
                     result_fields.insert(k.to_owned(), Box::new(t));
                 }
                 WidenTo(t) => {

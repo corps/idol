@@ -3,10 +3,10 @@ fields.a = "enums.EnumOneTwo"
 fields.b = "primitive_widens.IntAlias"
 
 [BasicStructCoSelf]
-is_a = ["BasicStruct", "BasicStruct"]
+is_a = ["BasicStructOne", "BasicStructOne"]
 
 [BasicStructContraSelf]
-is_a = ["BasicStruct", "BasicStruct"]
+is_a = ["BasicStructOne", "BasicStructOne"]
 
 [BasicStructTwo]
 fields.a = "enums.EnumOneTwo"

@@ -481,11 +481,8 @@ impl FieldComposer {
                 Invariant => {
                     return Err(format!("Key {} was present in left, but not right type", k));
                 }
-                Contravariant => {
+                _ => {
                     return Ok(ComposeResult::TakeLeft(true));
-                }
-                Covariant => {
-                    return Ok(ComposeResult::TakeLeft(false));
                 }
             }
         }
