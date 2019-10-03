@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Development scripts for idol_js",
   "dependencies": {
-    "idol_js": "../src/lib/idol",
+    "idol_js": "./src/lib/idol",
     "@babel/cli": "^7.5.5",
     "@babel/core": "^7.5.5",
     "@babel/node": "^7.5.5",
