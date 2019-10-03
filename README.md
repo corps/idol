@@ -11,27 +11,43 @@ Create a toml file, or a json file, _or an executable that outputs json_ (if you
 is_a = "TypeDec{}"
 
 [FieldDec]
-# Fields can be defined as an array of strings, where the first entry is the logical
-# type of the field, and each additional string is a semantic 'tag' attached to the
-# field, which can be (optionally) used by codegen tools or the runtime to provide
-# additional behavior.
 is_a = "string[]"
+tags = ["atleast_one"]
 
-[TypeDec.fields]
-# Is exclusive with is_a and fields properties.  Specifies an enum type whose
-# resident values are the given string elements of this enum.
-enum = "string[]"
+[TypeDec]
+# Defines the inhabitants of an enum type, where the first entry is used
+# as the 'default' when an out of bounds value is deserialized.
+fields.enum = "string[]"
 
-# Is exclusive with enum and fields properties.  Specifies a 'type alias' which will
-# code gen into a new type representing the given logical type.  ie: is_a = "string[]"
-# would create a new alias type for a string arrays.
-is_a = ["string", "optional"]
+# Defines an alias or type structure for this type.
+fields.is_a = "string[]"
 
-# Is exlcusive with is_a and enum properties.
-# Defines fields in a a struct type, where each key is a field name and each entry is the type of that
-# field.
-fields = "FieldDec{}"
-tags = "string[]"
+# Defines the typestructures that compose the fields of this type.
+fields.fields = "FieldDec{}"
+
+# Defines metadata and type specialization to the field specifically.
+fields.tags = "string[]"
+
+# When specifying multiple types, such as through multiple is_a or the combination of
+# is_a with a an enum or fields, idol will attempt to widen, narrow, or enforce type 'specifity'
+# based on this variance value.  See the Variance enum for more information.
+fields.variance = "Variance"
+# When true, any fields marked optional are dropped from the resulting construction.  This is
+# most useful in combination with Contravariant type composition to create slices of an original
+# model.
+fields.trim = "bool"
+
+# A type which changes the behavior of type composition in TypeDec's.
+# Covariant will ensure the resulting type could be read as any of
+# the composing parts, by combining fields of all structures and using
+# the most narrow type.
+# Contravariant will ensure the resulting type could be written from any
+# of the composing parts, by combining fields of all structures, marking
+# any fields not shared amongst all as optional, and using the most
+# wide type.
+# Invariant will ensure the constituent types are all functionally identical.
+[Variance]
+enum = ["Covariant", "Invariant", "Contravariant"]
 ```
 
 Run idol 
@@ -89,21 +105,23 @@ packing or unpacking as necessary.
 
 ## Model Files
 
-Definition idol models is very simple.  In fact, the entire grammar of idol is captured as idol models itself, in the example given above.
+Defining idol models is very simple.  In fact, the entire grammar of idol is captured as idol models itself, in the example given above.
 
 Type values that can be given to `TypeDec` include:
 
 1. `int` a signed int type.  Defaults to 0 from `expand`
-3.  `string` a string type.  Defaults to "" from `expand`
-4.  `double` a 64 bit precision float type.  Defaults to 0.0 from `expand`.
-5.  `bool` a boolean type of true or false.  Defaults to false from `expand`
+2.  `string` a string type.  Defaults to "" from `expand`
+3.  `double` a 64 bit precision float type.  Defaults to 0.0 from `expand`.
+4.  `bool` a boolean type of true or false.  Defaults to false from `expand`
+5.  `any` type which can capture any other value opaquely.
 
 Types can also be decorated with container types:
 
 1.  `int[]` is a list of ints.
 2.  `bool{}` is a map of string -> bool entries.
 
-Finally, tags can be used to provide additional typing / code gen information.  idol supports 2 by default.
+There are also type and field specializations which can be set that codegen will respect in
+generating more specialized serialization and types.
 
 1.  `atleast_one`.  When included in TypeDec.tags for a list type, the resulting list will validate only if atleast one entry exists, and `expand` will prefill atleast one value.  This is to support a safe upgrade path from a scalar to a list type in an existing field.
 
@@ -111,5 +129,7 @@ Finally, tags can be used to provide additional typing / code gen information.  
 
 ## Project Status
 
+Very early development.
+
 Current support languages: python, rust, nodejs
-Target future languages: graphql, ruby, flowjs, typescript.
+Target future languages: graphql, ruby, flowjs, etc

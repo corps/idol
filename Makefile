@@ -30,7 +30,7 @@ models: $(MODELS)
 	python3 --version
 	node --version
 	npm install
-	pip install -e ./src/lib
+	pip3 install -e ./src/lib
 
 	cat build.json | ./target/debug/idol_rs --output src/models/ --mod "crate::models"
 	cat build.json | ./src/lib/idol/idol_py --output src/lib/idol/py --target schema

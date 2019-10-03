@@ -24,7 +24,7 @@ models: $(MODELS)
 	npm --version
 	npm install
 	$$(npm bin)/babel-node --version
-	pip install -e ../src/lib
+	pip3 install -e ../src/lib
 	cat build.json | ../target/debug/idol_rs --output src/models/ --mod "crate::models"
 	cat build.json | idol_py --output src/lib/idol/py --target all.target
 	cat build.json | $$(npm bin)/idol_js --output src/lib/idol/js --target all.target
