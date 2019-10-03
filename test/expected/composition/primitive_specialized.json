@@ -1,0 +1,68 @@
+{
+  "SpecializedContravariantInt": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "any"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "SpecializedCovariantInt": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "primitive_specialized.SpecializedInt"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "SpecializedInt": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "int"
+    ],
+    "tags": [
+      "thing"
+    ],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "SpecializedString": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "string"
+    ],
+    "tags": [
+      "thing"
+    ],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "TwoSpecializedContravariant": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "any"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "UnspecializedInt": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "int"
+    ],
+    "tags": [
+      "description:hello"
+    ],
+    "trim": false,
+    "variance": "Covariant"
+  }
+}

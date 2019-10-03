@@ -1,0 +1,16 @@
+[AliasStructFits]
+is_a = ["primitive_widens.IntAlias[]", "int[]"]
+
+[ContraOtherStruct]
+is_a = ["primitive_widens.IntAlias[]", "int{}"]
+variance = "Contravariant"
+
+[IntoAny]
+is_a = ["primitive_widens.IntAlias[]", "any"]
+
+[IntoAnyStruct]
+is_a = ["primitive_widens.IntAlias[]", "any[]"]
+
+[IntoContraAnyStruct]
+is_a = ["primitive_widens.IntAlias{}", "any{}"]
+variance = "Contravariant"

@@ -1,0 +1,24 @@
+[ReferenceRemainsRight]
+is_a = ["int", "IntAlias"]
+
+[Widens]
+is_a = ["string", "int"]
+variance = "Contravariant"
+
+[AnyAlias]
+is_a = ["any", "BiggerWidens"]
+
+[BiggerWidens]
+is_a = ["string", "int", "IntAlias"]
+variance = "Contravariant"
+
+[StaysNarrow]
+is_a = ["string", "AnyAlias"]
+variance = "Covariant"
+
+[IntAlias]
+is_a = "int"
+
+[ReferenceRemains]
+is_a = ["IntAlias", "int"]
+variance = "Invariant"

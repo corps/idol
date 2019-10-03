@@ -1,1 +1,0 @@
-../lib/idol/idol_py.py

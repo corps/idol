@@ -8,7 +8,6 @@ pub struct TripletOfSideImport2 {
   pub r#a: crate::models::tests::abs::three::SideImport2,
   pub r#b: Vec<crate::models::tests::basic::TestLiteralTop>,
   pub r#c: HashMap<String, crate::models::tests::basic::TestStruct>,
-  pub r#side_import: crate::models::tests::abs::two::SideImport,
 }
 
 impl idol::ExpandsJson for TripletOfSideImport2 {
@@ -50,11 +49,6 @@ impl idol::ExpandsJson for TripletOfSideImport2 {
       None => (),
     }
 
-    match crate::models::tests::abs::two::SideImport::expand_json(&mut value["side_import"]) {
-      Some(v) => value["side_import"] = v,
-      None => (),
-    }
-
     None
   }
 }
@@ -68,7 +62,6 @@ impl idol::ValidatesJson for TripletOfSideImport2 {
     crate::models::tests::abs::three::SideImport2::validate_json(&value["a"]).map_err(|e| idol::ValidationError(format!("field a: {}", e)))?;
     Vec::<crate::models::tests::basic::TestLiteralTop>::validate_json(&value["b"]).map_err(|e| idol::ValidationError(format!("field b: {}", e)))?;
     HashMap::<String, crate::models::tests::basic::TestStruct>::validate_json(&value["c"]).map_err(|e| idol::ValidationError(format!("field c: {}", e)))?;
-    crate::models::tests::abs::two::SideImport::validate_json(&value["side_import"]).map_err(|e| idol::ValidationError(format!("field side_import: {}", e)))?;
 
     Ok(())
   }

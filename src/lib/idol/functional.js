@@ -3,21 +3,10 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.getSemigroup = getSemigroup;
-exports.compose = compose;
-exports.compose3 = compose3;
-exports.concatMap = concatMap;
-exports.flatten = flatten;
-exports.flattenOrderedObj = flattenOrderedObj;
-exports.Conflictable = exports.StringSet = exports.OrderedObj = void 0;
-
-function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
-
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
-
-function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
-
-function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+exports.naiveObjUpdate = naiveObjUpdate;
+exports.naiveObjectConcat = naiveObjectConcat;
+exports.cachedProperty = cachedProperty;
+exports.Alt = exports.StringSet = exports.OrderedObj = void 0;
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
@@ -30,26 +19,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function getSemigroup(source) {
-  return {
-    concat: function concat(a, b) {
-      return a.concat(b);
-    }
-  };
-}
-
-function compose(f, g) {
-  return function (a) {
-    return g(f(a));
-  };
-}
-
-function compose3(f, g, h) {
-  return function (a) {
-    return h(g(f(a)));
-  };
-}
 
 var OrderedObj =
 /*#__PURE__*/
@@ -74,104 +43,142 @@ function () {
       return false;
     }
   }, {
-    key: "concat",
-    value: function concat(other) {
+    key: "map",
+    value: function map(f) {
       var _this = this;
 
+      var newObj = {};
+      this.ordering.forEach(function (k) {
+        return newObj[k] = f(_this.obj[k]);
+      });
+      return new OrderedObj(newObj, this.ordering);
+    }
+  }, {
+    key: "mapIntoIterable",
+    value: function mapIntoIterable(f) {
+      var _this2 = this;
+
+      return this.ordering.map(function (k) {
+        return f(k, _this2.obj[k]);
+      });
+    }
+  }, {
+    key: "mapAndFilter",
+    value: function mapAndFilter(f) {
+      var _this3 = this;
+
+      return OrderedObj.fromIterable(this.keys().reduce(function (result, k) {
+        return result.concat(f(_this3.obj[k]).map(function (v) {
+          return [new OrderedObj(_defineProperty({}, k, v))];
+        }).getOr([]));
+      }, []));
+    }
+  }, {
+    key: "concat",
+    value: function concat(other) {
+      var _this4 = this;
+
       var ordering = this.ordering.concat(other.ordering.filter(function (k) {
-        return !(k in _this.obj);
+        return !(k in _this4.obj);
       }));
       var result = {};
       ordering.forEach(function (k) {
-        var left = _this.obj[k];
+        var left = _this4.obj[k];
         var right = other.obj[k];
-
-        var _getSemigroup = getSemigroup(right),
-            concat = _getSemigroup.concat;
-
-        if (!left) result[k] = right;else if (!right) result[k] = left;else result[k] = concat(left, right);
+        if (!left) result[k] = right;else if (!right) result[k] = left;else result[k] = left.concat(right);
       });
       return new OrderedObj(result, ordering);
     }
   }, {
-    key: "withKV",
-    value: function withKV(k, v) {
-      var ordering = this.ordering.concat(k in this.obj ? [] : [k]);
-      return new OrderedObj(_objectSpread({}, this.obj, _defineProperty({}, k, v)), ordering);
+    key: "keys",
+    value: function keys() {
+      return Object.keys(this.obj);
     }
   }, {
-    key: "zipWithKeysFrom",
-    value: function zipWithKeysFrom(other) {
-      return this.reduce(function (result, _ref) {
-        var _ref2 = _slicedToArray(_ref, 2),
-            next = _ref2[0],
-            k = _ref2[1];
-
-        if (k in other.obj) {
-          return result.concat(new OrderedObj(_defineProperty({}, other.obj[k], next)));
-        }
-
-        return result;
-      }, new OrderedObj());
-    }
-  }, {
-    key: "map",
-    value: function map(f) {
-      var _this2 = this;
-
-      var result = {};
-      this.ordering.forEach(function (k) {
-        return result[k] = f(_this2.obj[k], k);
-      });
-      return new OrderedObj(result, this.ordering);
-    }
-  }, {
-    key: "bimap",
-    value: function bimap(f) {
-      var _this3 = this;
-
-      var result = {};
-      var newOrdering = this.ordering.map(function (k) {
-        var _f = f(_this3.obj[k], k),
-            _f2 = _slicedToArray(_f, 2),
-            k2 = _f2[0],
-            v = _f2[1];
-
-        if (k2 in result) {
-          throw new Error('bimap invariant broke: not all keys unique');
-        }
-
-        result[k2] = v;
-        return k2;
-      });
-      return new OrderedObj(result, newOrdering);
-    }
-  }, {
-    key: "forEach",
-    value: function forEach(f) {
-      var _this4 = this;
-
-      this.ordering.forEach(function (k) {
-        return f(_this4.obj[k], k);
-      });
-    }
-  }, {
-    key: "reduce",
-    value: function reduce(f, d) {
+    key: "concatMap",
+    value: function concatMap(f, d) {
       var _this5 = this;
 
-      return this.ordering.reduce(function (p, n) {
-        return f(p, [_this5.obj[n], n]);
+      return this.ordering.reduce(function (result, nextK) {
+        return result.concat(f(nextK, _this5.obj[nextK]));
       }, d);
     }
   }, {
-    key: "items",
-    value: function items() {
+    key: "values",
+    value: function values() {
       var _this6 = this;
 
       return this.ordering.map(function (k) {
         return _this6.obj[k];
       });
+    }
+  }, {
+    key: "iter",
+    value: function iter() {
+      var _ref2;
+
+      var i = 0;
+      var obj = this.obj;
+      var keys = this.keys();
+      return _ref2 = {}, _defineProperty(_ref2, Symbol.iterator, function () {
+        return this;
+      }), _defineProperty(_ref2, "next", function next() {
+        if (i < keys.length) {
+          var key = keys[i];
+          return {
+            done: false,
+            value: [key, obj[key]]
+          };
+        }
+
+        return {
+          done: true
+        };
+      }), _ref2;
+    }
+  }, {
+    key: "get",
+    value: function get(k) {
+      if (k in this.obj) {
+        return Alt.lift(this.obj[k]);
+      }
+
+      return Alt.empty();
+    }
+  }, {
+    key: "length",
+    get: function get() {
+      return Object.keys(this.obj).length;
+    }
+  }], [{
+    key: "fromIterable",
+    value: function fromIterable(iter) {
+      var result = new OrderedObj();
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = iter[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var o = _step.value;
+          result = result.concat(o);
+        }
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+            _iterator["return"]();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
+      }
+
+      return result;
     }
   }]);
 
@@ -201,16 +208,6 @@ function () {
   }
 
   _createClass(StringSet, [{
-    key: "reduce",
-    value: function reduce(f, d) {
-      return this.items.reduce(f, d);
-    }
-  }, {
-    key: "map",
-    value: function map(f) {
-      return new StringSet(this.items.map(f));
-    }
-  }, {
     key: "concat",
     value: function concat(other) {
       return new StringSet(this.items.concat(other.items));
@@ -222,80 +219,149 @@ function () {
 
 exports.StringSet = StringSet;
 
-var Conflictable =
+var Alt =
 /*#__PURE__*/
 function () {
-  function Conflictable(values) {
-    _classCallCheck(this, Conflictable);
+  function Alt(value) {
+    _classCallCheck(this, Alt);
 
-    this.values = values;
+    this.value = value.slice(0, 1);
   }
 
-  _createClass(Conflictable, [{
-    key: "concat",
-    value: function concat(other) {
-      return new Conflictable(this.values.concat(other.values));
-    }
-  }, {
+  _createClass(Alt, [{
     key: "unwrap",
     value: function unwrap() {
-      var errorMessage = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "Unexpected conflict found.";
-
-      if (this.values.length > 1) {
-        throw new Error(errorMessage);
+      if (this.value.length) {
+        return this.value[0];
       }
 
-      return this.values[0];
+      throw new Error("Unwrapped empty value!");
     }
   }, {
-    key: "expectOne",
-    value: function expectOne() {
-      var emptyMessage = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "No value was found.";
-      var conflictMessage = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "Unexpected conflict found";
-
-      if (this.values.length === 0) {
-        throw new Error(emptyMessage);
+    key: "getOr",
+    value: function getOr(d) {
+      if (this.value.length) {
+        return this.value[0];
       }
 
-      return this.unwrap(conflictMessage);
+      return d;
     }
   }, {
-    key: "unwrapConflicts",
-    value: function unwrapConflicts(mapConflict) {
-      if (this.values.length > 1) {
-        return [mapConflict(this.values)];
+    key: "binding",
+    value: function binding() {
+      var value = this.value;
+      return (
+        /*#__PURE__*/
+        regeneratorRuntime.mark(function _callee() {
+          return regeneratorRuntime.wrap(function _callee$(_context) {
+            while (1) {
+              switch (_context.prev = _context.next) {
+                case 0:
+                  if (value.length) {
+                    _context.next = 3;
+                    break;
+                  }
+
+                  _context.next = 3;
+                  return false;
+
+                case 3:
+                  return _context.abrupt("return", value[0]);
+
+                case 4:
+                case "end":
+                  return _context.stop();
+              }
+            }
+          }, _callee);
+        })()
+      );
+    }
+  }, {
+    key: "bind",
+    value: function bind(f) {
+      if (this.isEmpty()) return this;
+      return f(this.unwrap());
+    }
+  }, {
+    key: "isEmpty",
+    value: function isEmpty() {
+      return !this.value.length;
+    }
+  }, {
+    key: "concat",
+    value: function concat(other) {
+      if (this.isEmpty()) return other;
+      return this;
+    }
+  }, {
+    key: "map",
+    value: function map(f) {
+      if (this.isEmpty()) return this;
+      return Alt.lift(f(this.unwrap()));
+    }
+  }, {
+    key: "either",
+    value: function either(other) {
+      if (!this.isEmpty() && !other.isEmpty()) {
+        throw new Error("Unexpected conflict, found ".concat(this.value.join(" ")));
       }
 
-      return [];
+      return this.concat(other);
+    }
+  }, {
+    key: "filter",
+    value: function filter(pred) {
+      if (this.isEmpty()) return this;
+      if (pred(this.unwrap())) return this;
+      return Alt.empty();
+    }
+  }], [{
+    key: "from",
+    value: function from(f) {
+      var result;
+
+      while (!(result = f.next()).done) {
+        if (!result.value) {
+          return new Alt([]);
+        }
+      }
+
+      return new Alt([result.value]);
+    }
+  }, {
+    key: "lift",
+    value: function lift(v) {
+      return new Alt([v]);
+    }
+  }, {
+    key: "empty",
+    value: function empty() {
+      return new Alt([]);
     }
   }]);
 
-  return Conflictable;
+  return Alt;
 }();
 
-exports.Conflictable = Conflictable;
+exports.Alt = Alt;
 
-function concatMap(container, f, d) {
-  var _getSemigroup2 = getSemigroup(d),
-      concat = _getSemigroup2.concat;
-
-  return container.reduce(function (p, n) {
-    return concat(p, f(n));
-  }, d);
+function naiveObjUpdate(one, other) {
+  for (var _k2 in other) {
+    if (_k2 in one) one[_k2] = one[_k2].concat(other[_k2]);else one[_k2] = other[_k2];
+  }
 }
 
-function flatten(container, d) {
-  return concatMap(container, function (i) {
-    return i;
-  }, d);
+function naiveObjectConcat(one, other) {
+  var result = _objectSpread({}, one);
+
+  naiveObjUpdate(result, other);
+  result.constructor = one.constructor;
+  return result;
 }
 
-function flattenOrderedObj(container, d) {
-  return concatMap(container, function (_ref4) {
-    var _ref5 = _slicedToArray(_ref4, 2),
-        i = _ref5[0],
-        _ = _ref5[1];
-
-    return i;
-  }, d);
+function cachedProperty(store, key, f) {
+  key = "__" + key;
+  if (key in store) return store[key];
+  return store[key] = f();
 }

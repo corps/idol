@@ -1,0 +1,52 @@
+{
+  "AliasStructFits": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "primitive_widens.IntAlias[]"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "ContraOtherStruct": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "any"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "IntoAny": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "primitive_widens.IntAlias[]"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "IntoAnyStruct": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "primitive_widens.IntAlias[]"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "IntoContraAnyStruct": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "any[]"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  }
+}

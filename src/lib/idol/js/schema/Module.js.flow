@@ -1,0 +1,19 @@
+// @flow
+import { SchemaModule } from "../codegen/schema/Module";
+import { OrderedObj } from "../../functional";
+import { Type } from "./Type";
+
+export class Module extends SchemaModule {
+  constructor(val: any) {
+    super(val);
+  }
+
+  typesAsOrderedObject(): OrderedObj<Type> {
+    return OrderedObj.fromIterable(
+      this.types_dependency_ordering.map(name => {
+        const type = this.types_by_name[name];
+        return new OrderedObj({ [type.named.qualified_name]: type });
+      })
+    );
+  }
+}

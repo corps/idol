@@ -1,0 +1,45 @@
+{
+  "EnumOne": {
+    "enum": [
+      "one"
+    ],
+    "fields": {},
+    "is_a": [],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "EnumOneTwo": {
+    "enum": [
+      "four",
+      "one",
+      "three",
+      "two"
+    ],
+    "fields": {},
+    "is_a": [],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "EnumOneWithCo": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "enums.EnumOne"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "EnumTwo": {
+    "enum": [
+      "two"
+    ],
+    "fields": {},
+    "is_a": [],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  }
+}

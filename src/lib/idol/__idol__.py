@@ -1,133 +1,25 @@
-from typing import TypeVar, MutableSequence, Optional, MutableMapping, Generic, Any, Iterable, \
-    Tuple, Union
+from types import new_class
+
+from collections.abc import MutableSequence
+from typing import (
+    TypeVar,
+    MutableMapping,
+    Any,
+    Iterable,
+    Tuple,
+    Type,
+    cast,
+    Union,
+    List as typingList,
+    Dict,
+    Iterator,
+    Optional,
+)
 from enum import Enum as enumEnum
-import sys
-
-NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
-if NEW_TYPING:
-    import collections.abc
-    from typing import (
-        Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias
-    )
-else:
-    from typing import (
-        Callable, CallableMeta, Union, _Union, TupleMeta, TypeVar,
-        _ClassVar, GenericMeta,
-    )
-
-T = TypeVar('T')
-
-
-def _gorg(cls):
-    assert isinstance(cls, GenericMeta)
-    if hasattr(cls, '_gorg'):
-        return cls._gorg
-    while cls.__origin__ is not None:
-        cls = cls.__origin__
-    return cls
-
-
-def is_union_type(tp):
-    if NEW_TYPING:
-        return (tp is Union or
-                isinstance(tp, _GenericAlias) and tp.__origin__ is Union)
-    return type(tp) is _Union
-
-
-def get_origin(tp):
-    if NEW_TYPING:
-        if isinstance(tp, _GenericAlias):
-            return tp.__origin__ if tp.__origin__ is not ClassVar else None
-        if tp is Generic:
-            return Generic
-        return None
-    if isinstance(tp, GenericMeta):
-        return _gorg(tp)
-    if is_union_type(tp):
-        return Union
-
-    return None
-
-
-def _eval_args(args):
-    res = []
-    for arg in args:
-        if not isinstance(arg, tuple):
-            res.append(arg)
-        else:
-            res.append(type(arg[0]).__getitem__(arg[0], _eval_args(arg[1:])))
-    return tuple(res)
-
-
-def is_generic_type(tp):
-    if NEW_TYPING:
-        return (isinstance(tp, type) and issubclass(tp, Generic) or
-                isinstance(tp, _GenericAlias) and
-                tp.__origin__ not in (Union, tuple))
-    return (isinstance(tp, GenericMeta) and not
-    isinstance(tp, (CallableMeta, TupleMeta)))
-
-
-def is_tuple_type(tp):
-    if NEW_TYPING:
-        return (tp is Tuple or isinstance(tp, _GenericAlias) and
-                tp.__origin__ is tuple or
-                isinstance(tp, type) and issubclass(tp, Generic) and
-                issubclass(tp, tuple))
-    return type(tp) is TupleMeta
-
-
-def get_args(tp):
-    if NEW_TYPING:
-        if isinstance(tp, _GenericAlias):
-            return tp.__args__
-        return ()
-    if is_generic_type(tp) or is_union_type(tp) or is_tuple_type(tp):
-        tree = tp._subs_tree()
-        if isinstance(tree, tuple) and len(tree) > 1:
-            return _eval_args(tree[1:])
-    return ()
 
 
 def with_metaclass(meta, *bases):
-    """Create a base class with a metaclass."""
     return meta("NewBase", bases, {})
-
-
-def unwrap_value(value):
-    if isinstance(value, WrapsValue):
-        value = value.unwrap()
-
-    return value
-
-
-def wrap_value(expected_type, value):
-    if expected_type in (Any, Optional, Union):
-        return value
-
-    origin = get_origin(expected_type)
-
-    if is_union_type(expected_type):
-        args = get_args(expected_type)
-        if len(args) != 2 or args[1] != type(None):
-            raise TypeError("Only Optional is supported, other Unions are not")
-
-        if value is None:
-            return None
-
-        expected_type = args[0]
-
-    wrapped = False
-    if origin:
-        wrapped = True
-    elif issubclass(expected_type, WrapsValue):
-        wrapped = True
-
-    if wrapped:
-        if not isinstance(value, WrapsValue):
-            value = expected_type(value)
-
-    return value
 
 
 def get_list_scalar(value):
@@ -139,161 +31,98 @@ def get_list_scalar(value):
     return value
 
 
-def is_valid(cls, json):
-    try:
-        validate(cls, json)
-        return True
-    except (ValueError, KeyError, TypeError):
-        return False
-
-
-def expand(cls, json):
-    if hasattr(cls, 'expand'):
-        return cls.expand(json, concrete_cls=cls)
-
-    return expand_primitive(cls, json)
-
-
-def validate(cls, json, path=[]):
-    if hasattr(cls, 'validate'):
-        return cls.validate(json, path=path, concrete_cls=cls)
-
-    return validate_primitive(cls, json, path=path)
-
-
-def expand_primitive(cls, json, concrete_cls=None):
-    if concrete_cls:
-        cls = concrete_cls
-
-    json = get_list_scalar(json)
-
-    if json:
-        return json
-
-    if issubclass(cls, int):
-        primitive_type = 'int64'
-    if issubclass(cls, float):
-        primitive_type = 'double'
-    if issubclass(cls, str):
-        primitive_type = 'string'
-    if issubclass(cls, bool):
-        primitive_type = 'boolean'
-
-    if primitive_type == 'int53':
-        return 0
-    if primitive_type == 'int64':
-        return 0
-    if primitive_type == 'double':
-        return 0.0
-    if primitive_type == 'string':
-        return ""
-    if primitive_type == 'boolean':
-        return False
-
-    return json
-
-
-def validate_primitive(cls, json, path=[], concrete_cls=None):
-    if concrete_cls:
-        cls = concrete_cls
-
-    if issubclass(cls, int):
-        primitive_type = 'int64'
-    if issubclass(cls, float):
-        primitive_type = 'double'
-    if issubclass(cls, str):
-        primitive_type = 'string'
-    if issubclass(cls, bool):
-        primitive_type = 'boolean'
-
-    if primitive_type == 'int53':
-        if not isinstance(json, int):
-            raise TypeError(f"{'.'.join(path)} Expected a int, found {type(json)}")
-        if json > 9007199254740991 or json < -9007199254740991:
-            raise ValueError(f"{'.'.join(path)} value was out of range for i53")
-    if primitive_type == 'int64':
-        if not isinstance(json, int):
-            raise TypeError(f"{'.'.join(path)} Expected a int, found {type(json)}")
-        if json > 9223372036854775807 or json < -9223372036854775807:
-            raise ValueError(f"{'.'.join(path)} value was out of range for i64")
-    if primitive_type == 'double':
-        if not isinstance(json, float):
-            raise TypeError(f"{'.'.join(path)} Expected a float, found {type(json)}")
-    if primitive_type == 'string':
-        if not isinstance(json, str):
-            raise TypeError(f"{'.'.join(path)} Expected a str, found {type(json)}")
-    if primitive_type == 'boolean':
-        if not isinstance(json, bool):
-            raise TypeError(f"{'.'.join(path)} Expected a bool, found {type(json)}")
-
-
-def inner_kind(cls):
-    if cls.is_container():
-        args = get_args(cls)
-        while not args:
-            cls = cls.__orig_bases__[0]
-            args = get_args(cls)
-        result = cls.__args__[0]
-        if type(result) is TypeVar:
-            raise TypeError("Logic bug!  inner kind was a TypeVar instead of a concrete type")
-        return result
-
-
-class WrapsValue:
+class IdolConstructor:
     @classmethod
-    def is_container(cls):
-        return False
-
-    is_valid = classmethod(is_valid)
-
-    def inst_inner_kind(self):
-        return inner_kind(self.__orig_class__)
-
-    def unwrap(self):
+    def validate(cls, json, path: typingList[str] = []):
         pass
 
-
-class Literal(WrapsValue, Generic[T]):
-    def __new__(cls, *args) -> T:
-        return cls.literal
+    @classmethod
+    def is_valid(cls, json) -> bool:
+        try:
+            cls.validate(json)
+            return True
+        except (ValueError, TypeError, KeyError):
+            return False
 
     @classmethod
-    def validate(cls, json, path=[], concrete_cls=None):
-        if concrete_cls:
-            cls = concrete_cls
-
-        if json != cls.literal:
-            raise ValueError(f"{'.'.join(path)} Expected to find literal {cls.literal}")
+    def unwrap(cls, value) -> Any:
+        return value
 
     @classmethod
-    def expand(cls, json, concrete_cls=None):
-        if concrete_cls:
-            cls = concrete_cls
+    def wrap(cls, value) -> Any:
+        return value
 
-        metadata = cls.__metadata__
+    @classmethod
+    def expand(cls, json) -> Any:
+        return json
+
+
+class Primitive(IdolConstructor):
+    type_constructor: Type
+
+    def __new__(cls, *args, **kwargs):
+        return cls.type_constructor(*args, **kwargs)
+
+    @staticmethod
+    def of(type_constructor: Type) -> Type["Primitive"]:
+        cls = cast(Type["Primitive"], new_class(type_constructor.__name__, (Primitive,)))
+
+        cls.type_constructor = type_constructor
+        return cls
+
+    @classmethod
+    def expand(cls, json) -> Union[str, float, bool, int]:
         json = get_list_scalar(json)
 
-        if json is None or type(json) is type(cls.literal):
-            json = cls.literal
+        if json:
+            return json
+
+        if issubclass(cls.type_constructor, str):
+            return ""
+        if issubclass(cls.type_constructor, float):
+            return 0.0
+        if issubclass(cls.type_constructor, bool):
+            return False
+        if issubclass(cls.type_constructor, int):
+            return 0
+
+        raise TypeError("type_constructor was not one of str, float, bool, or int!")
+
+    @classmethod
+    def validate(cls, json, path: typingList[str] = []):
+        if not issubclass(type(json), cls.type_constructor):
+            raise TypeError(
+                f"{'.'.join(path)} Expected type of {cls.type_constructor}, found {type(json)}"
+            )
+
+
+class Literal(IdolConstructor):
+    value: Union[str, int, float, bool]
+
+    @staticmethod
+    def of(value: Union[str, int, float, bool]) -> Type["Literal"]:
+        cls = cast(Type["Literal"], new_class(type(value).__name__, (Literal,)))
+        cls.value = value
+        return cls
+
+    @classmethod
+    def validate(cls, json, path=[]):
+        if json != cls.value:
+            raise ValueError(f"{'.'.join(path)} Expected to find literal {cls.value}")
+
+    @classmethod
+    def expand(cls, json) -> Union[str, int, float, bool]:
+        json = get_list_scalar(json)
+
+        if json is None or isinstance(json, type(cls.value)):
+            json = cls.value
 
         return json
 
 
-class Enum(WrapsValue, enumEnum):
-    def unwrap(self):
-        return self.value
-
+class Enum(IdolConstructor, enumEnum):
     @classmethod
-    def validate(cls, json, path=[], concrete_cls=None):
-        """
-        TypeError is raised when the json is not a string.
-        ValueError is raised when the json does not match any enum entry given string
-        """
-        if concrete_cls:
-            cls = concrete_cls
-
-        metadata = cls.__metadata__
-
+    def validate(cls, json, path=[]):
         if not isinstance(json, str):
             raise TypeError(f"{'.'.join(path)} Expected a string, found {type(json)}")
 
@@ -303,76 +132,77 @@ class Enum(WrapsValue, enumEnum):
             raise ValueError(f"{'.'.join(path)} Value does not match enum type {cls}")
 
     @classmethod
-    def expand(cls, json, concrete_cls=None):
-        """
-        Recursively expands all entries of this map.
-        """
-        if concrete_cls:
-            cls = concrete_cls
-
-        metadata = cls.__metadata__
+    def expand(cls, json):
         json = get_list_scalar(json)
 
         if json is None:
-            json = getattr(cls, iter(cls._member_map_).__next__()).value
+            json = next(iter(cls)).value
 
         return json
 
-
-class List(Generic[T], MutableSequence[T], WrapsValue):
     @classmethod
-    def is_container(cls):
-        return True
+    def unwrap(cls, value: enumEnum):
+        if isinstance(value, cls):
+            return value.value
+        return value
 
     @classmethod
-    def validate(cls, json, path=[], concrete_cls=None):
-        """
-        Recursively validates all items of this list.
-        TypeError is raised when the json is not a list object.
-        Otherwise, the inner item's value is validated against its respective type.
-        """
-        if concrete_cls:
-            cls = concrete_cls
+    def wrap(cls: Type["Enum_T"], value) -> "Enum_T":
+        return cls(value)
 
-        metadata = getattr(cls, '__metadata__', dict(tags=[]))
 
+Enum_T = TypeVar("Enum_T", bound=Enum)
+
+
+class List(IdolConstructor, MutableSequence):
+    inner_constructor: Type[IdolConstructor]
+    options: Dict[str, Any]
+
+    @staticmethod
+    def of(
+        inner_constructor: Type[IdolConstructor], options: Optional[Dict[str, Any]] = None
+    ) -> Type["List"]:
+        cls = cast(Type["List"], new_class(f"List[{inner_constructor.__name__}]", (List,)))
+        cls.inner_constructor = inner_constructor
+        cls.options = options
+        return cls
+
+    @classmethod
+    def validate(cls, json, path=[]):
         if not isinstance(json, list):
             raise TypeError(f"{'.'.join(path)} Expected a list, found {type(json)}")
 
-        if 'atleast_one' in metadata['tags']:
+        if cls.options.get("atleast_one"):
             if not len(json):
-                raise ValueError(f"{'.'.join(path)} Expected atleast one item, but it was empty")
+                raise ValueError(f"{'.'.join(path)} Expected at least one item, but it was empty")
 
         for i, val in enumerate(json):
-            validate(inner_kind(cls), val, path + [str(i)])
+            cls.inner_constructor.validate(val, path + [str(i)])
 
     @classmethod
-    def expand(cls, json, concrete_cls=None):
-        """
-        Recursively expands all items of this map.
-        """
-        if concrete_cls:
-            cls = concrete_cls
-
-        metadata = getattr(cls, '__metadata__', dict(tags=[]))
-
+    def expand(cls, json) -> Any:
         if json is None:
             json = []
 
         if not isinstance(json, list):
             json = [json]
 
-        if 'atleast_one' in metadata['tags']:
+        if cls.options.get("atleast_one"):
             if not len(json):
                 json.append(None)
 
         for i, val in enumerate(json):
-            json[i] = expand(inner_kind(cls), val)
+            json[i] = cls.inner_constructor.expand(val)
 
         return json
 
+    orig_list: typingList
+
+    def __init__(self, orig_list: typingList):
+        self.orig_list = orig_list
+
     def insert(self, index, v):
-        return self.orig_list.insert(index, unwrap_value(v))
+        return self.orig_list.insert(index, self.inner_constructor.unwrap(v))
 
     def __delitem__(self, i: int) -> None:
         return self.orig_list.__delitem__(i)
@@ -381,48 +211,53 @@ class List(Generic[T], MutableSequence[T], WrapsValue):
         return len(self.orig_list)
 
     def __getitem__(self, i):
-        return wrap_value(self.inst_inner_kind(), self.orig_list.__getitem__(i))
+        return self.inner_constructor.wrap(self.orig_list.__getitem__(i))
 
     def __setitem__(self, key, value):
-        self.orig_list.__setitem__(key, unwrap_value(value))
+        self.orig_list.__setitem__(key, self.inner_constructor.unwrap(value))
 
-    def __init__(self, orig_list):
-        self.orig_list = orig_list
+    def __iter__(self) -> Iterator:
+        for value in self.orig_list:
+            yield self.inner_constructor.wrap(value)
 
-    def unwrap(self):
-        return self.orig_list
-
-
-class Map(Generic[T], MutableMapping[str, T], WrapsValue):
-    @classmethod
-    def is_container(cls):
-        return True
+    def __contains__(self, x: Any) -> bool:
+        return self.inner_constructor.unwrap(x) in self.orig_list
 
     @classmethod
-    def validate(cls, json, path=[], concrete_cls=None):
-        """
-        Recursively validates all entries of this struct.
-        TypeError is raised when the json is not a dict object.
-        Otherwise, the inner entry's value is validated against its respective type.
-        """
-        if concrete_cls:
-            cls = concrete_cls
+    def unwrap(cls, val):
+        if isinstance(val, cls):
+            return val.orig_list
+        return val
 
+    @classmethod
+    def wrap(cls, val):
+        return cls(val)
+
+
+class Map(IdolConstructor, MutableMapping):
+    inner_constructor: Type[IdolConstructor]
+    options: Dict[str, Any]
+
+    @staticmethod
+    def of(
+        inner_constructor: Type[IdolConstructor], options: Optional[Dict[str, Any]] = {}
+    ) -> Type["Map"]:
+        cls = cast(Type["Map"], new_class(f"Map[{inner_constructor.__name__}]", (Map,)))
+        cls.inner_constructor = inner_constructor
+        cls.options = options
+
+        return cls
+
+    @classmethod
+    def validate(cls, json, path=[]):
         if not isinstance(json, dict):
             raise TypeError(f"{'.'.join(path)} Expected a dict, found {type(json)}")
 
-        for key, field in json.items():
-            val = json.get(key, None)
-            validate(inner_kind(cls), val, path + [key])
+        for key, val in json.items():
+            cls.inner_constructor.validate(val, path + [key])
 
     @classmethod
-    def expand(cls, json, concrete_cls=None):
-        """
-        Recursively expands all entries of this map.
-        """
-        if concrete_cls:
-            cls = concrete_cls
-
+    def expand(cls, json):
         json = get_list_scalar(json)
 
         if json is None:
@@ -431,14 +266,18 @@ class Map(Generic[T], MutableMapping[str, T], WrapsValue):
         if not isinstance(json, dict):
             return json
 
-        for key, field in json.items():
-            val = json.get(key, None)
-            json[key] = expand(inner_kind(cls), val)
+        for key, val in json.items():
+            json[key] = cls.inner_constructor.expand(val)
 
         return json
 
-    def __setitem__(self, k: str, v: T):
-        self.orig_map.__setitem__(k, unwrap_value(v))
+    orig_map: Dict[str, Any]
+
+    def __init__(self, orig_map):
+        self.orig_map = orig_map
+
+    def __setitem__(self, k: str, v: Any):
+        self.orig_map.__setitem__(k, self.inner_constructor.unwrap(v))
 
     def __delitem__(self, v: str):
         return self.orig_map.__delitem__(v)
@@ -451,84 +290,74 @@ class Map(Generic[T], MutableMapping[str, T], WrapsValue):
             yield item
 
     def __getitem__(self, i):
-        return wrap_value(self.inst_inner_kind(), self.orig_map.__getitem__(i))
+        return self.inner_constructor.wrap(self.orig_map.__getitem__(i))
 
-    def items(self) -> Iterable[Tuple[str, T]]:
+    def items(self):
         for item in self.orig_map:
             yield (item, self[item])
 
-    def values(self) -> Iterable[T]:
+    def values(self):
         for item in self.orig_map:
-            yield self[item]
+            yield self.inner_constructor.wrap(self[item])
 
-    def __init__(self, orig_map):
-        self.orig_map = orig_map
+    @classmethod
+    def unwrap(cls, val):
+        if isinstance(val, cls):
+            return val.orig_map
+        return val
 
-    def unwrap(self):
-        return self.orig_map
+    @classmethod
+    def wrap(cls, val):
+        return cls(val)
 
 
-def create_struct_prop(attr, type):
+def create_struct_prop(attr, type: Type[IdolConstructor]):
     @property
     def prop(self):
-        return wrap_value(type, self.orig_data.get(attr, None))
+        val = self.orig_data.get(attr, None)
+
+        if val is None:
+            return val
+
+        return type.wrap(val)
 
     @prop.setter
     def prop(self, v):
-        self.orig_data[attr] = unwrap_value(v)
+        self.orig_data[attr] = type.unwrap(v)
 
     return prop
 
 
 class StructMeta(type):
-    def __new__(cls, name, bases, dct):
-        cls = super().__new__(cls, name, bases, dct)
+    def __new__(mcs: Type["Struct"], name, bases, dct):
+        mcs = super().__new__(mcs, name, bases, dct)
+        for field_name, prop_name, constructor, _ in getattr(mcs, "__field_constructors__", []):
+            setattr(mcs, prop_name, create_struct_prop(field_name, constructor))
 
-        annotations = getattr(cls, '__annotations__', {})
-        for attr, type in annotations.items():
-
-            target_attr = attr
-            if attr in KEYWORDS:
-                target_attr = attr + '_'
-            setattr(cls, target_attr, create_struct_prop(attr, type))
-
-        return cls
+        return mcs
 
 
-class Struct(with_metaclass(StructMeta, WrapsValue)):
-    def __init__(self, orig_data):
-        orig_data = unwrap_value(orig_data)
+class Struct(with_metaclass(StructMeta, IdolConstructor)):
+    orig_data: Dict[str, Any]
+    __field_constructors__: typingList[Tuple[str, str, Type[IdolConstructor], Dict[str, Any]]] = []
 
-        if not isinstance(orig_data, dict):
-            raise TypeError(f"Expected to receive a dict, found a {type(orig_data).__name__}")
+    def __init__(self, orig_data: Dict[str, Any]):
         self.orig_data = orig_data
-
-    def unwrap(self):
-        return self.orig_data
 
     def __str__(self):
         return str(self.orig_data)
 
+    def __repr__(self):
+        return repr(self.orig_data)
+
     @classmethod
-    def validate(cls, json, path=[], concrete_cls=None):
-        """
-        Recursively validates all fields of this struct.
-        Fields marked as optional will not be validated when they are null.
-        KeyError is raised when an expected non optional is not present.
-        TypeError is raised when the json is not a dict object.
-        Otherwise, the inner field's value is validated against its respective type.
-        """
-        if concrete_cls:
-            cls = concrete_cls
-
-        metadata = cls.__metadata__
-
+    def validate(cls, json, path=[]):
         if not isinstance(json, dict):
             raise TypeError(f"{'.'.join(path)} Expected a dict, found {type(json)}")
 
-        for field_name, field in metadata['fields'].items():
+        for field_name, prop_name, constructor, options in cls.__field_constructors__:
             val = json.get(field_name, None)
-            optional = 'optional' in field['tags']
+            optional = options.get("optional")
 
             if val is None:
                 if optional:
@@ -536,26 +365,10 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
                 else:
                     raise KeyError(f"{'.'.join(path)} Missing required key {repr(field_name)}")
 
-            annotation_name = field_name
-            if field_name in KEYWORDS:
-                annotation_name += '_'
-
-            if optional:
-                validate(cls.__annotations__[annotation_name].__args__[0], val, path + [field_name])
-            else:
-                validate(cls.__annotations__[annotation_name], val, path + [field_name])
+            constructor.validate(val, path + [field_name])
 
     @classmethod
-    def expand(cls, json, concrete_cls=None):
-        """
-        Recursively expands all fields of this struct.
-        Fields marked as optional will not be expanded when they are null.
-        Otherwise, the inner field's value is expanded against its respective type.
-        """
-        if concrete_cls:
-            cls = concrete_cls
-
-        metadata = cls.__metadata__
+    def expand(cls, json):
         json = get_list_scalar(json)
 
         if json is None:
@@ -564,64 +377,33 @@ class Struct(with_metaclass(StructMeta, WrapsValue)):
         if not isinstance(json, dict):
             return json
 
-        for field_name, field in metadata['fields'].items():
+        for field_name, prop_name, constructor, options in cls.__field_constructors__:
             val = json.get(field_name, None)
-            optional = 'optional' in field['tags']
+            optional = options.get("optional")
 
             if val is None:
                 if optional:
                     json[field_name] = None
                     continue
 
-            annotation_name = field_name
-            if field_name in KEYWORDS:
-                annotation_name += '_'
-
             if optional:
-                if field['type_struct']['struct_kind'] != 'repeated':
+                if not issubclass(constructor, List):
                     val = get_list_scalar(val)
                 if val is not None:
-                    expand(cls.__annotations__[annotation_name].__args__[0], val)
+                    val = constructor.expand(val)
 
                 json[field_name] = val
             else:
-                json[field_name] = expand(cls.__annotations__[annotation_name], val)
+                json[field_name] = constructor.expand(val)
 
         return json
 
+    @classmethod
+    def unwrap(cls, val):
+        if isinstance(val, cls):
+            return val.orig_data
+        return val
 
-KEYWORDS = {
-    'False',
-    'True',
-    'class',
-    'finally',
-    'is',
-    'return',
-    'None',
-    'continue',
-    'for',
-    'lambda',
-    'try',
-    'def',
-    'from',
-    'nonlocal',
-    'while',
-    'and',
-    'del',
-    'global',
-    'not',
-    'with',
-    'as',
-    'elif',
-    'if',
-    'or',
-    'yield',
-    'assert',
-    'else',
-    'import',
-    'pass',
-    'break',
-    'except',
-    'in',
-    'raise',
-}
+    @classmethod
+    def wrap(cls, val):
+        return cls(val)

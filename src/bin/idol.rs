@@ -5,6 +5,9 @@ extern crate structopt;
 use idol::loader::{Loader, LoadsModules};
 use idol::models::declarations::ModuleDec;
 use idol::registry::SchemaRegistry;
+use std::collections::HashMap;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -17,6 +20,9 @@ struct Opt {
     /// Which extensions to search modules by.  This is in addition to those on any src files.
     #[structopt(long = "extension", short = "x")]
     extensions: Vec<String>,
+    /// output the resulting types as normalized declarations
+    #[structopt(long = "output-normalized", short = "N")]
+    output_normalized: Option<String>,
     src_files: Vec<String>,
 }
 
@@ -50,6 +56,8 @@ fn process_module(
     loader: &dyn LoadsModules,
     registry: &mut SchemaRegistry,
 ) -> Result<(), i32> {
+    eprintln!("Processing {}...", module_name);
+
     let module_def = match loader.load_module(&module_name) {
         Ok(value) => Ok(value),
         Err(err) => {
@@ -89,28 +97,62 @@ fn main() -> Result<(), i32> {
             process_module(&missing_module, &loader, &mut registry)?;
         }
 
-        if registry.missing_type_lookups.is_empty() && registry.unresolved_abstractions.is_empty() {
+        if registry.missing_type_lookups.is_empty() {
             continue;
-        }
-
-        for entry in registry.unresolved_abstractions.iter() {
-            eprintln!(
-                "Could not find abstract model definition {} which was required by {:?}.",
-                entry.0,
-                entry.1.iter().next()
-            );
         }
 
         for entry in registry.missing_type_lookups.iter() {
             eprintln!(
                 "Could not find model definition {} which was required by {}.",
-                entry.0, entry.1
+                entry.0,
+                entry
+                    .1
+                    .iter()
+                    .map(|r| r.qualified_name.to_owned())
+                    .collect::<Vec<String>>()
+                    .join(", ")
             );
         }
         return Err(1);
     }
 
     println!("{}", serde_json::to_string(&registry.modules).unwrap());
+
+    if let Some(output_normalized) = opt.output_normalized {
+        let mut path_buf = PathBuf::from(output_normalized);
+        for (module_name, types) in registry.as_type_decs().iter() {
+            path_buf.push(format!("{}.json", module_name));
+            let path = path_buf.as_path();
+
+            let output = serde_json::to_string_pretty(types).map_err(|err| {
+                eprintln!(
+                    "Error serializing normalized type declaration files! {}",
+                    err
+                );
+                1
+            })?;
+
+            let mut file = OpenOptions::new()
+                .write(true)
+                .create(true)
+                .open(path)
+                .map_err(|err| {
+                    eprintln!(
+                        "Error opening file {}: {}",
+                        path.as_os_str().to_string_lossy(),
+                        err
+                    );
+                    1
+                })?;
+
+            file.write_all(output.as_bytes()).map_err(|err| {
+                eprintln!("Error writing output: {}", err);
+                1
+            })?;
+
+            path_buf.pop();
+        }
+    }
 
     return Ok(());
 }

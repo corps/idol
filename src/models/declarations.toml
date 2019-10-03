@@ -6,8 +6,36 @@ is_a = "string[]"
 tags = ["atleast_one"]
 
 [TypeDec]
+# Defines the inhabitants of an enum type, where the first entry is used
+# as the 'default' when an out of bounds value is deserialized.
 fields.enum = "string[]"
-fields.is_a = "string"
+
+# Defines an alias or type structure for this type.
+fields.is_a = "string[]"
+
+# Defines the typestructures that compose the fields of this type.
 fields.fields = "FieldDec{}"
+
+# Defines metadata and type specialization to the field specifically.
 fields.tags = "string[]"
-fields.type_vars = "string[]"
+
+# When specifying multiple types, such as through multiple is_a or the combination of
+# is_a with a an enum or fields, idol will attempt to widen, narrow, or enforce type 'specifity'
+# based on this variance value.  See the Variance enum for more information.
+fields.variance = "Variance"
+# When true, any fields marked optional are dropped from the resulting construction.  This is
+# most useful in combination with Contravariant type composition to create slices of an original
+# model.
+fields.trim = "bool"
+
+# A type which changes the behavior of type composition in TypeDec's.
+# Covariant will ensure the resulting type could be read as any of
+# the composing parts, by combining fields of all structures and using
+# the most narrow type.
+# Contravariant will ensure the resulting type could be written from any
+# of the composing parts, by combining fields of all structures, marking
+# any fields not shared amongst all as optional, and using the most
+# wide type.
+# Invariant will ensure the constituent types are all functionally identical.
+[Variance]
+enum = ["Covariant", "Invariant", "Contravariant"]

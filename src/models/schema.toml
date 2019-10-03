@@ -1,24 +1,15 @@
-[StructKind]
 # Scalars are non contained values
-# Repeated are essentially lists.  They can be upgraded or downgraded to and from Scalars.
+# Repeated are homogenous lists.  They can be upgraded or downgraded to and from Scalars.
 #   A repeated is indicated in a TypeDec by ending with '[]'
-# Maps are 'dictionaries', whose key is always a string, mapping to js objects.
+# Maps are homogenous 'dictionaries', whose key is always a string, mapping to js objects.
 #   A map is indicated in a TypeDec by ending with '{}'
+[StructKind]
 enum = ["Scalar", "Repeated", "Map"]
 
 [PrimitiveType]
 enum = ["int", "double", "string", "bool", "any"]
 
-[Dependency.fields]
-# The external type name required by the from type
-to = "Reference"
-# The information on the type needing the to type.
-from = "Reference"
-# Convenience attribute indicating when the module for the from and to are equal.
-is_local = "bool"
-# True when the to reference is a higher kinded type (should take type_vars).
-is_abstraction = "bool"
-
+# A reference describes the location of a type in the module system.
 [Reference.fields]
 # The module_name.type_name string
 qualified_name = "string"
@@ -27,6 +18,7 @@ type_name = "string"
 # Just the module name
 module_name = "string"
 
+# A wrapper type containing fields that can describe a Type, as well as its tag metadata.
 [Type.fields]
 # Set when this is type is an alias or simply an type expression (such as a generic).
 # Exclusive with having values for options or fields.
@@ -44,37 +36,27 @@ options = "string[]"
 # In general, however, tags are considred optional and should not be required to
 # deserialize / serializeconsume correct logical values.
 tags = "string[]"
-# For high order kinds (generics) that target other types as arguments, each of these strings
-# is a local alias for the parameter at that position.
-# ie: if MyMap.type_vars = ["A", "B"] then MyMap<int, string> will replace all "A" and "B" references
-# inside of MyMap with int and string.
-type_vars = "string[]"
 # The name and module information of this type's definition.
 named = "Reference"
-# The dependencies found in this type's is_a or fields.
-dependencies = "Dependency[]"
 
 
+# Metadata contained about a module.
 [Module.fields]
 module_name = "string"
-dependencies = "Dependency[]"
 types_by_name = "Type{}"
 types_dependency_ordering = "string[]"
-abstract_types_by_name = "Type{}"
 
 [TypeStruct.fields]
 struct_kind = "StructKind"
 reference = "Reference"
 primitive_type = "PrimitiveType"
 literal = ["Literal", "optional"]
-parameters = "Reference[]"
 
 [Literal.fields]
 int = "int"
 double = "double"
 string = "string"
 bool = "bool"
-
 
 [Field.fields]
 field_name = "string"

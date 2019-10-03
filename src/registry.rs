@@ -1,330 +1,56 @@
 use crate::dep_mapper::DepMapper;
+use crate::err::{FieldDecError, ModuleError, ProcessingError, TypeDecError};
 use crate::models::declarations::*;
 use crate::schema::*;
+use crate::type_builder::TypeBuilder;
 use regex::Regex;
-use std::collections::HashMap;
 use std::collections::HashSet;
-use std::error::Error;
-use std::fmt::Display;
+use std::collections::{BTreeSet, HashMap};
 
-#[derive(Debug, PartialEq)]
-pub enum FieldDecError {
-    LiteralParseError(String),
-    UnknownPrimitiveType(String),
-    InvalidParameter(String),
-    UnspecifiedType,
-    LiteralAnyError,
-    LiteralInStructError,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum TypeDecError {
-    FieldError(String, FieldDecError),
-    BadFieldNameError(String),
-    IsAError(FieldDecError),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum ModuleError {
-    TypeDecError(String, TypeDecError),
-    GenericTypeError(String, String),
-    BadTypeNameError(String),
-    CircularDependency(String),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum ProcessingError {
-    ModuleError(String, ModuleError),
-    BadModuleNameError(String),
-    CircularImportError(String),
-    CircularTypeError(String),
-    DuplicateImportError(String),
-}
-
-impl From<serde_json::Error> for FieldDecError {
-    fn from(e: serde_json::Error) -> FieldDecError {
-        FieldDecError::LiteralParseError(e.description().to_string())
-    }
-}
-
-impl Display for ProcessingError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        (match self {
-            ProcessingError::ModuleError(m, err) => write!(f, "module {}: {}", m, err),
-            ProcessingError::BadModuleNameError(m) => write!(f, "module {}: invalid name", m),
-            ProcessingError::CircularImportError(desc) => {
-                write!(f, "circular module dependency found: {}", desc)
-            }
-            ProcessingError::CircularTypeError(desc) => write!(
-                f,
-                "circular dependency found via an abstract type: {}",
-                desc
-            ),
-            ProcessingError::DuplicateImportError(m) => write!(
-                f,
-                "module {}: process_module was called twice for same module!",
-                m
-            ),
-        })
-    }
-}
-
-impl Display for ModuleError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        (match self {
-            ModuleError::TypeDecError(m, err) => write!(f, "declaration {}: {}", m, err),
-            ModuleError::BadTypeNameError(m) => write!(f, "declaration {}", m),
-            ModuleError::CircularDependency(msg) => {
-                write!(f, "circular dependency between declarations: {}", msg)
-            }
-            ModuleError::GenericTypeError(m, msg) => {
-                write!(f, "problem with generic resolution of {}: {}", m, msg)
-            }
-        })
-    }
-}
-
-impl Display for TypeDecError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        (match self {
-            TypeDecError::FieldError(field, err) => write!(f, "field {}: {}", field, err),
-            TypeDecError::IsAError(err) => write!(f, "{}", err),
-            TypeDecError::BadFieldNameError(field) => write!(f, "field {}: invalid name", field),
-        })
-    }
-}
-
-impl Display for FieldDecError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        (match self {
-            FieldDecError::LiteralParseError(field) => {
-                write!(f, "problem parsing literal value for field {}", field)
-            }
-            FieldDecError::UnknownPrimitiveType(msg) => {
-                write!(f, "unknown primitive type: {}", msg)
-            }
-            FieldDecError::UnspecifiedType => write!(f, "type was unspecified"),
-            FieldDecError::LiteralAnyError => write!(f, "literal field cannot be 'any' type"),
-            FieldDecError::InvalidParameter(s) => {
-                write!(f, "field includes an invalid type parameter: {}", s)
-            },
-            FieldDecError::LiteralInStructError => write!(f, "literals in fields must be wrapped in a type alias.  Use is_a and create a new type to wrap the literal.")
-        })
-    }
-}
-
-#[derive(Debug)]
 pub struct SchemaRegistry {
     pub modules: HashMap<String, Module>,
+
+    pub types: HashMap<Reference, Type>,
+
     pub missing_module_lookups: HashSet<String>,
-    pub missing_type_lookups: HashMap<Reference, Reference>,
-    pub unresolved_abstractions: HashMap<Reference, HashSet<Reference>>,
-    pub module_dep_mapper: DepMapper,
+    // Added after attempting to build a type
+    // BTreeSet here is used for the consistent ordering property.
+    pub missing_type_lookups: HashMap<Reference, BTreeSet<Reference>>,
+    pub incomplete_types: HashMap<Reference, TypeDec>,
+
+    // These are updated on every pass of a module, and not just when a type is fully resolved.
     pub type_dep_mapper: DepMapper,
+    pub module_dep_mapper: DepMapper,
 }
 
+// in order of their local dependency (so no dependencies in self module)
+
 impl SchemaRegistry {
-    pub fn from_modules(modules: HashMap<String, Module>) -> SchemaRegistry {
-        SchemaRegistry {
-            modules,
-            missing_module_lookups: HashSet::new(),
+    pub fn new() -> SchemaRegistry {
+        return SchemaRegistry {
+            modules: HashMap::new(),
+            types: HashMap::new(),
             missing_type_lookups: HashMap::new(),
-            unresolved_abstractions: HashMap::new(),
-            module_dep_mapper: DepMapper::new(),
+            missing_module_lookups: HashSet::new(),
+
+            incomplete_types: HashMap::new(),
+
             type_dep_mapper: DepMapper::new(),
-        }
+            module_dep_mapper: DepMapper::new(),
+        };
     }
 
-    fn remove_resolved_missing_dependencies(
-        &mut self,
-        module_name: &String,
-    ) -> Result<(), ProcessingError> {
-        let module = self.modules.get(module_name).unwrap();
-
-        for type_name in module.types_by_name.keys() {
-            let reference =
-                Reference::from(format!("{}.{}", module.module_name, type_name).as_str());
-            self.missing_type_lookups.remove(&reference);
-        }
-
-        Ok(())
-    }
-
-    fn resolve_dependent_abstractions(
-        &mut self,
-        module_name: &String,
-    ) -> Result<(), ProcessingError> {
-        let module = self.modules.get(module_name).unwrap();
-        let new_abstract_types = module.abstract_types_by_name.to_owned();
-        let mut resolved_abstraction_modules: HashSet<String> = HashSet::new();
-
-        for (type_name, abstract_type) in new_abstract_types.iter() {
-            let abstract_reference =
-                Reference::from(format!("{}.{}", module_name, type_name).as_str());
-
-            if let Some(abstraction_references) =
-                self.unresolved_abstractions.remove(&abstract_reference)
-            {
-                for abstraction_reference in abstraction_references.iter() {
-                    let abstraction = self.resolve(abstraction_reference).unwrap();
-
-                    let new_type = SchemaRegistry::create_concrete_from(
-                        abstraction,
-                        abstraction_reference,
-                        abstract_type,
-                    )?;
-
-                    let abstraction_module_resolver =
-                        ModuleResolver(abstraction_reference.module_name.to_owned());
-                    let abstraction_module = self
-                        .modules
-                        .get_mut(&abstraction_reference.module_name)
-                        .unwrap();
-
-                    SchemaRegistry::add_type_and_replace_dependencies(
-                        abstraction_module,
-                        &abstraction_module_resolver,
-                        new_type,
-                    )
-                    .map_err(|e| {
-                        ProcessingError::ModuleError(abstraction_module.module_name.to_owned(), e)
-                    })?;
-
-                    resolved_abstraction_modules
-                        .insert(abstraction_reference.module_name.to_owned());
+    pub fn as_type_decs(&self) -> Vec<(String, HashMap<String, TypeDec>)> {
+        self.modules
+            .iter()
+            .map(|(module_name, module)| {
+                let mut types: HashMap<String, TypeDec> = HashMap::new();
+                for t in module.types_by_name.values() {
+                    types.insert(t.named.type_name.to_owned(), t.as_typedec());
                 }
-            }
-        }
-
-        // Recalculate any dependencies in need of resolving after pulling the abstraction in.
-        for module_name in resolved_abstraction_modules {
-            self.process_dependencies(&module_name)?;
-        }
-
-        Ok(())
-    }
-
-    fn process_dependencies(&mut self, module_name: &String) -> Result<(), ProcessingError> {
-        self.check_circular_dependencies(module_name)?;
-        self.process_local_abstractions(module_name)?;
-        self.add_missing_lookups(module_name)?;
-
-        Ok(())
-    }
-
-    fn create_concrete_from(
-        abstraction: &Type,
-        abstraction_reference: &Reference,
-        abstract_type: &Type,
-    ) -> Result<Type, ProcessingError> {
-        let new_type = abstraction
-            .resolve_abstraction(abstract_type)
-            .map_err(|msg| {
-                ProcessingError::ModuleError(
-                    abstraction_reference.module_name.to_owned(),
-                    ModuleError::GenericTypeError(abstraction_reference.type_name.to_owned(), msg),
-                )
-            })?;
-
-        Ok(new_type)
-    }
-
-    fn process_local_abstractions(&mut self, module_name: &String) -> Result<(), ProcessingError> {
-        let module = self.modules.get(module_name).unwrap();
-        let dependencies = module.dependencies.to_owned();
-        let mut new_types: Vec<(Type, &Reference)> = vec![];
-
-        for dep in dependencies.iter() {
-            if dep.is_abstraction {
-                if let Some(abstract_type) = self.resolve_abstract_type(&dep.to) {
-                    let abstraction = self.resolve(&dep.from).unwrap();
-
-                    new_types.push((
-                        SchemaRegistry::create_concrete_from(
-                            abstraction,
-                            &dep.from,
-                            abstract_type,
-                        )?,
-                        &dep.from,
-                    ));
-                } else {
-                    self.unresolved_abstractions
-                        .entry(dep.to.clone())
-                        .or_default()
-                        .insert(dep.from.clone());
-                }
-            }
-        }
-
-        let module = self.modules.get_mut(module_name).unwrap();
-        for (new_type, abstraction_reference) in new_types {
-            let abstraction_module_resolver =
-                ModuleResolver(abstraction_reference.module_name.to_owned());
-
-            SchemaRegistry::add_type_and_replace_dependencies(
-                module,
-                &abstraction_module_resolver,
-                new_type,
-            )
-            .map_err(|e| ProcessingError::ModuleError(module.module_name.to_owned(), e))?;
-        }
-
-        Ok(())
-    }
-
-    fn add_missing_lookups(&mut self, module_name: &String) -> Result<(), ProcessingError> {
-        let module = self.modules.get(module_name).unwrap();
-
-        for dep in module.dependencies.iter() {
-            if !self.modules.contains_key(&dep.to.module_name) {
-                self.missing_module_lookups
-                    .insert(dep.to.module_name.clone());
-            }
-
-            if !dep.is_abstraction {
-                if self.resolve(&dep.to).is_none() {
-                    self.missing_type_lookups
-                        .insert(dep.to.to_owned(), dep.from.to_owned());
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    fn check_circular_dependencies(&mut self, module_name: &String) -> Result<(), ProcessingError> {
-        let module = self.modules.get(module_name).unwrap();
-
-        for dep in module.dependencies.iter() {
-            // Check for cicular dependencies.  For local dependencies, the local ordering has already
-            // performed this check, so we can ignore duplicating effort.
-            if !dep.is_local {
-                // Check for circular imports caused by the concrete types.
-                // A circular module import is ok if it is only caused by abstract dependencies, which
-                // will not be included in output.
-                if !dep.is_abstraction {
-                    self.module_dep_mapper
-                        .add_dependency(
-                            dep.from.module_name.to_owned(),
-                            dep.to.module_name.to_owned(),
-                        )
-                        .map_err(|msg| ProcessingError::CircularImportError(msg))?;
-                }
-
-                // Abstract types can also cause circular dependencies in the output.
-                // These circular dependencies won't be caught by the local check or the module checker,
-                // since normally a modular level circular dependency via abstract types is not an issue
-                // for the output.
-                self.type_dep_mapper
-                    .add_dependency(
-                        dep.from.qualified_name.to_owned(),
-                        dep.to.qualified_name.to_owned(),
-                    )
-                    .map_err(|msg| ProcessingError::CircularTypeError(msg))?;
-            }
-        }
-
-        Ok(())
+                return (module_name.to_owned(), types);
+            })
+            .collect()
     }
 
     pub fn process_module(
@@ -340,366 +66,114 @@ impl SchemaRegistry {
 
         let mut module = Module::default();
         module.module_name = module_name.to_owned();
+        module
+            .order_local_dependencies(module_dec)
+            .map_err(|m| ProcessingError::CircularTypeError(m))?;
 
-        SchemaRegistry::add_types_to_module(&mut module, module_dec)
-            .map_err(|e| ProcessingError::ModuleError(module_name.to_owned(), e))?;
-        module.order_local_dependencies().map_err(|m| {
-            ProcessingError::ModuleError(module_name.to_owned(), ModuleError::CircularDependency(m))
-        })?;
+        // TODO: OMG DRY this up.
+        for (from_dep, to_dep) in module.get_all_declaration_dependencies(module_dec) {
+            if from_dep.module_name != to_dep.module_name {
+                self.module_dep_mapper
+                    .add_dependency(
+                        from_dep.module_name.to_owned(),
+                        to_dep.module_name.to_owned(),
+                    )
+                    .map_err(|msg| ProcessingError::CircularImportError(msg))?;
+            }
 
-        self.missing_module_lookups.remove(&module_name);
+            self.type_dep_mapper
+                .add_dependency(
+                    from_dep.qualified_name.to_owned(),
+                    to_dep.qualified_name.to_owned(),
+                )
+                .map_err(|msg| ProcessingError::CircularTypeError(msg))?;
+        }
+
+        let queue = self.prepare_resolution_queue(module, module_dec);
+        self.run_resolution_queue(queue)?;
+        Ok(())
+    }
+
+    fn prepare_resolution_queue(
+        &mut self,
+        module: Module,
+        module_dec: &ModuleDec,
+    ) -> Vec<Reference> {
+        let queue: Vec<Reference> = module
+            .types_dependency_ordering
+            .iter()
+            .map(|type_name| {
+                let named = Reference::from((&module.module_name, type_name));
+                self.incomplete_types.insert(
+                    named.to_owned(),
+                    module_dec.0.get(type_name).unwrap().to_owned(),
+                );
+                named
+            })
+            .collect();
+
+        self.missing_module_lookups.remove(&module.module_name);
         self.modules.insert(module.module_name.to_owned(), module);
 
-        self.process_dependencies(&module_name)?;
-        self.resolve_dependent_abstractions(&module_name)?;
-        self.remove_resolved_missing_dependencies(&module_name)?;
-
-        Ok(())
+        return queue;
     }
 
-    pub fn resolve(&self, model_reference: &Reference) -> Option<&Type> {
-        self.modules
-            .get(&model_reference.module_name)
-            .and_then(|module| module.types_by_name.get(&model_reference.type_name))
-    }
-
-    pub fn resolve_abstract_type(&self, model_reference: &Reference) -> Option<&Type> {
-        self.modules
-            .get(&model_reference.module_name)
-            .and_then(|module| {
-                module
-                    .abstract_types_by_name
-                    .get(&model_reference.type_name)
-            })
-    }
-
-    fn add_type_and_replace_dependencies(
-        module: &mut Module,
-        module_resolver: &ModuleResolver,
-        mut t: Type,
-    ) -> Result<(), ModuleError> {
-        let from = &t.named;
-
-        // remove any existing dependencies from this module.
-        if module.types_by_name.contains_key(&t.named.type_name) {
-            module.dependencies = module
-                .dependencies
-                .iter()
-                .filter(|d| &d.from != from)
-                .cloned()
-                .collect();
-        }
-
-        if t.is_abstract() {
-            module
-                .abstract_types_by_name
-                .insert(t.named.type_name.to_owned(), t);
-            return Ok(());
-        }
-
-        let mut new_type_deps: Vec<Dependency> = vec![];
-        for inner_struct in t.inner_structs().iter() {
-            if let Some(dependency) = inner_struct.as_dependency_from(from) {
-                new_type_deps.push(dependency.to_owned());
-                module.dependencies.push(dependency);
-            }
-        }
-
-        t.dependencies = new_type_deps;
-
-        module.types_by_name.insert(t.named.type_name.to_owned(), t);
-
-        Ok(())
-    }
-
-    fn add_types_to_module(module: &mut Module, module_dec: &ModuleDec) -> Result<(), ModuleError> {
-        let module_resolver = ModuleResolver(module.module_name.to_owned());
-        let mut type_names: Vec<&String> = module_dec.0.keys().collect();
-        type_names.sort();
-
-        for next in type_names {
-            let t = module_resolver.type_from_dec(next, &module_dec.0[next])?;
-            SchemaRegistry::add_type_and_replace_dependencies(module, &module_resolver, t)?;
-        }
-
-        Ok(())
-    }
-
-    pub fn new() -> SchemaRegistry {
-        return SchemaRegistry {
-            modules: HashMap::new(),
-            missing_type_lookups: HashMap::new(),
-            missing_module_lookups: HashSet::new(),
-            unresolved_abstractions: HashMap::new(),
-            module_dep_mapper: DepMapper::new(),
-            type_dep_mapper: DepMapper::new(),
-        };
-    }
-}
-
-struct ModuleResolver(String);
-
-impl ModuleResolver {
-    fn qualify(&self, name: &str) -> String {
-        if name.find(".").is_some() {
-            return name.to_owned();
-        }
-
-        if name.chars().next().unwrap_or(' ').is_ascii_uppercase() {
-            return format!("{}.{}", self.0, name);
-        }
-
-        return name.to_owned();
-    }
-
-    fn type_from_dec(&self, type_name: &str, type_dec: &TypeDec) -> Result<Type, ModuleError> {
-        lazy_static! {
-            static ref TYPE_NAME_REGEX: Regex =
-                Regex::new(r"^[A-Z]+[a-zA-Z_]*[0123456789]*$").unwrap();
-        }
-
-        if !TYPE_NAME_REGEX.is_match(type_name) {
-            return Err(ModuleError::BadTypeNameError(type_name.to_owned()));
-        }
-
-        let type_resolver = TypeResolver {
-            module_resolver: &self,
-            type_vars: type_dec.type_vars.to_owned(),
-        };
-
-        let named = Reference::from(self.qualify(type_name).as_ref());
-
-        Ok(Type {
-            named,
-            ..type_resolver
-                .type_of_dec(type_dec)
-                .map_err(|fe| ModuleError::TypeDecError(type_name.to_owned(), fe))?
-        })
-    }
-}
-
-struct TypeResolver<'a> {
-    module_resolver: &'a ModuleResolver,
-    type_vars: Vec<String>,
-}
-
-impl<'a> TypeResolver<'a> {
-    fn qualify(&self, name: &str) -> String {
-        if name.chars().next().unwrap_or(' ').is_ascii_uppercase() {
-            for type_var in self.type_vars.iter() {
-                if type_var == name {
-                    return name.to_owned();
-                }
-            }
-        }
-
-        return self.module_resolver.qualify(name);
-    }
-
-    fn type_of_dec(&self, type_dec: &TypeDec) -> Result<Type, TypeDecError> {
-        lazy_static! {
-            static ref FIELD_NAME_REGEX: Regex = Regex::new(r"^[a-zA-Z_]+[0123456789]*$").unwrap();
-        }
-
-        let mut result = Type::default();
-        result.tags = type_dec.tags.to_owned();
-        result.type_vars = type_dec.type_vars.to_owned();
-
-        if type_dec.is_a.len() > 0 {
-            result.is_a = Some(
-                self.type_struct_of_dec(&type_dec.is_a)
-                    .map_err(|e| TypeDecError::IsAError(e))?,
-            );
-            return Ok(result);
-        }
-
-        if type_dec.r#enum.len() > 0 {
-            result.options = type_dec.r#enum.to_owned();
-            return Ok(result);
-        }
-
-        for field in type_dec.fields.iter() {
-            let field_name = field.0.to_owned();
-
-            if !FIELD_NAME_REGEX.is_match(&field_name) {
-                return Err(TypeDecError::BadFieldNameError(field_name.to_owned()));
+    fn run_resolution_queue(&mut self, queue: Vec<Reference>) -> Result<(), ProcessingError> {
+        let mut queue = queue;
+        while let Some(next) = queue.pop() {
+            if self.types.contains_key(&next) {
+                continue;
             }
 
-            let field_dec = field.1;
-            let tags = Vec::from(&field_dec.0[1..]);
-            if field_dec.0.len() < 1 {
-                return Err(TypeDecError::FieldError(
-                    field_name.to_owned(),
-                    FieldDecError::UnspecifiedType,
-                ));
-            }
+            TypeBuilder::validate_type_name(&next.type_name)
+                .map_err(|me| ProcessingError::ModuleError(next.module_name.to_owned(), me))?;
+            let type_dec = self.incomplete_types.get(&next).unwrap();
 
-            let type_struct = self
-                .type_struct_of_dec(&field_dec.0[0])
-                .map_err(|e| TypeDecError::FieldError(field_name.to_owned(), e))?;
+            let result = {
+                let type_builder = TypeBuilder::new(&next, type_dec.to_owned(), &self.types);
+                type_builder.process().map_err(|te| {
+                    ProcessingError::ModuleError(
+                        next.module_name.to_owned(),
+                        ModuleError::TypeDecError(next.type_name.to_owned(), te),
+                    )
+                })?
+            };
 
-            if type_struct.literal.is_some() {
-                return Err(TypeDecError::FieldError(
-                    field_name.to_owned(),
-                    FieldDecError::LiteralInStructError,
-                ));
-            }
-
-            result.fields.insert(
-                field_name.to_owned(),
-                Field {
-                    field_name,
-                    tags,
-                    type_struct,
-                },
-            );
-        }
-
-        return Ok(result);
-    }
-
-    fn type_struct_of_dec(&self, field_val: &str) -> Result<TypeStruct, FieldDecError> {
-        let (mut type_struct, unused) = self.parse_type_annotation(field_val)?;
-
-        if let Some(field_val) = unused {
-            if is_model_ref(field_val) {
-                type_struct.reference = Reference::from(self.qualify(field_val).as_ref());
+            if let Ok(t) = result {
+                self.modules.get_mut(&next.module_name).map(|m| {
+                    m.types_by_name
+                        .insert(next.type_name.to_owned(), t.to_owned())
+                });
+                self.types.insert(next.to_owned(), t.to_owned());
+                self.incomplete_types.remove(&next);
+                let dependents = self.missing_type_lookups.remove(&next);
+                queue.extend(dependents.iter().flat_map(|d| d.iter().cloned()));
             } else {
-                type_struct.primitive_type = parse_primitive_type(field_val)?;
+                let missing_dependency = result.unwrap_err();
+
+                if !self.modules.contains_key(&missing_dependency.module_name) {
+                    self.missing_module_lookups
+                        .insert(missing_dependency.module_name.to_owned());
+                }
+
+                self.missing_type_lookups
+                    .entry(missing_dependency.to_owned())
+                    .or_default()
+                    .insert(next.to_owned());
+
+                self.incomplete_types
+                    .insert(next.to_owned(), type_dec.to_owned());
             }
         }
 
-        return Ok(type_struct);
+        Ok(())
     }
-
-    fn parse_type_annotation<'b>(
-        &self,
-        field_val: &'b str,
-    ) -> Result<(TypeStruct, Option<&'b str>), FieldDecError> {
-        lazy_static! {
-            static ref TYPE_ANNOTATION_REGEX: Regex =
-                Regex::new(r"^literal:(.*):(.*)$|(.+)\{\}$|(.+)\[\]$|^([^<>]+)<([^<>]*)>$")
-                    .unwrap();
-        }
-
-        TYPE_ANNOTATION_REGEX
-            .captures(field_val)
-            .and_then(|c| {
-                c.get(1)
-                    .map(|t| {
-                        parse_literal_annotation(t.as_str(), c.get(2).unwrap().as_str())
-                            .map(|s| (s, None))
-                    })
-                    .or_else(|| {
-                        c.get(3).map(|t| {
-                            Ok((
-                                TypeStruct {
-                                    struct_kind: StructKind::Map,
-                                    ..TypeStruct::default()
-                                },
-                                Some(t.as_str()),
-                            ))
-                        })
-                    })
-                    .or_else(|| {
-                        c.get(4).map(|t| {
-                            Ok((
-                                TypeStruct {
-                                    struct_kind: StructKind::Repeated,
-                                    ..TypeStruct::default()
-                                },
-                                Some(t.as_str()),
-                            ))
-                        })
-                    })
-                    .or_else(|| {
-                        c.get(5).map(|t| {
-                            let p_strs = c.get(6).unwrap().as_str();
-                            let p_strs = p_strs.split(",");
-                            let mut parameters: Vec<Reference> = vec![];
-
-                            for p_str in p_strs {
-                                let type_struct = self.type_struct_of_dec(p_str.trim())?;
-                                if type_struct.literal.is_some() {
-                                    return Err(FieldDecError::InvalidParameter(format!(
-                                        "{} was a literal, but reference is required",
-                                        p_str
-                                    )));
-                                }
-                                if type_struct.reference.type_name.len() == 0 {
-                                    return Err(FieldDecError::InvalidParameter(format!(
-                                        "{} was a primitive, but reference is required",
-                                        p_str
-                                    )));
-                                }
-                                if type_struct.struct_kind != StructKind::Scalar {
-                                    return Err(FieldDecError::InvalidParameter(format!(
-                                        "{} was a {:?}, but a {:?} is required",
-                                        p_str,
-                                        type_struct.struct_kind,
-                                        StructKind::Scalar
-                                    )));
-                                }
-                                parameters.push(type_struct.reference);
-                            }
-
-                            Ok((
-                                TypeStruct {
-                                    parameters: parameters,
-                                    ..TypeStruct::default()
-                                },
-                                Some(t.as_str()),
-                            ))
-                        })
-                    })
-            })
-            .or_else(|| Some(Ok((TypeStruct::default(), Some(field_val)))))
-            .unwrap()
-    }
-}
-
-fn is_model_ref<'a>(type_val: &'a str) -> bool {
-    return type_val.find(".").is_some()
-        || type_val.chars().next().unwrap_or(' ').is_ascii_uppercase();
-}
-
-fn parse_literal_annotation<'a>(
-    lit_type: &'a str,
-    val: &'a str,
-) -> Result<TypeStruct, FieldDecError> {
-    let mut result = TypeStruct::default();
-    result.struct_kind = StructKind::Scalar;
-    result.primitive_type = parse_primitive_type(lit_type)?;
-
-    let mut literal = Literal::default();
-
-    match result.primitive_type {
-        PrimitiveType::int => literal.int = serde_json::from_str(val)?,
-        PrimitiveType::string => literal.string = val.to_owned(),
-        PrimitiveType::double => literal.double = serde_json::from_str(val)?,
-        PrimitiveType::bool => literal.bool = serde_json::from_str(val)?,
-        PrimitiveType::any => return Err(FieldDecError::LiteralAnyError),
-    }
-
-    result.literal = Some(literal);
-    return Ok(result);
-}
-
-fn parse_primitive_type(prim_kind: &str) -> Result<PrimitiveType, FieldDecError> {
-    serde_json::from_value(serde_json::Value::String(prim_kind.to_owned()))
-        .map_err(|e| FieldDecError::UnknownPrimitiveType(e.to_string()))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::declarations::*;
-    use crate::schema::*;
-    use regex::Regex;
-    use std::collections::HashMap;
     use std::collections::HashSet;
-    use std::error::Error;
-    use std::fmt::Display;
     use std::iter::FromIterator;
 
     macro_rules! map(
@@ -719,14 +193,13 @@ mod tests {
         let mut registry = SchemaRegistry::new();
         let mut module_dec = ModuleDec::default();
         let type_dec = TypeDec {
-            is_a: "b.B".to_string(),
+            is_a: vec!["b.B".to_string()],
             ..TypeDec::default()
         };
         module_dec.0.insert("A".to_owned(), type_dec);
 
         let type_dec = TypeDec {
-            is_a: "c.C".to_string(),
-            type_vars: vec!["T".to_string()],
+            is_a: vec!["c.C".to_string()],
             ..TypeDec::default()
         };
         module_dec.0.insert("AA".to_owned(), type_dec);
@@ -735,16 +208,16 @@ mod tests {
         assert_eq!(result, Ok(()));
         assert_eq!(
             registry.missing_module_lookups,
-            HashSet::from_iter(vec!["b".to_owned()])
+            HashSet::from_iter(vec!["b".to_owned(), "c".to_owned()])
         );
-        assert_eq!(
-            registry
-                .missing_type_lookups
-                .keys()
-                .map(|r| r.qualified_name.to_owned())
-                .collect::<Vec<String>>(),
-            vec!["b.B".to_owned()]
-        );
+
+        let mut missing_type_names = registry
+            .missing_type_lookups
+            .keys()
+            .map(|r| r.qualified_name.to_owned())
+            .collect::<Vec<String>>();
+        missing_type_names.sort();
+        assert_eq!(missing_type_names, vec!["b.B".to_owned(), "c.C".to_owned()]);
     }
 
     #[test]
@@ -761,117 +234,6 @@ mod tests {
                 "My_module".to_string(),
             ))
         );
-    }
-
-    #[test]
-    fn test_primitive_generic_parameter() {
-        let mut registry = SchemaRegistry::new();
-        let mut module_dec = ModuleDec::default();
-        let type_dec = TypeDec {
-            is_a: "T[]".to_string(),
-            type_vars: vec!["T".to_string()],
-            ..TypeDec::default()
-        };
-        module_dec.0.insert("AList".to_owned(), type_dec);
-
-        let type_dec = TypeDec {
-            is_a: "AList<string>".to_string(),
-            ..TypeDec::default()
-        };
-        module_dec.0.insert("StringList".to_owned(), type_dec);
-
-        let result = registry.process_module("a".to_owned(), &module_dec);
-        assert_eq!(
-            result,
-            Err(ProcessingError::ModuleError(
-                "a".to_string(),
-                ModuleError::TypeDecError(
-                    "StringList".to_string(),
-                    TypeDecError::IsAError(FieldDecError::InvalidParameter(
-                        "string was a primitive, but reference is required".to_string()
-                    ))
-                )
-            ))
-        );
-    }
-
-    #[test]
-    fn test_generics_in_struct() {
-        let mut registry = SchemaRegistry::new();
-        let mut module_dec = ModuleDec::default();
-        let type_dec = TypeDec {
-            is_a: "T[]".to_string(),
-            type_vars: vec!["T".to_string()],
-            ..TypeDec::default()
-        };
-        module_dec.0.insert("AList".to_owned(), type_dec);
-
-        let type_dec = TypeDec {
-            fields: map! { "my_field".to_owned() => FieldDec(vec!["AList<AString>".to_owned()]) },
-            ..TypeDec::default()
-        };
-        module_dec.0.insert("FancyStruct".to_owned(), type_dec);
-
-        let type_dec = TypeDec {
-            is_a: "string".to_string(),
-            ..TypeDec::default()
-        };
-        module_dec.0.insert("AString".to_owned(), type_dec);
-
-        let result = registry.process_module("a".to_owned(), &module_dec);
-        assert_eq!(
-            result,
-            Err(ProcessingError::ModuleError(
-                "a".to_string(),
-                ModuleError::GenericTypeError(
-                    "FancyStruct".to_string(),
-                    "generics only supported in `is_a` type aliases".to_string(),
-                )
-            ))
-        );
-    }
-
-    #[test]
-    fn test_circular_abstract_types() {
-        let mut registry = SchemaRegistry::new();
-        let mut module_dec = ModuleDec::default();
-        let type_dec = TypeDec {
-            is_a: "T[]".to_string(),
-            type_vars: vec!["T".to_string()],
-            ..TypeDec::default()
-        };
-        module_dec.0.insert("AList".to_owned(), type_dec);
-
-        let type_dec = TypeDec {
-            is_a: "b.BList<AString>".to_string(),
-            ..TypeDec::default()
-        };
-        module_dec.0.insert("StringList".to_owned(), type_dec);
-
-        let type_dec = TypeDec {
-            is_a: "string".to_string(),
-            ..TypeDec::default()
-        };
-        module_dec.0.insert("AString".to_owned(), type_dec);
-
-        let result = registry.process_module("a".to_owned(), &module_dec);
-        assert_eq!(result, Ok(()));
-
-        let type_dec = TypeDec {
-            is_a: "T[]".to_string(),
-            type_vars: vec!["T".to_string()],
-            ..TypeDec::default()
-        };
-        module_dec.0.insert("BList".to_owned(), type_dec);
-
-        let type_dec = TypeDec {
-            is_a: "a.AList<a.AString>".to_string(),
-            ..TypeDec::default()
-        };
-        module_dec.0.insert("StringList".to_owned(), type_dec);
-
-        let result = registry.process_module("My_module2".to_owned(), &module_dec);
-        assert_eq!(result, Ok(()));
     }
 
     #[test]
@@ -912,7 +274,7 @@ mod tests {
         let mut registry = SchemaRegistry::new();
         let mut module_dec = ModuleDec::default();
         let type_dec = TypeDec {
-            is_a: "string".to_owned(),
+            is_a: vec!["string".to_owned()],
             ..TypeDec::default()
         };
         module_dec.0.insert("My_model".to_owned(), type_dec);
@@ -921,7 +283,7 @@ mod tests {
         assert!(result.is_ok());
 
         let type_dec = TypeDec {
-            is_a: "string".to_owned(),
+            is_a: vec!["string".to_owned()],
             ..TypeDec::default()
         };
         module_dec
@@ -964,124 +326,12 @@ mod tests {
     }
 
     #[test]
-    fn test_local_abstractions_dependencies() {
-        let mut registry = SchemaRegistry::new();
-        let mut module_dec = ModuleDec::default();
-        let type_dec = TypeDec {
-            fields: map! {
-                "a".to_string() => FieldDec(vec!["T[]".to_owned()]),
-                "b".to_string() => FieldDec(vec!["b.Model2".to_owned()])
-            },
-            type_vars: vec!["T".to_string()],
-            ..TypeDec::default()
-        };
-        module_dec.0.insert("Model".to_owned(), type_dec);
-        let result = registry.process_module("a".to_owned(), &module_dec);
-        assert_eq!(result, Ok(()));
-
-        assert_eq!(registry.unresolved_abstractions.len(), 0);
-        assert_eq!(registry.modules.get("a").unwrap().dependencies, vec![]);
-
-        let mut module_dec = ModuleDec::default();
-        let type_dec = TypeDec {
-            is_a: "a.Model<c.Model>".to_string(),
-            ..TypeDec::default()
-        };
-        module_dec.0.insert("Model".to_owned(), type_dec);
-        let type_dec = TypeDec {
-            is_a: "string".to_string(),
-            ..TypeDec::default()
-        };
-        module_dec.0.insert("Model2".to_owned(), type_dec);
-        let result = registry.process_module("b".to_owned(), &module_dec);
-        assert_eq!(result, Ok(()));
-
-        assert_eq!(registry.unresolved_abstractions.len(), 0);
-        let bMod = registry.modules.get("b").unwrap();
-        assert_eq!(bMod.dependencies, vec![Dependency {
-            from: Reference::from("b.Model"),
-            to: Reference::from("c.Model"),
-            is_abstraction: false,
-            is_local: false,
-        }, Dependency {
-            from: Reference::from("b.Model"),
-            to: Reference::from("b.Model2"),
-            is_abstraction: false,
-            is_local: true,
-        }]);
-
-        assert_eq!(bMod.dependencies, bMod.types_by_name.get("Model").unwrap().dependencies);
-    }
-
-
-    #[test]
-    fn test_dependent_abstractions_dependencies() {
-        let mut registry = SchemaRegistry::new();
-
-        let mut module_dec = ModuleDec::default();
-        let type_dec = TypeDec {
-            is_a: "a.Model<c.Model>".to_string(),
-            ..TypeDec::default()
-        };
-        module_dec.0.insert("Model".to_owned(), type_dec);
-        let type_dec = TypeDec {
-            is_a: "string".to_string(),
-            ..TypeDec::default()
-        };
-        module_dec.0.insert("Model2".to_owned(), type_dec);
-        let result = registry.process_module("b".to_owned(), &module_dec);
-        assert_eq!(result, Ok(()));
-
-        assert_eq!(registry.unresolved_abstractions.len(), 1);
-        let bMod = registry.modules.get("b").unwrap();
-        assert_eq!(bMod.dependencies, vec![Dependency {
-            from: Reference::from("b.Model"),
-            to: Reference::from("a.Model"),
-            is_abstraction: true,
-            is_local: false,
-        }]);
-
-        assert_eq!(bMod.dependencies, bMod.types_by_name.get("Model").unwrap().dependencies);
-
-        let mut module_dec = ModuleDec::default();
-        let type_dec = TypeDec {
-            fields: map! {
-                "a".to_string() => FieldDec(vec!["T[]".to_owned()]),
-                "b".to_string() => FieldDec(vec!["b.Model2".to_owned()])
-            },
-            type_vars: vec!["T".to_string()],
-            ..TypeDec::default()
-        };
-        module_dec.0.insert("Model".to_owned(), type_dec);
-        let result = registry.process_module("a".to_owned(), &module_dec);
-        assert_eq!(result, Ok(()));
-
-        assert_eq!(registry.unresolved_abstractions.len(), 0);
-        assert_eq!(registry.modules.get("a").unwrap().dependencies, vec![]);
-
-        let bMod = registry.modules.get("b").unwrap();
-        assert_eq!(bMod.dependencies, vec![Dependency {
-            from: Reference::from("b.Model"),
-            to: Reference::from("c.Model"),
-            is_abstraction: false,
-            is_local: false,
-        }, Dependency {
-            from: Reference::from("b.Model"),
-            to: Reference::from("b.Model2"),
-            is_abstraction: false,
-            is_local: true,
-        }]);
-
-        assert_eq!(bMod.dependencies, bMod.types_by_name.get("Model").unwrap().dependencies);
-    }
-
-    #[test]
     fn test_circular_import() {
         let mut registry = SchemaRegistry::new();
 
         let mut module_dec = ModuleDec::default();
         let type_dec = TypeDec {
-            is_a: "a.A".to_owned(),
+            is_a: vec!["a.A".to_owned()],
             ..TypeDec::default()
         };
         module_dec.0.insert("A".to_owned(), type_dec);
@@ -1091,7 +341,7 @@ mod tests {
 
         let mut module_dec = ModuleDec::default();
         let type_dec = TypeDec {
-            is_a: "c.A".to_owned(),
+            is_a: vec!["c.A".to_owned()],
             ..TypeDec::default()
         };
         module_dec.0.insert("A".to_owned(), type_dec);
@@ -1101,17 +351,18 @@ mod tests {
 
         let mut module_dec = ModuleDec::default();
         let type_dec = TypeDec {
-            is_a: "b.A".to_owned(),
+            is_a: vec!["b.A".to_owned()],
             ..TypeDec::default()
         };
         module_dec.0.insert("A".to_owned(), type_dec);
+
         let result = registry.process_module("c".to_owned(), &module_dec);
 
-        assert!(result.is_err());
-
-        match result {
-            Err(ProcessingError::CircularImportError(desc)) => assert_eq!(desc, "b <- c <- a <- b"),
-            _ => assert!(false),
-        }
+        assert_eq!(
+            result,
+            Err(ProcessingError::CircularImportError(
+                "b <- c <- a <- b".to_string()
+            ))
+        );
     }
 }

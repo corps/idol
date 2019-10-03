@@ -1,0 +1,133 @@
+{
+  "BasicStructCoSelf": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "fields.BasicStructOne"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "BasicStructContraSelf": {
+    "enum": [],
+    "fields": {},
+    "is_a": [
+      "fields.BasicStructOne"
+    ],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "BasicStructOne": {
+    "enum": [],
+    "fields": {
+      "a": [
+        "enums.EnumOneTwo"
+      ],
+      "b": [
+        "primitive_widens.IntAlias"
+      ]
+    },
+    "is_a": [],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "BasicStructOneTwoCo": {
+    "enum": [],
+    "fields": {
+      "a": [
+        "enums.EnumOneTwo"
+      ],
+      "b": [
+        "primitive_widens.IntAlias"
+      ],
+      "c": [
+        "int"
+      ],
+      "d": [
+        "string[]"
+      ]
+    },
+    "is_a": [],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "BasicStructOneTwoCoTrim": {
+    "enum": [],
+    "fields": {
+      "b": [
+        "primitive_widens.IntAlias"
+      ],
+      "c": [
+        "int"
+      ]
+    },
+    "is_a": [],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "BasicStructOneTwoContra": {
+    "enum": [],
+    "fields": {
+      "a": [
+        "enums.EnumOneTwo"
+      ],
+      "b": [
+        "primitive_widens.IntAlias",
+        "optional"
+      ],
+      "c": [
+        "int",
+        "optional"
+      ]
+    },
+    "is_a": [],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "BasicStructOneTwoContraWithD": {
+    "enum": [],
+    "fields": {
+      "a": [
+        "enums.EnumOneTwo",
+        "optional"
+      ],
+      "b": [
+        "primitive_widens.IntAlias",
+        "optional"
+      ],
+      "c": [
+        "int",
+        "optional"
+      ],
+      "d": [
+        "string[]",
+        "optional"
+      ]
+    },
+    "is_a": [],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "BasicStructTwo": {
+    "enum": [],
+    "fields": {
+      "a": [
+        "enums.EnumOneTwo"
+      ],
+      "c": [
+        "int"
+      ]
+    },
+    "is_a": [],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  }
+}

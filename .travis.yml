@@ -19,6 +19,7 @@ addons:
     - libdw-dev
     - jq
     - python3.6
+    - python3.6-venv
   homebrew:
     update: true
     packages:
@@ -30,8 +31,16 @@ script:
   export PATH="$PWD/test:$PATH"
   export PATH="/usr/local/opt/node@8/bin:$PATH"
   export PATH="$PWD/node_modules/.bin:$PATH"
+
+  curl https://bootstrap.pypa.io/get-pip.py | sudo -H python3
+  python3 -m venv env
+  source env/bin/activate
+  pip install setuptools
+  pip install -e ./src/lib
+
   npm install
   make test
+  make versions
   make release
 
   mkdir bin
@@ -45,19 +54,37 @@ script:
     test -x $file && test -f $file && cp $file bin/
   done
 
-  cp -r ./src/lib ./
+  tar c bin | gzip > release/idol-$(uname | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
 
-  tar c bin lib | gzip > release/idol-$(uname | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
+  # This is such a hack, should move off travisci when I can.
+  cp -r ./src/lib/* ./
+  cp -r ./src/lib/idol/* ./
 before_deploy:
 - git config --local user.name "Zachary Collins"
 - git config --local user.email "recursive.cookie.jar@gmail.com"
-- export TRAVIS_TAG=${TRAVIS_TAG:-v$(./bin/idol --version | cut -d'' '' -f2).$(git log --format=%h -1)}
+- export TRAVIS_TAG=${TRAVIS_TAG:-v$(./bin/idol --version | cut -d'' '' -f2).$(git
+  log --format=%h -1)}
 - git tag $TRAVIS_TAG || git fetch --tags
 deploy:
-  provider: releases
+- provider: releases
   api_key:
     secure: MKiNVxhgyi9oGVBAAuemny3wc8jjOaeP55dR35/QbQDbb5AmRj4Fpc4VttT2+TQbnFB7VawnvI/HyGt53FverzODBmxGsGf7slDp6Qvlz5mVsWmGrS+5x9ok03hOAAtZKB1GL+O+Qf/A5jQuoCwYdQCw/UBGVS7Edud/bEvAvsMur6uy5qoboq8CCJie8MSFjxGFanf4pdO5NuCEjc33bjfSI4XyHrl2xC7oPSmTWM9ZsHO6UOm6pah0wia08D4r8Hc6iTTr9Uqszt1pUdjvJk7qZ35c5zOrr1G+pLXHGUefMqpCY1KHQwSEjvzXWekKBITJC1EnRFDTValB2LPPx0XsewTIB2Siydq3bI4ij71iSoQE91o6Mx11VS6Z50fvMtSnAMp1+CfJNkeicqLC+HXBiIWhjuFFzNFMXtnMoADvAU7iNtZF8skLNY6XwtsOyyeB41CfjEIe4U6WKcwy/YbY+mzPlhvCgFc6tm4YU2juU5JvBy52vUHYbArHcV7U10Fn0Zpca6ZG6M8wXEQzjNzm+0quTRb2ETSoJzR0j3sYRzkRGONVarYWsfZlXt4Qiy7T8CDMfVsQgPWrcArkw+Mc4ETrMDiigJwC2kcKxumOyoiaAvuooo840h6B94xv+hy4zm3eRQjCSMyWfCpivrJfMR8lkL55Jsb8Fk2YhQA=
   file_glob: true
   file: release/*
   on:
     repo: lyric-com/idol
+- provider: npm
+  email: npm@staylyric.com
+  api_key:
+    secure: HZqucmEZVyS3lDKxx3ZSNeK32CGIJLdbB/8daxIwWoWaMyx8m7y8+eIgrtdccb0MfAWxmoEjcWpTA7zKAdQ0ZFCSGk2YbSfTxLVury5QOe2bznwHrZwhWQyE14MHxCmVQTm5TnTbg9EFxmkvslqydZtIXbbjD8a5Wu/6fDx3rgoDa7KtdpwYtiP69BwkhntR8Q73aQ6CSJ2NLwcKI++d9kRoNtX3A04FM8TThvARZBMwWNaPCHsxnXJHf01YVR0VwLIi9IJftYqc8Vim/hybmr26pq9K6R3Vvg3w21WKmB2DPC+ZAmrGHV0yyFfoOlFBJEsEkvnhcphMGCmcyn6a6Oj9TJ1V6CnVPt7ER9N625L7Da9KExrRHB4sZeqf34gIDyXE+ETTPVR5/v1p9/jBaM0GHJgG2Z5bIcICAv3cQive8DZ+U4YUYIMQd5jE0QPrZSnniZEkrFd8BQQhFhOww4ciKz3wTSaNUhW81LoVUkBmDD016jjbw4cGlDeROGD5wcnq25X/L3TzmYtFAftWLEeMxIRRX/W4ZHWa2mcOCLAy6ratBYImXVvOU+3kLCZFq5qy5Xf7J3CMF9qEleDP9dssEPjPU3FvHVGWb/mnkuhDjqBlE58/X8o0S0kzpn/wdOGqy+TcMLgI0vV8wk2157MrhedKO5iI81aM0RlVKek=
+  on:
+    repo: lyric-com/idol
+    condition: $(uname) = Linux
+
+- provider: pypi
+  user: corps
+  api_key:
+    secure: CnmQ9jBsuBXCJTx88cdrr+rohT0CoGvNgBPXwanLfs0wu3oLcZiRHH9QKG3CqQv5MfX9ab7zpaxHR3teUSvuQaV6QKV8TV9YyH+A2DHAb1I8ik2J9YclZMpFUqsDenGtk+KzTLUXbntYVGRYGsG9+vvtje6fGaFePns5dnyAA4+8CMT9nwa9Pb7L4LkuJXmferVTZ90n092hBv5soj25W+CBOXygoxqEY5u2kztKsWFtC5IozaSI22cm5dUzxOWXIWDqnZ1AX2x3VXBuUuy+jCa/zxQWO0emZOwMooCkWVzDoLhxtziF/R6W2brOV3YEE8IeryAjHhGmiyyDUI7ECy4X8vsVJq1sNOPuDZ/HuoljP7Lu4e6hnq3Ab2FfA3RIHlhGN4W9IERw4LdIawIo/UryNozw+j2ygs7L5UMkUH7VE3LcvJKJ2oFnDUPWLGmGoT2yX4Aqb9YTfy1gR+3owohLPNtJ8gwaX1sp8VLW2Jnk52zJoyNO8aAA4pnT8S1N/M4+PHeBU0nTdET1bVD96UnkIA2VCzVB2DxAl2WhKjQ00E/yHmrDPScwpeiuvQhHjz+A3gNr3fi5E/gyY+LMoltAMMCgAsEUb9916KnELgw/x58ggrLWK4M6K5YcdXHqJF1dXNX7bcLgTm9OYznf0iv8zN0964uPG+bOoNCoiEU=
+  on:
+    repo: lyric-com/idol
+    condition: $(uname) = Linux

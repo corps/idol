@@ -1,0 +1,14 @@
+[LitFitIntoPrim]
+is_a = ["literal:string:my words", "string"]
+
+[LitContraPrim]
+is_a = ["literal:string:my words", "string"]
+variance = "Contravariant"
+
+[LitWithTags]
+is_a = "literal:double:2.4"
+tags = ["abc"]
+
+[LitWithTagsContraPrim]
+is_a = ["LitWithTags", "double"]
+variance = "Contravariant"
