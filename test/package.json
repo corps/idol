@@ -5,7 +5,7 @@
     "prepare": "cd .. && npm run compile"
   },
   "dependencies": {
-    "idol_js": "../src/lib/idol",
+    "@lyric-travel/idol_js": "../src/lib/idol",
     "@babel/node": "^7.5.5",
     "@babel/preset-env": "^7.5.5",
     "@babel/core": "^7.5.5",
