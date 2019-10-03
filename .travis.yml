@@ -28,6 +28,7 @@ addons:
 script:
 - |
   set -e
+  set -x
   export PATH="$PWD/test:$PATH"
   export PATH="/usr/local/opt/node@8/bin:$PATH"
   export PATH="$PWD/node_modules/.bin:$PATH"
@@ -45,6 +46,9 @@ script:
 
   mkdir bin
   mkdir release
+
+  rm package.json
+  rm -rf node_modules
 
   for file in ./target/release/*; do
     test -x $file && test -f $file && cp $file bin/
@@ -80,7 +84,7 @@ deploy:
 
 - provider: pypi
   user: corps
-  api_key:
+  password:
     secure: CnmQ9jBsuBXCJTx88cdrr+rohT0CoGvNgBPXwanLfs0wu3oLcZiRHH9QKG3CqQv5MfX9ab7zpaxHR3teUSvuQaV6QKV8TV9YyH+A2DHAb1I8ik2J9YclZMpFUqsDenGtk+KzTLUXbntYVGRYGsG9+vvtje6fGaFePns5dnyAA4+8CMT9nwa9Pb7L4LkuJXmferVTZ90n092hBv5soj25W+CBOXygoxqEY5u2kztKsWFtC5IozaSI22cm5dUzxOWXIWDqnZ1AX2x3VXBuUuy+jCa/zxQWO0emZOwMooCkWVzDoLhxtziF/R6W2brOV3YEE8IeryAjHhGmiyyDUI7ECy4X8vsVJq1sNOPuDZ/HuoljP7Lu4e6hnq3Ab2FfA3RIHlhGN4W9IERw4LdIawIo/UryNozw+j2ygs7L5UMkUH7VE3LcvJKJ2oFnDUPWLGmGoT2yX4Aqb9YTfy1gR+3owohLPNtJ8gwaX1sp8VLW2Jnk52zJoyNO8aAA4pnT8S1N/M4+PHeBU0nTdET1bVD96UnkIA2VCzVB2DxAl2WhKjQ00E/yHmrDPScwpeiuvQhHjz+A3gNr3fi5E/gyY+LMoltAMMCgAsEUb9916KnELgw/x58ggrLWK4M6K5YcdXHqJF1dXNX7bcLgTm9OYznf0iv8zN0964uPG+bOoNCoiEU=
   on:
     repo: lyric-com/idol
