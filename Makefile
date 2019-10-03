@@ -18,6 +18,7 @@ target/release/idol_rs: src/*.rs $(SOURCE_FILES) src/bin/idol_rs.rs
 	cargo build --bin idol_rs --release
 
 src/lib/idol/idol_js.js: src/es6/idol/*.js src/lib/idol/node_modules
+	npm install
 	npm run compile
 
 src/lib/idol/node_modules:
@@ -28,6 +29,8 @@ models: $(MODELS)
 	./target/debug/idol $? > build.json
 	python3 --version
 	node --version
+	npm install
+	pip install -e ./src/lib
 
 	cat build.json | ./target/debug/idol_rs --output src/models/ --mod "crate::models"
 	cat build.json | ./src/lib/idol/idol_py --output src/lib/idol/py --target schema
