@@ -19,6 +19,7 @@ addons:
     - libdw-dev
     - jq
     - python3.6
+    - python3-pip
   homebrew:
     update: true
     packages:
