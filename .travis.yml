@@ -57,10 +57,9 @@ script:
   cp -r ./src/lib/idol/* ./
   git config --local user.name "Zachary Collins"
   git config --local user.email "recursive.cookie.jar@gmail.com"
-  export TRAVIS_TAG=${TRAVIS_TAG:-v$(./bin/idol --version | cut -d'' '' -f2).$(git log --format=%h -1)}
+  export TRAVIS_TAG=${TRAVIS_TAG:-v$(./bin/idol --version | cut -d' ' -f2).$(git log --format=%h -1)}
   echo $TRAVIS_TAG
   git tag $TRAVIS_TAG || git fetch --tags
-before_deploy:
 deploy:
 - provider: releases
   api_key:
