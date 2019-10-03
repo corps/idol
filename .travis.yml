@@ -31,9 +31,10 @@ script:
   export PATH="/usr/local/opt/node@8/bin:$PATH"
   export PATH="$PWD/node_modules/.bin:$PATH"
 
-  python3 -m ensurepip --upgrade
+  curl https://bootstrap.pypa.io/get-pip.py | sudo -H python3
   python3 -m pip install setuptools
-  python3 -m pip install -e ./src/lib
+  python3 -m pip --upgrade
+  python3 -m pip --version
 
   npm install
   make test
