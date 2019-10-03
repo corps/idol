@@ -31,6 +31,9 @@ script:
   export PATH="$PWD/test:$PATH"
   export PATH="/usr/local/opt/node@8/bin:$PATH"
   export PATH="$PWD/node_modules/.bin:$PATH"
+
+  pip3 install setuptools
+
   npm install
   make test
   make versions
