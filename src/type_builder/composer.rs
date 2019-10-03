@@ -25,7 +25,7 @@ impl DenormalizedType {
         return match (specialized, other_specialized) {
             (true, true) => {
                 match variance {
-                    Invariant => Err("two specialized types cannot be invariant".to_string()),
+                    Invariant => Err("two specialized types cannot be invariant.".to_string()),
                     Covariant => Err(
                         "cannot select a narrower covariant amongst two specialized types"
                             .to_string(),
@@ -219,7 +219,7 @@ impl AnonymousType {
                 } else {
                     let missing_options: Vec<&String> = options
                         .iter()
-                        .filter(|i| other_options.contains(i))
+                        .filter(|i| !other_options.contains(i))
                         .collect();
                     if missing_options.len() == 0 {
                         if options.len() < other_options.len() {

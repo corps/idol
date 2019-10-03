@@ -11,3 +11,4 @@ package-lock.json
 tmp*
 .local
 idol.egg-info
+test/actual

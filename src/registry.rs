@@ -90,8 +90,7 @@ impl SchemaRegistry {
         }
 
         let queue = self.prepare_resolution_queue(module, module_dec);
-        self.run_resolution_queue(queue)
-            .map_err(|me| ProcessingError::ModuleError(module_name.to_owned(), me))?;
+        self.run_resolution_queue(queue)?;
         Ok(())
     }
 
@@ -119,21 +118,25 @@ impl SchemaRegistry {
         return queue;
     }
 
-    fn run_resolution_queue(&mut self, queue: Vec<Reference>) -> Result<(), ModuleError> {
+    fn run_resolution_queue(&mut self, queue: Vec<Reference>) -> Result<(), ProcessingError> {
         let mut queue = queue;
         while let Some(next) = queue.pop() {
             if self.types.contains_key(&next) {
                 continue;
             }
 
-            TypeBuilder::validate_type_name(&next.type_name)?;
+            TypeBuilder::validate_type_name(&next.type_name)
+                .map_err(|me| ProcessingError::ModuleError(next.module_name.to_owned(), me))?;
             let type_dec = self.incomplete_types.get(&next).unwrap();
 
             let result = {
                 let type_builder = TypeBuilder::new(&next, type_dec.to_owned(), &self.types);
-                type_builder
-                    .process()
-                    .map_err(|te| ModuleError::TypeDecError(next.type_name.to_owned(), te))?
+                type_builder.process().map_err(|te| {
+                    ProcessingError::ModuleError(
+                        next.module_name.to_owned(),
+                        ModuleError::TypeDecError(next.type_name.to_owned(), te),
+                    )
+                })?
             };
 
             if let Ok(t) = result {

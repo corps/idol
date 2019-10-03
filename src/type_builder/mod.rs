@@ -243,16 +243,7 @@ impl<'a> TypeBuilder<'a> {
                     )?);
                 }
             }
-
-            println!(
-                "left_kind {:?} + next_kind {:?} = cur_kind {:?} because {:?}",
-                left_kind.to_owned(),
-                next_kind.to_owned(),
-                cur_kind.to_owned(),
-                compose_result.to_owned(),
-            )
         }
-        println!("");
 
         return Ok(Ok(cur_kind));
     }
