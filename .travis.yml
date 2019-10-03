@@ -19,6 +19,7 @@ addons:
     - libdw-dev
     - jq
     - python3.6
+    - python3.6-pip
   homebrew:
     update: true
     packages:
@@ -31,8 +32,8 @@ script:
   export PATH="/usr/local/opt/node@8/bin:$PATH"
   export PATH="$PWD/node_modules/.bin:$PATH"
 
-  curl https://bootstrap.pypa.io/get-pip.py | sudo -H python3
-  python3 -m pip install setuptools
+  pip3.6 install setuptools
+  pip3.6 install pip
 
   npm install
   make test
