@@ -19,6 +19,7 @@ addons:
     - libdw-dev
     - jq
     - python3.6
+    - python3.6-venv
   homebrew:
     update: true
     packages:
@@ -32,7 +33,10 @@ script:
   export PATH="$PWD/node_modules/.bin:$PATH"
 
   curl https://bootstrap.pypa.io/get-pip.py | sudo -H python3
-  pip3.6 install pip setuptools
+  python3 -m venv env
+  source env/bin/activate
+  pip install setuptools
+  pip install -e ./src/lib
 
   npm install
   make test
