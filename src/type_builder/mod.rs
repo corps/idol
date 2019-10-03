@@ -173,9 +173,8 @@ impl<'a> TypeBuilder<'a> {
         if self.type_dec.trim {
             let keys_to_remove = t
                 .fields
-                .iter()
-                .filter(|(_, field)| field.tags.contains(&"optional".to_string()))
-                .map(|(k, _)| k)
+                .keys()
+                .filter(|k| !self.type_dec.fields.contains_key(k.to_owned()))
                 .cloned()
                 .collect::<Vec<String>>();
 
@@ -267,6 +266,7 @@ impl<'a> TypeBuilder<'a> {
         match (t, inheritted, variance) {
             (t, false, _) => t,
             (t, _, Variance::Invariant) => t,
+            (t, _, Variance::Covariant) => t,
             (DenormalizedType::Anonymous(anon), _, _) => {
                 DenormalizedType::Annotated(anon, vec!["optional".to_owned()], true)
             }

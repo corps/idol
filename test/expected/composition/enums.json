@@ -11,7 +11,9 @@
   },
   "EnumOneTwo": {
     "enum": [
+      "four",
       "one",
+      "three",
       "two"
     ],
     "fields": {},

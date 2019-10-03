@@ -37,8 +37,32 @@
   "BasicStructOneTwoCo": {
     "enum": [],
     "fields": {
+      "a": [
+        "enums.EnumOneTwo"
+      ],
+      "b": [
+        "primitive_widens.IntAlias"
+      ],
+      "c": [
+        "int"
+      ],
       "d": [
         "string[]"
+      ]
+    },
+    "is_a": [],
+    "tags": [],
+    "trim": false,
+    "variance": "Covariant"
+  },
+  "BasicStructOneTwoCoTrim": {
+    "enum": [],
+    "fields": {
+      "b": [
+        "primitive_widens.IntAlias"
+      ],
+      "c": [
+        "int"
       ]
     },
     "is_a": [],
@@ -49,8 +73,16 @@
   "BasicStructOneTwoContra": {
     "enum": [],
     "fields": {
-      "d": [
-        "string[]"
+      "a": [
+        "enums.EnumOneTwo"
+      ],
+      "b": [
+        "primitive_widens.IntAlias",
+        "optional"
+      ],
+      "c": [
+        "int",
+        "optional"
       ]
     },
     "is_a": [],
@@ -58,11 +90,24 @@
     "trim": false,
     "variance": "Covariant"
   },
-  "BasicStructOneTwoContraTrim": {
+  "BasicStructOneTwoContraWithD": {
     "enum": [],
     "fields": {
+      "a": [
+        "enums.EnumOneTwo",
+        "optional"
+      ],
+      "b": [
+        "primitive_widens.IntAlias",
+        "optional"
+      ],
+      "c": [
+        "int",
+        "optional"
+      ],
       "d": [
-        "string[]"
+        "string[]",
+        "optional"
       ]
     },
     "is_a": [],

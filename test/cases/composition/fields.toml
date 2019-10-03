@@ -16,13 +16,17 @@ fields.c = "int"
 is_a = ["BasicStructOne", "BasicStructTwo"]
 fields.d = "string[]"
 
-[BasicStructOneTwoContra]
+[BasicStructOneTwoContraWithD]
 is_a = ["BasicStructOne", "BasicStructTwo"]
 fields.d = "string[]"
 variance = "Contravariant"
 
-[BasicStructOneTwoContraTrim]
+[BasicStructOneTwoContra]
 is_a = ["BasicStructOne", "BasicStructTwo"]
-fields.d = "string[]"
 variance = "Contravariant"
+
+[BasicStructOneTwoCoTrim]
+is_a = ["BasicStructOne", "BasicStructTwo"]
+fields.b = "any"
+fields.c = "any"
 trim = true
