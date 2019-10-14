@@ -1,0 +1,6 @@
+FROM rust:1.38
+
+WORKDIR /usr/src/myapp
+COPY . .
+
+RUN make rust-dev

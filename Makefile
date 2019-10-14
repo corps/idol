@@ -1,20 +1,17 @@
 MODELS     := $(wildcard src/models/*.toml)
-SOURCE_FILES = $(shell find src -type f | egrep ".*\.rs" | grep -v "bin/")
+RUST_SOURCE_FILES = $(shell find src -type f | egrep ".*\.rs" | grep -v "bin/")
 
-release: target/release/idol target/release/idol_rs src/lib/idol/idol_js.js
-
-dev: target/debug/idol target/debug/idol_rs src/lib/idol/idol_js.js models
-
-target/debug/idol: src/*.rs $(SOURCE_FILES) src/bin/idol.rs
+# Binary builds
+target/debug/idol: $(RUST_SOURCE_FILES) src/bin/idol.rs
 	cargo build --bin idol
 
-target/debug/idol_rs: src/*.rs $(SOURCE_FILES) src/bin/idol_rs.rs
+target/debug/idol_rs: $(RUST_SOURCE_FILES) src/bin/idol_rs.rs
 	cargo build --bin idol_rs
 
-target/release/idol: src/*.rs $(SOURCE_FILES) src/bin/idol.rs
+target/release/idol: rust-models $(RUST_SOURCE_FILES) src/bin/idol.rs
 	cargo build --bin idol --release
 
-target/release/idol_rs: src/*.rs $(SOURCE_FILES) src/bin/idol_rs.rs
+target/release/idol_rs: rust-models $(SOURCE_FILES) src/bin/idol_rs.rs
 	cargo build --bin idol_rs --release
 
 src/lib/idol/idol_js.js: src/es6/idol/*.js src/lib/idol/node_modules
@@ -25,6 +22,29 @@ src/lib/idol/node_modules:
 	node --version
 	(cd src/lib/idol && npm install)
 
+# Release steps
+.PHONY: rust-release
+rust-release: target/release/idol target/release/idol_rs
+
+.PHONY: rust-dev
+rust-dev: target/debug/idol target/debug/idol_rs
+
+# models
+build.json: $(MODELS) target/debug/idol
+	./target/debug/idol $? > build.json
+
+# Ensure that build.json is up to date.
+# Used by CI
+.PHONY: check-build.json
+check-build.json: $(MODELS) target/debug/idol
+	./target/debug/idol $? > build1.json
+	diff build.json build1.json
+
+.PHONY: rust-models
+rust-models: build.json target/debug/idol_rs
+	cat build.json | ./target/debug/idol_rs --output src/models/ --mod "crate::models"
+
+.PHONY: models
 models: $(MODELS)
 	./target/debug/idol $? > build.json
 	python3 --version

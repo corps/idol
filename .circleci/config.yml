@@ -1,0 +1,58 @@
+jobs:
+  build-rust-linux:
+    docker:
+      - image: rust:1.38
+
+    steps:
+      - checkout
+      - restore_cache:
+          key: project-cache
+      - run:
+          name: Check formatting
+          command: |
+            rustfmt --version
+            cargo fmt -- --write-mode=diff
+
+      - run:
+          name: Check build.json has been updated
+          command: |
+            make check-build.json
+      - run:
+          name: Test
+          command: cargo test
+      - run:
+          name: Build Release
+          command: make rust-release
+      - run:
+          name: Build Release
+          command: make rust-release
+      - persist_to_workspace:
+          root: target
+          paths:
+            - release/idol
+            - release/idol_rs
+      - save_cache:
+          key: project-cache
+          paths:
+            - "~/.cargo"
+            - "./target"
+
+  publish-rust-linux:
+    docker:
+      - image: cibuilds/github:0.10
+    steps:
+      - attach_workspace:
+          at: ./target
+      - run:
+          name: "Publish Release on GitHub"
+          command: |
+            VERSION=$(target/release/idol --version | cur -d' ' -f2))
+            mv target/release ./bin
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./bin
+
+workflows:
+  version: 2
+    main-rust:
+      jobs:
+          - build-rust-linux: { }
+          - publish-rust-linux: { requires: [build-rust-linux], filters: { bramches: { only: [release-rust] } } }
