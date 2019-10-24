@@ -12,11 +12,15 @@ class SchemaReferenceSchema(Schema):
     """
 
     # Just the module name
-    module_name = String(dump_to="module_name", load_from="module_name")
+    module_name = String(
+        dump_to="module_name", load_from="module_name", allow_none=False
+    )
     # The module_name.type_name string
-    qualified_name = String(dump_to="qualified_name", load_from="qualified_name")
+    qualified_name = String(
+        dump_to="qualified_name", load_from="qualified_name", allow_none=False
+    )
     # Just the type name
-    type_name = String(dump_to="type_name", load_from="type_name")
+    type_name = String(dump_to="type_name", load_from="type_name", allow_none=False)
 
 
 SchemaReferenceField = wrap_field(

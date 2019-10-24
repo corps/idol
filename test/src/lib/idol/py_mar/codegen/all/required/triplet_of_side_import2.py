@@ -8,13 +8,15 @@ from ...__idol__ import wrap_field
 
 
 class AllRequiredTripletOfSideImport2Schema(Schema):
-    a = TestsAbsThreeSideImport2Field(dump_to="a", load_from="a")
-    b = List(TestsBasicTestLiteralTopField(), dump_to="b", load_from="b")
-    c = Dict(dump_to="c", load_from="c")
+    a = TestsAbsThreeSideImport2Field(dump_to="a", load_from="a", allow_none=False)
+    b = List(
+        TestsBasicTestLiteralTopField(), dump_to="b", load_from="b", allow_none=False
+    )
+    c = Dict(dump_to="c", load_from="c", allow_none=False)
 
 
 AllRequiredTripletOfSideImport2Field = wrap_field(
-    (lambda: Nested),
+    Nested,
     "AllRequiredTripletOfSideImport2Field",
-    AllRequiredTripletOfSideImport2Schema,
+    (lambda: AllRequiredTripletOfSideImport2Schema),
 )

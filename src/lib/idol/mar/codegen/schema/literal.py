@@ -7,10 +7,10 @@ from ..__idol__ import wrap_field
 
 
 class SchemaLiteralSchema(Schema):
-    bool = Boolean(dump_to="bool", load_from="bool")
-    double = Float(dump_to="double", load_from="double")
-    int = Int(dump_to="int", load_from="int")
-    string = String(dump_to="string", load_from="string")
+    bool = Boolean(dump_to="bool", load_from="bool", allow_none=False)
+    double = Float(dump_to="double", load_from="double", allow_none=False)
+    int = Int(dump_to="int", load_from="int", allow_none=False)
+    string = String(dump_to="string", load_from="string", allow_none=False)
 
 
 SchemaLiteralField = wrap_field(

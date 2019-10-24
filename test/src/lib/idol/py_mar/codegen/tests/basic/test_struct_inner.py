@@ -6,11 +6,11 @@ from ...__idol__ import wrap_field
 
 
 class TestsBasicTestStructInnerSchema(Schema):
-    d = Boolean(dump_to="d", load_from="d")
-    e = Float(dump_to="e", load_from="e")
-    f = Int(dump_to="f", load_from="f")
+    d = Boolean(dump_to="d", load_from="d", allow_none=False)
+    e = Float(dump_to="e", load_from="e", allow_none=False)
+    f = Int(dump_to="f", load_from="f", allow_none=False)
 
 
 TestsBasicTestStructInnerField = wrap_field(
-    (lambda: Nested), "TestsBasicTestStructInnerField", TestsBasicTestStructInnerSchema
+    Nested, "TestsBasicTestStructInnerField", (lambda: TestsBasicTestStructInnerSchema)
 )

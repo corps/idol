@@ -4,5 +4,5 @@ from ...__idol__ import wrap_field
 from marshmallow.fields import Constant
 
 TestsBasicLiteralTrueField = wrap_field(
-    (lambda: Constant), "TestsBasicLiteralTrueField", True
+    Constant, "TestsBasicLiteralTrueField", (lambda: True)
 )

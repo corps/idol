@@ -9,10 +9,15 @@ class SchemaModuleSchema(Schema):
     Metadata contained about a module.
     """
 
-    module_name = String(dump_to="module_name", load_from="module_name")
-    types_by_name = Dict(dump_to="types_by_name", load_from="types_by_name")
+    module_name = String(
+        dump_to="module_name", load_from="module_name", allow_none=False
+    )
+    types_by_name = Dict(
+        dump_to="types_by_name", load_from="types_by_name", allow_none=False
+    )
     types_dependency_ordering = List(
         String(),
         dump_to="types_dependency_ordering",
         load_from="types_dependency_ordering",
+        allow_none=False,
     )

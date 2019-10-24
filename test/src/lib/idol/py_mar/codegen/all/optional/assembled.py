@@ -16,29 +16,37 @@ from ..required.triplet_of_side_import2 import AllRequiredTripletOfSideImport2Fi
 
 class AllOptionalAssembledSchema(Schema):
     test_atleast_one = TestsBasicTestAtleastOneField(
-        dump_to="test_atleast_one", load_from="test_atleast_one"
+        dump_to="test_atleast_one", load_from="test_atleast_one", allow_none=True
     )
-    test_enum = TestsBasicTestEnumField(dump_to="test_enum", load_from="test_enum")
-    test_kind = TestsBasicTestKindField(dump_to="test_kind", load_from="test_kind")
+    test_enum = TestsBasicTestEnumField(
+        dump_to="test_enum", load_from="test_enum", allow_none=True
+    )
+    test_kind = TestsBasicTestKindField(
+        dump_to="test_kind", load_from="test_kind", allow_none=True
+    )
     test_list_of = AllRequiredListOfTestKindField(
-        dump_to="test_list_of", load_from="test_list_of"
+        dump_to="test_list_of", load_from="test_list_of", allow_none=True
     )
     test_list_of_list_struct = TestsBasicTestListOfListStructField(
-        dump_to="test_list_of_list_struct", load_from="test_list_of_list_struct"
+        dump_to="test_list_of_list_struct",
+        load_from="test_list_of_list_struct",
+        allow_none=True,
     )
     test_literal_struct = TestsBasicTestLiteralStructField(
-        dump_to="test_literal_struct", load_from="test_literal_struct"
+        dump_to="test_literal_struct", load_from="test_literal_struct", allow_none=True
     )
     test_literal_top = TestsBasicTestLiteralTopField(
-        dump_to="test_literal_top", load_from="test_literal_top"
+        dump_to="test_literal_top", load_from="test_literal_top", allow_none=True
     )
-    test_map = TestsBasicTestMapField(dump_to="test_map", load_from="test_map")
+    test_map = TestsBasicTestMapField(
+        dump_to="test_map", load_from="test_map", allow_none=True
+    )
     test_optional_field = TestsBasicTestOptionalFieldField(
-        dump_to="test_optional_field", load_from="test_optional_field"
+        dump_to="test_optional_field", load_from="test_optional_field", allow_none=True
     )
     test_struct = TestsBasicTestStructField(
-        dump_to="test_struct", load_from="test_struct"
+        dump_to="test_struct", load_from="test_struct", allow_none=True
     )
     test_triplet = AllRequiredTripletOfSideImport2Field(
-        dump_to="test_triplet", load_from="test_triplet"
+        dump_to="test_triplet", load_from="test_triplet", allow_none=True
     )

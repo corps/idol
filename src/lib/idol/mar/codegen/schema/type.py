@@ -15,22 +15,22 @@ class SchemaTypeSchema(Schema):
 
     # When this type is a struct, each of its fields and the type of that field is included
     # Exclusive with is_a and options
-    fields = Dict(dump_to="fields", load_from="fields")
+    fields = Dict(dump_to="fields", load_from="fields", allow_none=False)
     # Set when this is type is an alias or simply an type expression (such as a generic).
     # Exclusive with having values for options or fields.
-    is_a = SchemaTypeStructField(dump_to="is_a", load_from="is_a")
+    is_a = SchemaTypeStructField(dump_to="is_a", load_from="is_a", allow_none=True)
     # The name and module information of this type's definition.
-    named = SchemaReferenceField(dump_to="named", load_from="named")
+    named = SchemaReferenceField(dump_to="named", load_from="named", allow_none=False)
     # When this type is an enum includes the string values for each enum entry.  Note that each
     # target language may have different rules for the enum constant names, but these entries are
     # canonical resident values.
     # Exclusive with is_a and fields.
-    options = List(String(), dump_to="options", load_from="options")
+    options = List(String(), dump_to="options", load_from="options", allow_none=False)
     # General metadata given to a type.  Currently, atleast_one for Repeated types is supported.
     # Custom codegen can use these tags to implement semantic types on top of simple logic types.
     # In general, however, tags are considred optional and should not be required to
     # deserialize / serializeconsume correct logical values.
-    tags = List(String(), dump_to="tags", load_from="tags")
+    tags = List(String(), dump_to="tags", load_from="tags", allow_none=False)
 
 
 SchemaTypeField = wrap_field(

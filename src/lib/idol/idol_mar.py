@@ -95,43 +95,6 @@ class FieldExpressionComposer:
         )
 
 
-class FieldKwdsBuilder:
-    ts_context: TypeStructContext
-    default: Optional[str]
-    missing: Optional[str]
-
-    def __init__(
-            self, ts_context: TypeStructContext, default: Optional[str], missing: Optional[str]
-    ):
-        self.ts_context = ts_context
-        self.default = default
-        self.missing = missing
-
-    def field_kwds(self) -> Dict[str, str]:
-        kwds: Dict[str, str] = dict()
-        if self.default:
-            kwds["default"] = self.default
-
-        if self.missing:
-            kwds["missing"] = self.missing
-
-        optional = includes_tag(self.ts_context.field_tags, "optional")
-        required = includes_tag(self.ts_context.field_tags, "required")
-
-        if optional and required:
-            raise Exception(
-                f"Field {self.ts_context.field_name or self.ts_context.type_display_name} has both optional and required tags, but only one should be allowed."
-            )
-
-        if required:
-            kwds["required"] = scripter.literal(True)
-
-        if optional:
-            kwds["allow_none"] = scripter.literal(True)
-
-        return kwds
-
-
 class IdolMarshmallow(GeneratorContext):
     scaffolds: Dict[str, "IdolMarScaffoldFile"]
     codegens: Dict[str, "IdolMarCodegenFile"]
@@ -314,6 +277,9 @@ class IdolMarCodegenStruct(GeneratorFileContext):
                                             dict(
                                                 dump_to=scripter.literal(field_name),
                                                 load_from=scripter.literal(field_name),
+                                                allow_none=scripter.literal(
+                                                    includes_tag(field.ts_decon.context.field_tags,
+                                                                 "optional")),
                                             )
                                         ).field_instance_expr()
                                     ),

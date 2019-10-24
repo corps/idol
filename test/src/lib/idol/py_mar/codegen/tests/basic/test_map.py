@@ -3,4 +3,4 @@
 from ...__idol__ import wrap_field
 from marshmallow.fields import Dict
 
-TestsBasicTestMapField = wrap_field((lambda: Dict), "TestsBasicTestMapField")
+TestsBasicTestMapField = wrap_field(Dict, "TestsBasicTestMapField")

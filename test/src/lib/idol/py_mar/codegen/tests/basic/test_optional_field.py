@@ -6,11 +6,11 @@ from ...__idol__ import wrap_field
 
 
 class TestsBasicTestOptionalFieldSchema(Schema):
-    optional = String(dump_to="optional", load_from="optional")
+    optional = String(dump_to="optional", load_from="optional", allow_none=True)
 
 
 TestsBasicTestOptionalFieldField = wrap_field(
-    (lambda: Nested),
+    Nested,
     "TestsBasicTestOptionalFieldField",
-    TestsBasicTestOptionalFieldSchema,
+    (lambda: TestsBasicTestOptionalFieldSchema),
 )

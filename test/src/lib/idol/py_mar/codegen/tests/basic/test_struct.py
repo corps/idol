@@ -7,11 +7,11 @@ from ...__idol__ import wrap_field
 
 
 class TestsBasicTestStructSchema(Schema):
-    a = String(dump_to="a", load_from="a")
-    b = Int(dump_to="b", load_from="b")
-    c = TestsBasicTestStructInnerField(dump_to="c", load_from="c")
+    a = String(dump_to="a", load_from="a", allow_none=False)
+    b = Int(dump_to="b", load_from="b", allow_none=False)
+    c = TestsBasicTestStructInnerField(dump_to="c", load_from="c", allow_none=False)
 
 
 TestsBasicTestStructField = wrap_field(
-    (lambda: Nested), "TestsBasicTestStructField", TestsBasicTestStructSchema
+    Nested, "TestsBasicTestStructField", (lambda: TestsBasicTestStructSchema)
 )

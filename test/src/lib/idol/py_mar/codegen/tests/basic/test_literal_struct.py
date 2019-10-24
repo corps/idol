@@ -11,15 +11,19 @@ from marshmallow.fields import Nested
 
 
 class TestsBasicTestLiteralStructSchema(Schema):
-    five = TestsBasicLiteralFiveField(dump_to="five", load_from="five")
-    four = TestsBasicLiteralTrueField(dump_to="four", load_from="four")
-    one = TestsBasicLiteral1Field(dump_to="one", load_from="one")
-    three = TestsBasicLiteralThreeOField(dump_to="three", load_from="three")
-    two = TestsBasicLiteralHelloField(dump_to="two", load_from="two")
+    five = TestsBasicLiteralFiveField(dump_to="five", load_from="five", allow_none=True)
+    four = TestsBasicLiteralTrueField(
+        dump_to="four", load_from="four", allow_none=False
+    )
+    one = TestsBasicLiteral1Field(dump_to="one", load_from="one", allow_none=False)
+    three = TestsBasicLiteralThreeOField(
+        dump_to="three", load_from="three", allow_none=False
+    )
+    two = TestsBasicLiteralHelloField(dump_to="two", load_from="two", allow_none=False)
 
 
 TestsBasicTestLiteralStructField = wrap_field(
-    (lambda: Nested),
+    Nested,
     "TestsBasicTestLiteralStructField",
-    TestsBasicTestLiteralStructSchema,
+    (lambda: TestsBasicTestLiteralStructSchema),
 )

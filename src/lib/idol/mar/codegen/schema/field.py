@@ -8,9 +8,11 @@ from ..__idol__ import wrap_field
 
 
 class SchemaFieldSchema(Schema):
-    field_name = String(dump_to="field_name", load_from="field_name")
-    tags = List(String(), dump_to="tags", load_from="tags")
-    type_struct = SchemaTypeStructField(dump_to="type_struct", load_from="type_struct")
+    field_name = String(dump_to="field_name", load_from="field_name", allow_none=False)
+    tags = List(String(), dump_to="tags", load_from="tags", allow_none=False)
+    type_struct = SchemaTypeStructField(
+        dump_to="type_struct", load_from="type_struct", allow_none=False
+    )
 
 
 SchemaFieldField = wrap_field(

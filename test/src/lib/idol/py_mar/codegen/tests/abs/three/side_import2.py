@@ -6,9 +6,11 @@ from ....__idol__ import wrap_field
 
 
 class TestsAbsThreeSideImport2Schema(Schema):
-    side_import2 = Int(dump_to="side_import2", load_from="side_import2")
+    side_import2 = Int(
+        dump_to="side_import2", load_from="side_import2", allow_none=False
+    )
 
 
 TestsAbsThreeSideImport2Field = wrap_field(
-    (lambda: Nested), "TestsAbsThreeSideImport2Field", TestsAbsThreeSideImport2Schema
+    Nested, "TestsAbsThreeSideImport2Field", (lambda: TestsAbsThreeSideImport2Schema)
 )

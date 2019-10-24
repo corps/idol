@@ -11,11 +11,12 @@ class TestsBasicTestListOfListStructSchema(Schema):
         TestsBasicTestAtleastOneField(),
         dump_to="list_of_list",
         load_from="list_of_list",
+        allow_none=False,
     )
 
 
 TestsBasicTestListOfListStructField = wrap_field(
-    (lambda: Nested),
+    Nested,
     "TestsBasicTestListOfListStructField",
-    TestsBasicTestListOfListStructSchema,
+    (lambda: TestsBasicTestListOfListStructSchema),
 )
