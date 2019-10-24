@@ -65,7 +65,9 @@ class Primitive(IdolConstructor):
 
     @staticmethod
     def of(type_constructor: Type) -> Type["Primitive"]:
-        cls = cast(Type["Primitive"], new_class(type_constructor.__name__, (Primitive,)))
+        cls = cast(
+            Type["Primitive"], new_class(type_constructor.__name__, (Primitive,))
+        )
 
         cls.type_constructor = type_constructor
         return cls
@@ -160,9 +162,12 @@ class List(IdolConstructor, MutableSequence):
 
     @staticmethod
     def of(
-        inner_constructor: Type[IdolConstructor], options: Optional[Dict[str, Any]] = None
+        inner_constructor: Type[IdolConstructor],
+        options: Optional[Dict[str, Any]] = None,
     ) -> Type["List"]:
-        cls = cast(Type["List"], new_class(f"List[{inner_constructor.__name__}]", (List,)))
+        cls = cast(
+            Type["List"], new_class(f"List[{inner_constructor.__name__}]", (List,))
+        )
         cls.inner_constructor = inner_constructor
         cls.options = options
         return cls
@@ -174,7 +179,9 @@ class List(IdolConstructor, MutableSequence):
 
         if cls.options.get("atleast_one"):
             if not len(json):
-                raise ValueError(f"{'.'.join(path)} Expected at least one item, but it was empty")
+                raise ValueError(
+                    f"{'.'.join(path)} Expected at least one item, but it was empty"
+                )
 
         for i, val in enumerate(json):
             cls.inner_constructor.validate(val, path + [str(i)])
@@ -331,7 +338,9 @@ def create_struct_prop(attr, type: Type[IdolConstructor]):
 class StructMeta(type):
     def __new__(mcs: Type["Struct"], name, bases, dct):
         mcs = super().__new__(mcs, name, bases, dct)
-        for field_name, prop_name, constructor, _ in getattr(mcs, "__field_constructors__", []):
+        for field_name, prop_name, constructor, _ in getattr(
+            mcs, "__field_constructors__", []
+        ):
             setattr(mcs, prop_name, create_struct_prop(field_name, constructor))
 
         return mcs
@@ -339,7 +348,9 @@ class StructMeta(type):
 
 class Struct(with_metaclass(StructMeta, IdolConstructor)):
     orig_data: Dict[str, Any]
-    __field_constructors__: typingList[Tuple[str, str, Type[IdolConstructor], Dict[str, Any]]] = []
+    __field_constructors__: typingList[
+        Tuple[str, str, Type[IdolConstructor], Dict[str, Any]]
+    ] = []
 
     def __init__(self, orig_data: Dict[str, Any]):
         self.orig_data = orig_data
@@ -363,7 +374,9 @@ class Struct(with_metaclass(StructMeta, IdolConstructor)):
                 if optional:
                     continue
                 else:
-                    raise KeyError(f"{'.'.join(path)} Missing required key {repr(field_name)}")
+                    raise KeyError(
+                        f"{'.'.join(path)} Missing required key {repr(field_name)}"
+                    )
 
             constructor.validate(val, path + [field_name])
 

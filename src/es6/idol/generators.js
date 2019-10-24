@@ -635,9 +635,15 @@ export class GeneratorFileContext<P: GeneratorContext> {
   }
 
   export(ident: string, scriptable: string => string | Array<string>): Exported {
+    if (!this.state.idents.getIdentifierSources(this.path, ident).getOr(new StringSet()).items.length) {
+      throw new Error("GeneratorFileContext.export called before ident was reserved!");
+    }
+
+    this.state.addContent(this.path, scriptable(ident));
+
     return {
       path: this.path,
-      ident: this.state.addContentWithIdent(this.path, ident, scriptable),
+      ident
     };
   }
 
@@ -657,12 +663,17 @@ export class GeneratorFileContext<P: GeneratorContext> {
 
 export class ExternFileContext<P: GeneratorContext> extends GeneratorFileContext<P> {
   // Subclasses required to provide this
-  static EXTERN_FILE = "";
+  externFile: string;
+
+  constructor(externFile: string, parent: P, path: Path) {
+    super(parent, path);
+    this.externFile = externFile;
+  }
 
   get dumpedFile(): Path {
     return cachedProperty(this, "dumpedFile", () => {
       const content = fs
-          .readFileSync(this.constructor.EXTERN_FILE, "UTF-8")
+          .readFileSync(this.externFile, "UTF-8")
           .toString();
       this.state.addContent(this.path, content);
       return this.path;

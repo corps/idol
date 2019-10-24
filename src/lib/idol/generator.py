@@ -355,11 +355,13 @@ class IdentifiersAcc:
     __add__ = concat
 
     def add_identifier(self, into_path: Path, ident: str, source: str) -> str:
-        if source not in Alt(
+        sources = Alt(
             sources
             for path_idents in self.idents.get(into_path.path)
             for sources in path_idents.get(ident)
-        ).get_or(StringSet([source])):
+        ).get_or(StringSet([source]))
+
+        if source not in sources:
             raise ValueError(
                 f"Cannot create ident {ident} in {into_path.path}, conflicts with existing definition."
             )
@@ -579,8 +581,30 @@ class GeneratorContext:
         self.config = config
 
 
-class GeneratorFileContext:
+class AbstractGeneratorFileContext:
     path: Path
+    state: GeneratorAcc
+
+    def reserve_ident(self, ident: str) -> str:
+        self.state.idents.add_identifier(self.path, ident, self.state.get_unique_source(self.path))
+        return ident
+
+    def export(self, ident: str, scriptable: Callable[[str], Union[str, List]]) -> Exported:
+        assert self.state.idents.get_identifier_sources(self.path, ident).get_or(
+            StringSet()
+        ), "GeneratorFileContext.export called before identifier reserved."
+
+        self.state.add_content(self.path, scriptable(ident))
+        return Exported(self.path, ident)
+
+    def import_ident(self, exported: Exported, as_ident: Optional[str] = None) -> str:
+        return self.state.import_ident(self.path, exported, as_ident)
+
+    def apply_expr(self, expression: Expression) -> str:
+        return expression(self.state, self.path)
+
+
+class GeneratorFileContext(AbstractGeneratorFileContext):
     parent: GeneratorContext
 
     def __init__(self, parent: GeneratorContext, path: Path):
@@ -594,19 +618,6 @@ class GeneratorFileContext:
     @property
     def config(self) -> GeneratorConfig:
         return self.parent.config
-
-    def reserve_ident(self, ident: str) -> str:
-        self.state.idents.add_identifier(self.path, ident, self.state.get_unique_source(self.path))
-        return ident
-
-    def export(self, ident: str, scriptable: Callable[[str], Union[str, List]]) -> Exported:
-        return Exported(self.path, self.state.add_content_with_ident(self.path, ident, scriptable))
-
-    def import_ident(self, exported: Exported, as_ident: Optional[str] = None) -> str:
-        return self.state.import_ident(self.path, exported, as_ident)
-
-    def apply_expr(self, expression: Expression) -> str:
-        return expression(self.state, self.path)
 
 
 class ExternFileContext(GeneratorFileContext):

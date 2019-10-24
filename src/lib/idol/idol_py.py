@@ -27,6 +27,7 @@ from idol.generator import (
     get_tag_values,
     includes_tag,
     ExternFileContext,
+    AbstractGeneratorFileContext,
 )
 from idol.py.schema.primitive_type import PrimitiveType
 from idol.py.schema.reference import Reference
@@ -56,14 +57,20 @@ class IdolPy(GeneratorContext):
     def scaffold_file(self, ref: Reference) -> "IdolPyScaffoldFile":
         path = self.state.reserve_path(**self.config.paths_of(scaffold=ref))
         t = self.config.params.all_types.obj[ref.qualified_name]
-        scaffold_file = self.scaffold_impl(self, t, path)
-        return self.scaffolds.setdefault(ref.qualified_name, scaffold_file)
+
+        if ref.qualified_name not in self.scaffolds:
+            self.scaffolds[ref.qualified_name] = self.scaffold_impl(self, t, path)
+
+        return self.scaffolds[ref.qualified_name]
 
     def codegen_file(self, ref: Reference) -> "IdolPyCodegenFile":
         path = self.state.reserve_path(**self.config.paths_of(codegen=ref))
         t = self.config.params.all_types.obj[ref.qualified_name]
-        codegen_file = self.codegen_impl(self, t, path)
-        return self.codegens.setdefault(ref.qualified_name, codegen_file)
+
+        if ref.qualified_name not in self.codegens:
+            self.codegens[ref.qualified_name] = self.codegen_impl(self, t, path)
+
+        return self.codegens[ref.qualified_name]
 
     @cached_property
     def idol_py_file(self) -> "IdolPyFile":
@@ -351,7 +358,7 @@ class IdolPyCodegenTypeStruct(GeneratorContext):
         )
 
 
-class IdolPyCodegenTypeStructDeclaration(IdolPyCodegenTypeStruct, GeneratorFileContext):
+class IdolPyCodegenTypeStructDeclaration(IdolPyCodegenTypeStruct, AbstractGeneratorFileContext):
     path: Path
     codegen_file: IdolPyCodegenFile
 
@@ -496,7 +503,7 @@ class IdolPyCodegenScalar(GeneratorContext):
     }
 
 
-class IdolPyCodegenScalarDeclaration(IdolPyCodegenScalar, GeneratorFileContext):
+class IdolPyCodegenScalarDeclaration(IdolPyCodegenScalar, AbstractGeneratorFileContext):
     path: Path
     codegen_file: IdolPyCodegenFile
 
@@ -601,7 +608,7 @@ class IdolPyFile(ExternFileContext):
         return self.export_extern("Primitive")
 
     @cached_property
-    def primitive(self) -> Exported:
+    def literal(self) -> Exported:
         return self.export_extern("Literal")
 
     @cached_property

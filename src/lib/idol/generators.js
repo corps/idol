@@ -12,7 +12,7 @@ exports.build = build;
 exports.importExpr = importExpr;
 exports.camelify = camelify;
 exports.snakify = snakify;
-exports.RESERVED_WORDS = exports.GeneratorFileContext = exports.GeneratorAcc = exports.ImportsAcc = exports.IdentifiersAcc = exports.GeneratorConfig = exports.TypeDeconstructor = exports.TypeStructDeconstructor = exports.ScalarDeconstructor = exports.ScalarContext = exports.TypeStructContext = exports.ImportPath = exports.Path = void 0;
+exports.RESERVED_WORDS = exports.ExternFileContext = exports.GeneratorFileContext = exports.GeneratorAcc = exports.ImportsAcc = exports.IdentifiersAcc = exports.GeneratorConfig = exports.TypeDeconstructor = exports.TypeStructDeconstructor = exports.ScalarDeconstructor = exports.ScalarContext = exports.TypeStructContext = exports.ImportPath = exports.Path = void 0;
 
 var _Module = require("./js/schema/Module");
 
@@ -30,7 +30,25 @@ var scripter = _interopRequireWildcard(require("./scripter"));
 
 var _build_env = require("./build_env");
 
+var _fs = _interopRequireDefault(require("fs"));
+
+var _path2 = _interopRequireDefault(require("path"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = Object.defineProperty && Object.getOwnPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : {}; if (desc.get || desc.set) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj["default"] = obj; return newObj; } }
+
+function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
 
 function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
 
@@ -737,6 +755,10 @@ function () {
         asIdent = ident;
       }
 
+      if (intoPath.path === exported.path.path) {
+        return ident;
+      }
+
       var fromPath = intoPath.importPathTo(exported.path);
 
       if (!fromPath.isModule && this.idents.getIdentifierSources(fromPath.path, ident).isEmpty()) {
@@ -792,6 +814,36 @@ function () {
   }
 
   _createClass(GeneratorFileContext, [{
+    key: "export",
+    value: function _export(ident, scriptable) {
+      if (!this.state.idents.getIdentifierSources(this.path, ident).getOr(new _functional.StringSet()).items.length) {
+        throw new Error("GeneratorFileContext.export called before ident was reserved!");
+      }
+
+      this.state.addContent(this.path, scriptable(ident));
+      return {
+        path: this.path,
+        ident: ident
+      };
+    }
+  }, {
+    key: "reserveIdent",
+    value: function reserveIdent(ident) {
+      this.state.idents.addIdentifier(this.path, ident, this.state.getUniqueSource(this.path));
+      return ident;
+    }
+  }, {
+    key: "importIdent",
+    value: function importIdent(exported) {
+      var asIdent = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+      return this.state.importIdent(this.path, exported, asIdent);
+    }
+  }, {
+    key: "applyExpr",
+    value: function applyExpr(expr) {
+      return expr(this.state, this.path);
+    }
+  }, {
     key: "state",
     get: function get() {
       return this.parent.state;
@@ -807,6 +859,50 @@ function () {
 }();
 
 exports.GeneratorFileContext = GeneratorFileContext;
+
+var ExternFileContext =
+/*#__PURE__*/
+function (_GeneratorFileContext) {
+  _inherits(ExternFileContext, _GeneratorFileContext);
+
+  // Subclasses required to provide this
+  function ExternFileContext(externFile, parent, path) {
+    var _this5;
+
+    _classCallCheck(this, ExternFileContext);
+
+    _this5 = _possibleConstructorReturn(this, _getPrototypeOf(ExternFileContext).call(this, parent, path));
+    _this5.externFile = externFile;
+    return _this5;
+  }
+
+  _createClass(ExternFileContext, [{
+    key: "exportExtern",
+    value: function exportExtern(ident) {
+      return {
+        path: this.dumpedFile,
+        ident: this.state.idents.addIdentifier(this.dumpedFile, ident, "addExtern")
+      };
+    }
+  }, {
+    key: "dumpedFile",
+    get: function get() {
+      var _this6 = this;
+
+      return (0, _functional.cachedProperty)(this, "dumpedFile", function () {
+        var content = _fs["default"].readFileSync(_this6.externFile, "UTF-8").toString();
+
+        _this6.state.addContent(_this6.path, content);
+
+        return _this6.path;
+      });
+    }
+  }]);
+
+  return ExternFileContext;
+}(GeneratorFileContext);
+
+exports.ExternFileContext = ExternFileContext;
 
 function build(config, output) {
   var buildEnv = new _build_env.BuildEnv(config.name, config.codegenRoot);

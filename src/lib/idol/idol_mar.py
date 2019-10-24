@@ -27,13 +27,12 @@ from idol.generator import (
     get_tag_values,
     includes_tag,
     TypeStructContext,
-    get_tag_value,
     ExternFileContext,
     ImportPath,
+    AbstractGeneratorFileContext,
 )
 from idol.py.schema.primitive_type import PrimitiveType
 from idol.py.schema.reference import Reference
-from idol.py.schema.struct_kind import StructKind
 from idol.py.schema.type import Type
 
 
@@ -154,14 +153,20 @@ class IdolMarshmallow(GeneratorContext):
     def scaffold_file(self, ref: Reference) -> "IdolMarScaffoldFile":
         path = self.state.reserve_path(**self.config.paths_of(scaffold=ref))
         t = self.config.params.all_types.obj[ref.qualified_name]
-        scaffold_file = self.scaffold_impl(self, t, path)
-        return self.scaffolds.setdefault(ref.qualified_name, scaffold_file)
+
+        if t.named not in self.scaffolds:
+            self.scaffolds[t.named.qualified_name] = self.scaffold_impl(self, t, path)
+
+        return self.scaffolds[t.named.qualified_name]
 
     def codegen_file(self, ref: Reference) -> "IdolMarCodegenFile":
         path = self.state.reserve_path(**self.config.paths_of(codegen=ref))
         t = self.config.params.all_types.obj[ref.qualified_name]
-        codegen_file = self.codegen_impl(self, t, path)
-        return self.codegens.setdefault(ref.qualified_name, codegen_file)
+
+        if t.named.qualified_name not in self.codegens:
+            self.codegens[t.named.qualified_name] = self.codegen_impl(self, t, path)
+
+        return self.codegens[ref.qualified_name]
 
     @cached_property
     def idol_mar_file(self) -> "IdolMarFile":
@@ -399,7 +404,7 @@ class IdolMarCodegenEnum(GeneratorFileContext):
 
     @cached_property
     def declared_field(self) -> Alt[Exported]:
-        return Alt.lift(
+        return Alt(
             self.export(
                 self.codegen_file.default_field_name,
                 scripter.assignable(
@@ -427,7 +432,7 @@ class IdolMarCodegenEnum(GeneratorFileContext):
 
     @property
     def default_enum_name(self):
-        return self.codegen_file.t.named.qualified_name + "Enum"
+        return self.codegen_file.t.named.as_qualified_ident + "Enum"
 
 
 class IdolMarCodegenTypeStruct(GeneratorContext):
@@ -482,7 +487,7 @@ class IdolMarCodegenTypeStruct(GeneratorContext):
         return Alt.empty()
 
 
-class IdolMarCodegenTypeStructDeclaration(IdolMarCodegenTypeStruct, GeneratorFileContext):
+class IdolMarCodegenTypeStructDeclaration(IdolMarCodegenTypeStruct, AbstractGeneratorFileContext):
     path: Path
     codegen_file: IdolMarCodegenFile
 

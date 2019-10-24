@@ -14,6 +14,11 @@ class SchemaField(Struct):
 
     __field_constructors__ = [
         ("field_name", "field_name", Primitive.of(str), dict(optional=False)),
-        ("tags", "tags", List.of(Primitive.of(str), dict(atleast_one=False)), dict(optional=False)),
+        (
+            "tags",
+            "tags",
+            List.of(Primitive.of(str), dict(atleast_one=False)),
+            dict(optional=False),
+        ),
         ("type_struct", "type_struct", ScaffoldTypeStruct, dict(optional=False)),
     ]

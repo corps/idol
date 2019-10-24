@@ -1,7 +1,6 @@
 #! /usr/bin/env node
 // @flow
-import fs from "fs";
-import path from "path";
+import { resolve } from "path";
 import * as scripter from "./scripter";
 import { start } from "./cli";
 import { Reference } from "./js/schema/Reference";
@@ -503,7 +502,9 @@ export class IdolJsCodegenScalar implements GeneratorContext {
 }
 
 export class IdolJsFile extends ExternFileContext<IdolJs> {
-  static EXTERN_FILE = path.resolve(__dirname, "../../lib/idol/__idol__.js");
+  constructor(parent: IdolJs, path: Path) {
+    super(resolve(__dirname, "../../lib/idol/__idol__.js"), parent, path);
+  }
 
   get literal(): Exported {
       return this.exportExtern("Literal");

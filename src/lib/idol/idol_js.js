@@ -6,9 +6,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.IdolJsFile = exports.IdolJsCodegenScalar = exports.IdolJsCodegenTypeStructDeclaration = exports.IdolJsCodegenTypeStruct = exports.IdolJsCodegenEnum = exports.IdolJsCodegenStruct = exports.IdolJsScaffoldFile = exports.IdolJsCodegenFile = exports.IdolJs = void 0;
 
-var _fs = _interopRequireDefault(require("fs"));
-
-var _path = _interopRequireDefault(require("path"));
+var _path = require("path");
 
 var scripter = _interopRequireWildcard(require("./scripter"));
 
@@ -23,8 +21,6 @@ var _generators = require("./generators");
 var _functional = require("./functional");
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = Object.defineProperty && Object.getOwnPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : {}; if (desc.get || desc.set) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj["default"] = obj; return newObj; } }
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
@@ -155,6 +151,9 @@ function (_GeneratorFileContext) {
 
     _this5 = _possibleConstructorReturn(this, _getPrototypeOf(IdolJsCodegenFile).call(this, idolJs, path));
     _this5.typeDecon = new _generators.TypeDeconstructor(type);
+
+    _this5.reserveIdent(_this5.defaultTypeName);
+
     return _this5;
   }
 
@@ -238,6 +237,9 @@ function (_GeneratorFileContext2) {
     _this10 = _possibleConstructorReturn(this, _getPrototypeOf(IdolJsScaffoldFile).call(this, idolJs, path));
     _this10.typeDecon = (0, _generators.getMaterialTypeDeconstructor)(idolJs.config.params.allTypes, type);
     _this10.type = type;
+
+    _this10.reserveIdent(_this10.defaultTypeName);
+
     return _this10;
   }
 
@@ -256,16 +258,13 @@ function (_GeneratorFileContext2) {
 
         return codegenFile.declaredTypeIdent.bind(function (codegenType) {
           return codegenFile.struct.map(function (codegenStruct) {
-            return scripter.classDec([scripter.methodDec("constructor", ["val"], [scripter.invocation("super", "val")])], _this11.state.importIdent(_this11.path, codegenType));
+            return scripter.classDec([scripter.methodDec("constructor", ["val"], [scripter.invocation("super", "val")])], _this11.importIdent(codegenType));
           }).concat(codegenFile.typeStruct.map(function (tsDecon) {
-            return scripter.variable(_this11.state.importIdent(_this11.path, codegenType));
+            return scripter.variable(_this11.importIdent(codegenType));
           })).concat(codegenFile["enum"].map(function (options) {
-            return scripter.variable(_this11.state.importIdent(_this11.path, codegenType));
+            return scripter.variable(_this11.importIdent(codegenType));
           })).map(function (scriptable) {
-            return {
-              ident: _this11.state.addContentWithIdent(_this11.path, _this11.defaultTypeName, scriptable),
-              path: _this11.path
-            };
+            return _this11["export"](_this11.defaultTypeName, scriptable);
           });
         });
       });
@@ -307,23 +306,20 @@ function (_GeneratorFileContext3) {
         var fieldConstructorIdents = _this13.fields.mapAndFilter(function (codegenTypeStruct) {
           return codegenTypeStruct.constructorExpr;
         }).map(function (expr) {
-          return expr(_this13.state, _this13.path);
+          return _this13.applyExpr(expr);
         });
 
-        return _functional.Alt.lift({
-          path: _this13.path,
-          ident: _this13.state.addContentWithIdent(_this13.path, _this13.codegenFile.defaultTypeName, function (ident) {
-            return [scripter.comment((0, _generators.getTagValues)(_this13.codegenFile.typeDecon.t.tags, "description").join("\n")), scripter.classDec([scripter.methodDec("constructor", ["val"], [scripter.assignment("this._original", "val")])].concat(_toConsumableArray(_this13.stubMethods), _toConsumableArray(fieldConstructorIdents.concatMap(function (fieldName, constructor) {
-              var camelFieldName = (0, _generators.camelify)(fieldName, false);
+        return _functional.Alt.lift(_this13["export"](_this13.codegenFile.defaultTypeName, function (ident) {
+          return [scripter.comment((0, _generators.getTagValues)(_this13.codegenFile.typeDecon.t.tags, "description").join("\n")), scripter.classDec([scripter.methodDec("constructor", ["val"], [scripter.assignment("this._original", "val")])].concat(_toConsumableArray(_this13.stubMethods), _toConsumableArray(fieldConstructorIdents.concatMap(function (fieldName, constructor) {
+            var camelFieldName = (0, _generators.camelify)(fieldName, false);
 
-              var fields = _this13.gettersAndSettersFor(fieldName, fieldName, constructor);
+            var fields = _this13.gettersAndSettersFor(fieldName, fieldName, constructor);
 
-              return ["\n", scripter.comment((0, _generators.getTagValues)(_this13.fields.obj[fieldName].tsDecon.context.fieldTags, "description").join("\n"))].concat(fieldName === camelFieldName ? fields : fields.concat(_this13.gettersAndSettersFor(camelFieldName, fieldName, constructor)));
-            }, []))))(ident), "\n", scripter.invocation(_this13.state.importIdent(_this13.path, _this13.parent.idolJsFile.struct), ident, scripter.arrayLiteral.apply(scripter, _toConsumableArray(fieldConstructorIdents.mapIntoIterable(function (fieldName, constructor) {
-              return scripter.objLiteral(scripter.propDec("fieldName", scripter.literal(fieldName)), scripter.propDec("type", constructor), scripter.propDec("optional", scripter.literal((0, _generators.includesTag)(_this13.fields.obj[fieldName].tsDecon.context.fieldTags, "optional"))));
-            }))))];
-          })
-        });
+            return ["\n", scripter.comment((0, _generators.getTagValues)(_this13.fields.obj[fieldName].tsDecon.context.fieldTags, "description").join("\n"))].concat(fieldName === camelFieldName ? fields : fields.concat(_this13.gettersAndSettersFor(camelFieldName, fieldName, constructor)));
+          }, []))))(ident), "\n", scripter.invocation(_this13.importIdent(_this13.parent.idolJsFile.struct), ident, scripter.arrayLiteral.apply(scripter, _toConsumableArray(fieldConstructorIdents.mapIntoIterable(function (fieldName, constructor) {
+            return scripter.objLiteral(scripter.propDec("fieldName", scripter.literal(fieldName)), scripter.propDec("type", constructor), scripter.propDec("optional", scripter.literal((0, _generators.includesTag)(_this13.fields.obj[fieldName].tsDecon.context.fieldTags, "optional"))));
+          }))))];
+        }));
       });
     }
   }, {
@@ -360,14 +356,11 @@ function (_GeneratorFileContext4) {
       var _this15 = this;
 
       return (0, _functional.cachedProperty)(this, "declaredIdent", function () {
-        return _functional.Alt.lift({
-          path: _this15.path,
-          ident: _this15.state.addContentWithIdent(_this15.path, _this15.codegenFile.defaultTypeName, function (ident) {
-            return [scripter.comment((0, _generators.getTagValues)(_this15.codegenFile.typeDecon.t.tags, "description").join("\n")), scripter.variable(scripter.objLiteral.apply(scripter, _toConsumableArray(_this15.options.map(function (option) {
-              return scripter.propDec(option.toUpperCase(), scripter.literal(option));
-            })).concat(["\n", scripter.propDec("options", scripter.literal(_this15.options)), scripter.propDec("default", scripter.literal(_this15.options[0])), "\n", scripter.comment("These methods are implemented via the runtime, stubs exist here for reference."), scripter.methodDec("validate", ["val"], []), scripter.methodDec("isValid", ["val"], [scripter.ret("true")]), scripter.methodDec("expand", ["val"], [scripter.ret("val")]), scripter.methodDec("wrap", ["val"], [scripter.ret("val")]), scripter.methodDec("unwrap", ["val"], [scripter.ret("val")])])))(ident), scripter.invocation(_this15.state.importIdent(_this15.path, _this15.parent.idolJsFile["enum"]), ident)];
-          })
-        });
+        return _functional.Alt.lift(_this15["export"](_this15.codegenFile.defaultTypeName, function (ident) {
+          return [scripter.comment((0, _generators.getTagValues)(_this15.codegenFile.typeDecon.t.tags, "description").join("\n")), scripter.variable(scripter.objLiteral.apply(scripter, _toConsumableArray(_this15.options.map(function (option) {
+            return scripter.propDec(option.toUpperCase(), scripter.literal(option));
+          })).concat(["\n", scripter.propDec("options", scripter.literal(_this15.options)), scripter.propDec("default", scripter.literal(_this15.options[0])), "\n", scripter.comment("These methods are implemented via the runtime, stubs exist here for reference."), scripter.methodDec("validate", ["val"], []), scripter.methodDec("isValid", ["val"], [scripter.ret("true")]), scripter.methodDec("expand", ["val"], [scripter.ret("val")]), scripter.methodDec("wrap", ["val"], [scripter.ret("val")]), scripter.methodDec("unwrap", ["val"], [scripter.ret("val")])])))(ident), scripter.invocation(_this15.importIdent(_this15.parent.idolJsFile["enum"]), ident)];
+        }));
       });
     }
   }]);
@@ -477,16 +470,23 @@ function (_IdolJsCodegenTypeStr) {
       return this.codegenFile.path;
     }
   }, {
+    key: "export",
+    get: function get() {
+      return _generators.GeneratorFileContext.prototype["export"];
+    }
+  }, {
+    key: "applyExpr",
+    get: function get() {
+      return _generators.GeneratorFileContext.prototype.applyExpr;
+    }
+  }, {
     key: "declaredIdent",
     get: function get() {
       var _this19 = this;
 
       return (0, _functional.cachedProperty)(this, "declaredIdent", function () {
         return _this19.constructorExpr.map(function (expr) {
-          return {
-            path: _this19.path,
-            ident: _this19.state.addContentWithIdent(_this19.path, _this19.codegenFile.defaultTypeName, scripter.commented((0, _generators.getTagValues)(_this19.tsDecon.context.typeTags, "description").join("\n"), scripter.variable(expr(_this19.state, _this19.path))))
-          };
+          return _this19["export"](_this19.codegenFile.defaultTypeName, scripter.commented((0, _generators.getTagValues)(_this19.tsDecon.context.typeTags, "description").join("\n"), scripter.variable(_this19.applyExpr(expr))));
         });
       });
     }
@@ -579,104 +579,49 @@ exports.IdolJsCodegenScalar = IdolJsCodegenScalar;
 
 var IdolJsFile =
 /*#__PURE__*/
-function (_GeneratorFileContext5) {
-  _inherits(IdolJsFile, _GeneratorFileContext5);
+function (_ExternFileContext) {
+  _inherits(IdolJsFile, _ExternFileContext);
 
-  function IdolJsFile() {
+  function IdolJsFile(parent, path) {
     _classCallCheck(this, IdolJsFile);
 
-    return _possibleConstructorReturn(this, _getPrototypeOf(IdolJsFile).apply(this, arguments));
+    return _possibleConstructorReturn(this, _getPrototypeOf(IdolJsFile).call(this, (0, _path.resolve)(__dirname, "../../lib/idol/__idol__.js"), parent, path));
   }
 
   _createClass(IdolJsFile, [{
-    key: "dumpedFile",
-    get: function get() {
-      var _this23 = this;
-
-      return (0, _functional.cachedProperty)(this, "dumpedFile", function () {
-        var content = _fs["default"].readFileSync(_path["default"].resolve(__dirname, "../../lib/idol/__idol__.js"), "UTF-8").toString();
-
-        _this23.state.addContent(_this23.path, content);
-
-        return _this23.path;
-      });
-    }
-  }, {
     key: "literal",
     get: function get() {
-      var _this24 = this;
-
-      return (0, _functional.cachedProperty)(this, "literal", function () {
-        return {
-          path: _this24.dumpedFile,
-          ident: _this24.state.idents.addIdentifier(_this24.path, "Literal", "literal")
-        };
-      });
+      return this.exportExtern("Literal");
     }
   }, {
     key: "primitive",
     get: function get() {
-      var _this25 = this;
-
-      return (0, _functional.cachedProperty)(this, "primitive", function () {
-        return {
-          path: _this25.dumpedFile,
-          ident: _this25.state.idents.addIdentifier(_this25.path, "Primitive", "primitive")
-        };
-      });
+      return this.exportExtern("Primitive");
     }
   }, {
     key: "list",
     get: function get() {
-      var _this26 = this;
-
-      return (0, _functional.cachedProperty)(this, "list", function () {
-        return {
-          path: _this26.dumpedFile,
-          ident: _this26.state.idents.addIdentifier(_this26.path, "List", "list")
-        };
-      });
+      return this.exportExtern("List");
     }
   }, {
     key: "map",
     get: function get() {
-      var _this27 = this;
-
-      return (0, _functional.cachedProperty)(this, "map", function () {
-        return {
-          path: _this27.dumpedFile,
-          ident: _this27.state.idents.addIdentifier(_this27.path, "Map", "map")
-        };
-      });
+      return this.exportExtern("Map");
     }
   }, {
     key: "enum",
     get: function get() {
-      var _this28 = this;
-
-      return (0, _functional.cachedProperty)(this, "enum", function () {
-        return {
-          path: _this28.dumpedFile,
-          ident: _this28.state.idents.addIdentifier(_this28.path, "Enum", "enum")
-        };
-      });
+      return this.exportExtern("Enum");
     }
   }, {
     key: "struct",
     get: function get() {
-      var _this29 = this;
-
-      return (0, _functional.cachedProperty)(this, "struct", function () {
-        return {
-          path: _this29.dumpedFile,
-          ident: _this29.state.idents.addIdentifier(_this29.path, "Struct", "struct")
-        };
-      });
+      return this.exportExtern("Struct");
     }
   }]);
 
   return IdolJsFile;
-}(_generators.GeneratorFileContext);
+}(_generators.ExternFileContext);
 
 exports.IdolJsFile = IdolJsFile;
 
