@@ -1,14 +1,13 @@
 #! /usr/bin/env node
 // @flow
-import fs from "fs";
-import path from "path";
+import { resolve } from "path";
 import * as scripter from "./scripter";
 import { start } from "./cli";
 import { Reference } from "./js/schema/Reference";
 import { Type } from "./js/schema/Type";
 import {
   build,
-  camelify,
+  camelify, ExternFileContext,
   GeneratorAcc,
   GeneratorConfig,
   GeneratorFileContext,
@@ -97,6 +96,7 @@ export class IdolJsCodegenFile extends GeneratorFileContext<IdolJs> {
   constructor(idolJs: IdolJs, path: Path, type: Type) {
     super(idolJs, path);
     this.typeDecon = new TypeDeconstructor(type);
+    this.reserveIdent(this.defaultTypeName);
   }
 
   get type(): Type {
@@ -153,6 +153,7 @@ export class IdolJsScaffoldFile extends GeneratorFileContext<IdolJs> {
     super(idolJs, path);
     this.typeDecon = getMaterialTypeDeconstructor(idolJs.config.params.allTypes, type);
     this.type = type;
+    this.reserveIdent(this.defaultTypeName);
   }
 
   get defaultTypeName(): string {
@@ -167,23 +168,20 @@ export class IdolJsScaffoldFile extends GeneratorFileContext<IdolJs> {
           .map(codegenStruct =>
             scripter.classDec(
               [scripter.methodDec("constructor", ["val"], [scripter.invocation("super", "val")])],
-              this.state.importIdent(this.path, codegenType)
+              this.importIdent(codegenType)
             )
           )
           .concat(
             codegenFile.typeStruct.map(tsDecon =>
-              scripter.variable(this.state.importIdent(this.path, codegenType))
+              scripter.variable(this.importIdent(codegenType))
             )
           )
           .concat(
             codegenFile.enum.map(options =>
-              scripter.variable(this.state.importIdent(this.path, codegenType))
+              scripter.variable(this.importIdent(codegenType))
             )
           )
-          .map(scriptable => ({
-            ident: this.state.addContentWithIdent(this.path, this.defaultTypeName, scriptable),
-            path: this.path
-          }))
+          .map(scriptable => (this.export(this.defaultTypeName, scriptable)))
       );
     });
   }
@@ -203,12 +201,9 @@ export class IdolJsCodegenStruct extends GeneratorFileContext<IdolJs> {
     return cachedProperty(this, "declaredIdent", () => {
       const fieldConstructorIdents: OrderedObj<string> = this.fields
         .mapAndFilter(codegenTypeStruct => codegenTypeStruct.constructorExpr)
-        .map(expr => expr(this.state, this.path));
+        .map(expr => this.applyExpr(expr));
 
-      return Alt.lift({
-        path: this.path,
-        ident: this.state.addContentWithIdent(
-          this.path,
+      return Alt.lift(this.export(
           this.codegenFile.defaultTypeName,
           (ident: string) => [
             scripter.comment(
@@ -245,7 +240,7 @@ export class IdolJsCodegenStruct extends GeneratorFileContext<IdolJs> {
             ])(ident),
             "\n",
             scripter.invocation(
-              this.state.importIdent(this.path, this.parent.idolJsFile.struct),
+              this.importIdent(this.parent.idolJsFile.struct),
               ident,
               scripter.arrayLiteral(
                 ...fieldConstructorIdents.mapIntoIterable((fieldName, constructor) =>
@@ -267,7 +262,7 @@ export class IdolJsCodegenStruct extends GeneratorFileContext<IdolJs> {
             )
           ]
         )
-      });
+      );
     });
   }
 
@@ -320,10 +315,7 @@ export class IdolJsCodegenEnum extends GeneratorFileContext<IdolJs> {
 
   get declaredIdent(): Alt<Exported> {
     return cachedProperty(this, "declaredIdent", () =>
-      Alt.lift({
-        path: this.path,
-        ident: this.state.addContentWithIdent(
-          this.path,
+      Alt.lift(this.export(
           this.codegenFile.defaultTypeName,
           ident => [
             scripter.comment(
@@ -349,12 +341,12 @@ export class IdolJsCodegenEnum extends GeneratorFileContext<IdolJs> {
               )
             )(ident),
             scripter.invocation(
-              this.state.importIdent(this.path, this.parent.idolJsFile.enum),
+              this.importIdent(this.parent.idolJsFile.enum),
               ident
             )
           ]
         )
-      })
+      )
     );
   }
 }
@@ -433,21 +425,25 @@ export class IdolJsCodegenTypeStructDeclaration extends IdolJsCodegenTypeStruct 
   get path(): Path {
     return this.codegenFile.path;
   }
+  
+  get export() {
+    return GeneratorFileContext.prototype.export;
+  }
+
+  get applyExpr() {
+    return GeneratorFileContext.prototype.applyExpr;
+  }
 
   get declaredIdent(): Alt<Exported> {
     return cachedProperty(this, "declaredIdent", () =>
       this.constructorExpr.map(expr => {
-        return {
-          path: this.path,
-          ident: this.state.addContentWithIdent(
-            this.path,
-            this.codegenFile.defaultTypeName,
-            scripter.commented(
-              getTagValues(this.tsDecon.context.typeTags, "description").join("\n"),
-              scripter.variable(expr(this.state, this.path))
-            )
+        return this.export(
+          this.codegenFile.defaultTypeName,
+          scripter.commented(
+            getTagValues(this.tsDecon.context.typeTags, "description").join("\n"),
+            scripter.variable(this.applyExpr(expr))
           )
-        };
+        );
       })
     );
   }
@@ -505,69 +501,33 @@ export class IdolJsCodegenScalar implements GeneratorContext {
   }
 }
 
-export class IdolJsFile extends GeneratorFileContext<IdolJs> {
-  get dumpedFile(): Path {
-    return cachedProperty(this, "dumpedFile", () => {
-      const content = fs
-        .readFileSync(path.resolve(__dirname, "../../lib/idol/__idol__.js"), "UTF-8")
-        .toString();
-      this.state.addContent(this.path, content);
-      return this.path;
-    });
+export class IdolJsFile extends ExternFileContext<IdolJs> {
+  constructor(parent: IdolJs, path: Path) {
+    super(resolve(__dirname, "../../lib/idol/__idol__.js"), parent, path);
   }
 
   get literal(): Exported {
-    return cachedProperty(this, "literal", () => {
-      return {
-        path: this.dumpedFile,
-        ident: this.state.idents.addIdentifier(this.path, "Literal", "literal")
-      };
-    });
+      return this.exportExtern("Literal");
   }
 
   get primitive(): Exported {
-    return cachedProperty(this, "primitive", () => {
-      return {
-        path: this.dumpedFile,
-        ident: this.state.idents.addIdentifier(this.path, "Primitive", "primitive")
-      };
-    });
+    return this.exportExtern("Primitive");
   }
 
   get list(): Exported {
-    return cachedProperty(this, "list", () => {
-      return {
-        path: this.dumpedFile,
-        ident: this.state.idents.addIdentifier(this.path, "List", "list")
-      };
-    });
+    return this.exportExtern("List");
   }
 
   get map(): Exported {
-    return cachedProperty(this, "map", () => {
-      return {
-        path: this.dumpedFile,
-        ident: this.state.idents.addIdentifier(this.path, "Map", "map")
-      };
-    });
+    return this.exportExtern("Map");
   }
 
   get enum(): Exported {
-    return cachedProperty(this, "enum", () => {
-      return {
-        path: this.dumpedFile,
-        ident: this.state.idents.addIdentifier(this.path, "Enum", "enum")
-      };
-    });
+    return this.exportExtern("Enum");
   }
 
   get struct(): Exported {
-    return cachedProperty(this, "struct", () => {
-      return {
-        path: this.dumpedFile,
-        ident: this.state.idents.addIdentifier(this.path, "Struct", "struct")
-      };
-    });
+    return this.exportExtern("Struct");
   }
 }
 

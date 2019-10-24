@@ -19,14 +19,15 @@ clean:
 
 models: $(MODELS)
 	../target/debug/idol $? > build.json
-	python3 --version
+	python --version
 	node --version
 	npm --version
 	npm install
 	$$(npm bin)/babel-node --version
-	python3 -m pip install -e ../src/lib
+	pip install -e ../src/lib
 	cat build.json | ../target/debug/idol_rs --output src/models/ --mod "crate::models"
 	cat build.json | idol_py --output src/lib/idol/py --target all.target
+	cat build.json | idol_mar --output src/lib/idol/py_mar --target all.target
 	cat build.json | $$(npm bin)/idol_js --output src/lib/idol/js --target all.target
 	# cat build.json | ../src/bin/idol_graphql.js --output src/lib/idol/graphql --target all.target
 

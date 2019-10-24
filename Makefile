@@ -27,15 +27,16 @@ src/lib/idol/node_modules:
 
 models: $(MODELS)
 	./target/debug/idol $? > build.json
-	python3 --version
+	python --version
 	node --version
-	python3 -m pip --version
+	pip --version
 	npm install
-	python3 -m pip install -e ./src/lib
+	pip install -e ./src/lib
 
 	cat build.json | ./target/debug/idol_rs --output src/models/ --mod "crate::models"
 	cat build.json | ./src/lib/idol/idol_py --output src/lib/idol/py --target schema
 	cat build.json | ./src/lib/idol/idol_js.js --output src/es6/idol/js --target schema
+	cat build.json | ./src/lib/idol/idol_mar --output src/lib/idol/mar --target schema
 
 test: dev
 	cargo test

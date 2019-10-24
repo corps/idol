@@ -1,3 +1,4 @@
+from idol.py.schema.struct_kind import StructKind
 from .primitive_type import PrimitiveType
 from ..codegen.schema.type_struct import SchemaTypeStruct
 
@@ -29,3 +30,14 @@ class TypeStruct(SchemaTypeStruct):
             return self.literal.int
         elif self.primitive_type == PrimitiveType.STRING:
             return self.literal.string
+
+    @property
+    def type_display_name(self) -> str:
+        result: str = self.primitive_type.value
+
+        if self.struct_kind == StructKind.REPEATED:
+            result += "[]"
+        if self.struct_kind == StructKind.MAP:
+            result += "{}"
+
+        return result
