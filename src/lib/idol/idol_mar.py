@@ -42,17 +42,17 @@ class FieldExpressionComposer:
     kwds: Dict[str, Union[str, str]]
 
     def __init__(
-        self,
-        constructor_ident: Expression,
-        args: List[Union[str, Expression]] = None,
-        kwds: Dict[str, Union[str, Expression]] = None,
+            self,
+            constructor_ident: Expression,
+            args: List[Union[str, Expression]] = None,
+            kwds: Dict[str, Union[str, Expression]] = None,
     ):
         self.constructor_ident = constructor_ident
         self.args = args or []
         self.kwds = kwds or {}
 
     def resolve_arg_or_kwd(
-        self, expr_or_str: Union[Expression, str], state: GeneratorAcc, path: Path
+            self, expr_or_str: Union[Expression, str], state: GeneratorAcc, path: Path
     ):
         if isinstance(expr_or_str, str):
             return expr_or_str
@@ -79,16 +79,16 @@ class FieldExpressionComposer:
             args, kwds = self.resolve_args_and_kwds(state, path)
             return scripter.invocation(
                 state.import_ident(path, idol_mar.idol_mar_file.wrap_field),
-                scripter.thunk(self.constructor_ident(state, path)),
-                name,
-                *args,
+                self.constructor_ident(state, path),
+                scripter.literal(name),
+                *list(scripter.thunk(arg) for arg in args),
                 **kwds,
             )
 
         return expr
 
     def with_more_kwds(
-        self, more_kwds: Dict[str, Union[Expression, str]]
+            self, more_kwds: Dict[str, Union[Expression, str]]
     ) -> "FieldExpressionComposer":
         return FieldExpressionComposer(
             self.constructor_ident, self.args, dict(**self.kwds, **more_kwds)
@@ -101,7 +101,7 @@ class FieldKwdsBuilder:
     missing: Optional[str]
 
     def __init__(
-        self, ts_context: TypeStructContext, default: Optional[str], missing: Optional[str]
+            self, ts_context: TypeStructContext, default: Optional[str], missing: Optional[str]
     ):
         self.ts_context = ts_context
         self.default = default
@@ -139,10 +139,10 @@ class IdolMarshmallow(GeneratorContext):
     codegen_impl: "Callable[[IdolMarshmallow, Type, Path], IdolMarCodegenFile]"
 
     def __init__(
-        self,
-        config: GeneratorConfig,
-        scaffold_impl: "Callable[[IdolMarshmallow, Type, Path], IdolMarScaffoldFile]" = None,
-        codegen_impl: "Callable[[IdolMarshmallow, Type, Path], IdolMarCodegenFile]" = None,
+            self,
+            config: GeneratorConfig,
+            scaffold_impl: "Callable[[IdolMarshmallow, Type, Path], IdolMarScaffoldFile]" = None,
+            codegen_impl: "Callable[[IdolMarshmallow, Type, Path], IdolMarCodegenFile]" = None,
     ):
         super(IdolMarshmallow, self).__init__(GeneratorAcc(), config)
         self.scaffolds = {}
@@ -154,7 +154,7 @@ class IdolMarshmallow(GeneratorContext):
         path = self.state.reserve_path(**self.config.paths_of(scaffold=ref))
         t = self.config.params.all_types.obj[ref.qualified_name]
 
-        if t.named not in self.scaffolds:
+        if t.named.qualified_name not in self.scaffolds:
             self.scaffolds[t.named.qualified_name] = self.scaffold_impl(self, t, path)
 
         return self.scaffolds[t.named.qualified_name]
@@ -285,7 +285,7 @@ class IdolMarCodegenStruct(GeneratorFileContext):
     fields: OrderedObj["IdolMarCodegenTypeStruct"]
 
     def __init__(
-        self, codegen_file: IdolMarCodegenFile, fields: "OrderedObj[IdolMarCodegenTypeStruct]"
+            self, codegen_file: IdolMarCodegenFile, fields: "OrderedObj[IdolMarCodegenTypeStruct]"
     ):
         self.fields = fields
         self.codegen_file = codegen_file
@@ -319,7 +319,7 @@ class IdolMarCodegenStruct(GeneratorFileContext):
                                     ),
                                 )
                             ]
-                        )
+                    )
                     ],
                     doc_str=get_tag_values(self.codegen_file.t.tags, "description"),
                 ),
@@ -333,9 +333,8 @@ class IdolMarCodegenStruct(GeneratorFileContext):
 
             if self.codegen_file.t.named.qualified_name in self.config.params.scaffold_types.obj:
                 for scaffold_declared_schema in self.codegen_file.idol_mar.scaffold_file(
-                    self.codegen_file.t.named
+                        self.codegen_file.t.named
                 ).declared_schema:
-
                     def lazy_import(state: GeneratorAcc, path: Path) -> str:
                         import_module = state.import_ident(
                             path, Exported(Path("importlib"), "import_module")
@@ -346,10 +345,12 @@ class IdolMarCodegenStruct(GeneratorFileContext):
                                 import_module,
                                 scripter.literal(
                                     ImportPath.as_python_module_path(
-                                        path.import_path_to(scaffold_declared_schema.path).rel_path
+                                        path.import_path_to(
+                                            scaffold_declared_schema.path
+                                        ).rel_path
                                     )
                                 ),
-                                "__name__",
+                                "__package__",
                             ),
                             scaffold_declared_schema.ident,
                         )
@@ -449,7 +450,7 @@ class IdolMarCodegenTypeStruct(GeneratorContext):
         return Alt(
             IdolMarCodegenScalar(self.idol_mar, scalar_decon)
             for scalar_decon in (
-                self.ts_decon.get_scalar() ^ self.ts_decon.get_map() ^ self.ts_decon.get_repeated()
+                    self.ts_decon.get_scalar() ^ self.ts_decon.get_map() ^ self.ts_decon.get_repeated()
             )
         )
 
@@ -549,9 +550,9 @@ class IdolMarCodegenScalar(GeneratorContext):
     @cached_property
     def field_expr_composer(self) -> Alt[FieldExpressionComposer]:
         return (
-            self.reference_import_field_expr_composer
-            ^ self.prim_field_expr
-            ^ self.literal_field_expr
+                self.reference_import_field_expr_composer
+                ^ self.prim_field_expr
+                ^ self.literal_field_expr
         )
 
     @cached_property
@@ -622,6 +623,7 @@ class IdolMarScaffoldFile(GeneratorFileContext):
         codegen_schema_ident: Alt[str] = Alt(
             self.import_ident(codegen_schema, self.default_schema_name + "Codegen")
             for codegen_schema in self.idol_mar.codegen_file(self.t.named).declared_schema
+            if type_decon.get_struct()
         )
 
         return Alt(

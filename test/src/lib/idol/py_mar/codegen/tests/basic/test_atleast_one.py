@@ -5,5 +5,5 @@ from ...__idol__ import wrap_field
 from marshmallow.fields import List
 
 TestsBasicTestAtleastOneField = wrap_field(
-    (lambda: List), TestsBasicTestAtleastOneField, TestsBasicTestKindField()
+    (lambda: List), "TestsBasicTestAtleastOneField", TestsBasicTestKindField()
 )

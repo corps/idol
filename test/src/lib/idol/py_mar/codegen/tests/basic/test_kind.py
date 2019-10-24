@@ -3,4 +3,4 @@
 from ...__idol__ import wrap_field
 from marshmallow.fields import String
 
-TestsBasicTestKindField = wrap_field((lambda: String), TestsBasicTestKindField)
+TestsBasicTestKindField = wrap_field((lambda: String), "TestsBasicTestKindField")

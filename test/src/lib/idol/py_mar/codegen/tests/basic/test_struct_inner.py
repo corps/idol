@@ -12,5 +12,5 @@ class TestsBasicTestStructInnerSchema(Schema):
 
 
 TestsBasicTestStructInnerField = wrap_field(
-    (lambda: Nested), TestsBasicTestStructInnerField, TestsBasicTestStructInnerSchema
+    (lambda: Nested), "TestsBasicTestStructInnerField", TestsBasicTestStructInnerSchema
 )

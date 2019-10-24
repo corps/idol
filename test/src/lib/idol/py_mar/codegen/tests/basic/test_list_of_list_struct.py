@@ -16,6 +16,6 @@ class TestsBasicTestListOfListStructSchema(Schema):
 
 TestsBasicTestListOfListStructField = wrap_field(
     (lambda: Nested),
-    TestsBasicTestListOfListStructField,
+    "TestsBasicTestListOfListStructField",
     TestsBasicTestListOfListStructSchema,
 )

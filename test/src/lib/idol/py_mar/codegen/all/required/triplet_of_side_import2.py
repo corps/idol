@@ -15,6 +15,6 @@ class AllRequiredTripletOfSideImport2Schema(Schema):
 
 AllRequiredTripletOfSideImport2Field = wrap_field(
     (lambda: Nested),
-    AllRequiredTripletOfSideImport2Field,
+    "AllRequiredTripletOfSideImport2Field",
     AllRequiredTripletOfSideImport2Schema,
 )

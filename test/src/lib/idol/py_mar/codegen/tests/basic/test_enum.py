@@ -12,5 +12,8 @@ class TestsBasicTestEnumEnum(Enum):
 
 
 TestsBasicTestEnumField = wrap_field(
-    (lambda: EnumField), TestsBasicTestEnumField, TestsBasicTestEnumEnum, by_value=True
+    (lambda: EnumField),
+    "TestsBasicTestEnumField",
+    TestsBasicTestEnumEnum,
+    by_value=True,
 )

@@ -11,6 +11,6 @@ class TestsBasicTestOptionalFieldSchema(Schema):
 
 TestsBasicTestOptionalFieldField = wrap_field(
     (lambda: Nested),
-    TestsBasicTestOptionalFieldField,
+    "TestsBasicTestOptionalFieldField",
     TestsBasicTestOptionalFieldSchema,
 )

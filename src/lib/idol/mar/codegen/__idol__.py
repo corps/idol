@@ -20,7 +20,4 @@ def wrap_field(field: Type[Field], name: str, *args, **kwds) -> Type[Field]:
         exec_body=lambda class_dict: class_dict.update(__init__=wrapped_init),
     )
 
-    return cast(
-        Type[Field],
-        new_class
-    )
+    return cast(Type[Field], new_class)

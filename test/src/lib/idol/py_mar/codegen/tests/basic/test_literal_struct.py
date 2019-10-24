@@ -20,6 +20,6 @@ class TestsBasicTestLiteralStructSchema(Schema):
 
 TestsBasicTestLiteralStructField = wrap_field(
     (lambda: Nested),
-    TestsBasicTestLiteralStructField,
+    "TestsBasicTestLiteralStructField",
     TestsBasicTestLiteralStructSchema,
 )

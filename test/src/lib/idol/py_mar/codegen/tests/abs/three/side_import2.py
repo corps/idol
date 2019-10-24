@@ -10,5 +10,5 @@ class TestsAbsThreeSideImport2Schema(Schema):
 
 
 TestsAbsThreeSideImport2Field = wrap_field(
-    (lambda: Nested), TestsAbsThreeSideImport2Field, TestsAbsThreeSideImport2Schema
+    (lambda: Nested), "TestsAbsThreeSideImport2Field", TestsAbsThreeSideImport2Schema
 )
