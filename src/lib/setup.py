@@ -14,7 +14,7 @@ setup(
     packages=["idol"],
     install_requires=["black", "cached_property"],
     python_require=">= 3.6",
-    scripts=["idol/idol_py"],
+    scripts=["idol/idol_py", "idol/idol_mar"],
     zip_safe=False,
     include_package_data=True,
     package_data={"": ["idol/LICENSE", "idol/idol_py", "idol/VERSION"]},

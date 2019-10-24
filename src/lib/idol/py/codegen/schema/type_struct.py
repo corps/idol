@@ -19,12 +19,7 @@ class SchemaTypeStruct(Struct):
 
     __field_constructors__ = [
         ("literal", "literal", ScaffoldLiteral, dict(optional=True)),
-        (
-            "primitive_type",
-            "primitive_type",
-            ScaffoldPrimitiveType,
-            dict(optional=False),
-        ),
+        ("primitive_type", "primitive_type", ScaffoldPrimitiveType, dict(optional=False)),
         ("reference", "reference", ScaffoldReference, dict(optional=False)),
         ("struct_kind", "struct_kind", ScaffoldStructKind, dict(optional=False)),
     ]

@@ -103,8 +103,12 @@ def type_parameterized(cons: str, *type_params) -> str:
     return cons + type_params
 
 
-def literal(value):
+def literal(value) -> str:
     return repr(value)
+
+
+def thunk(expr: str) -> str:
+    return f"(lambda: {expr})"
 
 
 def array(values: Iterable[str]):

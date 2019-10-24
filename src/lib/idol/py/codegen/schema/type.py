@@ -36,12 +36,7 @@ class SchemaType(Struct):
     tags: MutableSequence[str]
 
     __field_constructors__ = [
-        (
-            "fields",
-            "fields",
-            Map.of(ScaffoldField, dict(atleast_one=False)),
-            dict(optional=False),
-        ),
+        ("fields", "fields", Map.of(ScaffoldField, dict(atleast_one=False)), dict(optional=False)),
         ("is_a", "is_a", ScaffoldTypeStruct, dict(optional=True)),
         ("named", "named", ScaffoldReference, dict(optional=False)),
         (
@@ -50,10 +45,5 @@ class SchemaType(Struct):
             List.of(Primitive.of(str), dict(atleast_one=False)),
             dict(optional=False),
         ),
-        (
-            "tags",
-            "tags",
-            List.of(Primitive.of(str), dict(atleast_one=False)),
-            dict(optional=False),
-        ),
+        ("tags", "tags", List.of(Primitive.of(str), dict(atleast_one=False)), dict(optional=False)),
     ]

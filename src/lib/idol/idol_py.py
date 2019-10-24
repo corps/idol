@@ -26,6 +26,7 @@ from idol.generator import (
     get_safe_ident,
     get_tag_values,
     includes_tag,
+    ExternFileContext,
 )
 from idol.py.schema.primitive_type import PrimitiveType
 from idol.py.schema.reference import Reference
@@ -106,6 +107,8 @@ class IdolPyCodegenFile(GeneratorFileContext):
         self.t_decon = TypeDeconstructor(t)
         super(IdolPyCodegenFile, self).__init__(idol_py, path)
 
+        self.reserve_ident(self.default_type_name)
+
     @cached_property
     def declared_type_ident(self) -> Alt[Exported]:
         type_ident: Alt[Exported] = Alt(
@@ -160,58 +163,49 @@ class IdolPyCodegenStruct(GeneratorFileContext):
     @cached_property
     def declared_ident(self) -> Alt[Exported]:
         return Alt.lift(
-            Exported(
-                self.path,
-                self.state.add_content_with_ident(
-                    self.path,
-                    self.codegen_file.default_type_name,
-                    scripter.nameable_class_dec(
-                        [
-                            self.state.import_ident(
-                                self.path, self.codegen_file.idol_py.idol_py_file.struct
+            self.export(
+                self.codegen_file.default_type_name,
+                scripter.nameable_class_dec(
+                    [self.import_ident(self.codegen_file.idol_py.idol_py_file.struct)],
+                    [
+                        line
+                        for field_name, field in self.fields
+                        for typing_expr in field.typing_expr
+                        for line in (
+                            scripter.comments(
+                                get_tag_values(field.ts_decon.context.field_tags, "description")
                             )
-                        ],
-                        [
-                            line
-                            for field_name, field in self.fields
-                            for typing_expr in field.typing_expr
-                            for line in (
-                                scripter.comments(
-                                    get_tag_values(field.ts_decon.context.field_tags, "description")
-                                )
-                                + [
-                                    scripter.typing(
-                                        get_safe_ident(field_name),
-                                        typing_expr(self.state, self.path),
-                                    ),
-                                    ""
-                                ]
-                            )
-                        ]
-                        + [
-                            scripter.assignment(
-                                "__field_constructors__",
-                                scripter.array(
-                                    scripter.tuple(
-                                        scripter.literal(field_name),
-                                        scripter.literal(get_safe_ident(field_name)),
-                                        field_expr(self.state, self.path),
-                                        scripter.invocation(
-                                            "dict",
-                                            optional=scripter.literal(
-                                                includes_tag(
-                                                    field.ts_decon.context.field_tags, "optional"
-                                                )
-                                            ),
-                                        ),
-                                    )
-                                    for field_name, field in self.fields
-                                    for field_expr in field.constructor_expr
+                            + [
+                                scripter.typing(
+                                    get_safe_ident(field_name), self.apply_expr(typing_expr)
                                 ),
-                            )
-                        ],
-                        doc_str=get_tag_values(self.codegen_file.t.tags, "description"),
-                    ),
+                                "",
+                            ]
+                        )
+                    ]
+                    + [
+                        scripter.assignment(
+                            "__field_constructors__",
+                            scripter.array(
+                                scripter.tuple(
+                                    scripter.literal(field_name),
+                                    scripter.literal(get_safe_ident(field_name)),
+                                    self.apply_expr(field_expr),
+                                    scripter.invocation(
+                                        "dict",
+                                        optional=scripter.literal(
+                                            includes_tag(
+                                                field.ts_decon.context.field_tags, "optional"
+                                            )
+                                        ),
+                                    ),
+                                )
+                                for field_name, field in self.fields
+                                for field_expr in field.constructor_expr
+                            ),
+                        )
+                    ],
+                    doc_str=get_tag_values(self.codegen_file.t.tags, "description"),
                 ),
             )
         )
@@ -229,23 +223,15 @@ class IdolPyCodegenEnum(GeneratorFileContext):
     @cached_property
     def declared_ident(self) -> Alt[Exported]:
         return Alt.lift(
-            Exported(
-                self.path,
-                self.state.add_content_with_ident(
-                    self.path,
-                    self.codegen_file.default_type_name,
-                    scripter.nameable_class_dec(
-                        [
-                            self.state.import_ident(
-                                self.path, self.codegen_file.idol_py.idol_py_file.enum
-                            )
-                        ],
-                        [
-                            scripter.assignment(name.upper(), scripter.literal(name))
-                            for name in self.options
-                        ],
-                        doc_str=get_tag_values(self.codegen_file.t.tags, "description"),
-                    ),
+            self.export(
+                self.codegen_file.default_type_name,
+                scripter.nameable_class_dec(
+                    [self.import_ident(self.codegen_file.idol_py.idol_py_file.enum)],
+                    [
+                        scripter.assignment(name.upper(), scripter.literal(name))
+                        for name in self.options
+                    ],
+                    doc_str=get_tag_values(self.codegen_file.t.tags, "description"),
                 ),
             )
         )
@@ -365,7 +351,7 @@ class IdolPyCodegenTypeStruct(GeneratorContext):
         )
 
 
-class IdolPyCodegenTypeStructDeclaration(IdolPyCodegenTypeStruct):
+class IdolPyCodegenTypeStructDeclaration(IdolPyCodegenTypeStruct, GeneratorFileContext):
     path: Path
     codegen_file: IdolPyCodegenFile
 
@@ -384,17 +370,12 @@ class IdolPyCodegenTypeStructDeclaration(IdolPyCodegenTypeStruct):
     @cached_property
     def declared_ident(self) -> Alt[Exported]:
         return Alt(
-            Exported(
-                self.path,
-                self.state.add_content_with_ident(
-                    self.path,
-                    self.codegen_file.default_type_name,
-                    scripter.commented(
-                        get_tag_values(self.codegen_file.t_decon.t.tags, "description"),
-                        scripter.declare_and_shadow(
-                            typing_expr(self.state, self.path),
-                            constructor_expr(self.state, self.path),
-                        ),
+            self.export(
+                self.codegen_file.default_type_name,
+                scripter.commented(
+                    get_tag_values(self.codegen_file.t_decon.t.tags, "description"),
+                    scripter.declare_and_shadow(
+                        self.apply_expr(typing_expr), self.apply_expr(constructor_expr)
                     ),
                 ),
             )
@@ -515,7 +496,7 @@ class IdolPyCodegenScalar(GeneratorContext):
     }
 
 
-class IdolPyCodegenScalarDeclaration(IdolPyCodegenScalar):
+class IdolPyCodegenScalarDeclaration(IdolPyCodegenScalar, GeneratorFileContext):
     path: Path
     codegen_file: IdolPyCodegenFile
 
@@ -527,16 +508,12 @@ class IdolPyCodegenScalarDeclaration(IdolPyCodegenScalar):
     @cached_property
     def declared_prim_ident(self) -> Alt[Exported]:
         return Alt(
-            Exported(
-                self.path,
-                self.state.add_content_with_ident(
-                    self.path,
-                    self.codegen_file.default_type_name,
-                    scripter.commented(
-                        get_tag_values(self.codegen_file.t_decon.t.tags, "description"),
-                        scripter.declare_and_shadow(
-                            prim_expr(self.state, self.path), prim_con_expr(self.state, self.path)
-                        ),
+            self.export(
+                self.codegen_file.default_type_name,
+                scripter.commented(
+                    get_tag_values(self.codegen_file.t_decon.t.tags, "description"),
+                    scripter.declare_and_shadow(
+                        self.apply_expr(prim_expr), self.apply_expr(prim_con_expr)
                     ),
                 ),
             )
@@ -551,15 +528,11 @@ class IdolPyCodegenScalarDeclaration(IdolPyCodegenScalar):
     @cached_property
     def declared_alias_ident(self) -> Alt[Exported]:
         return Alt(
-            Exported(
-                self.path,
-                self.state.add_content_with_ident(
-                    self.path,
-                    self.codegen_file.default_type_name,
-                    scripter.commented(
-                        get_tag_values(self.codegen_file.t_decon.t.tags, "description"),
-                        scripter.assignable(ref_import(self.state, self.path)),
-                    ),
+            self.export(
+                self.codegen_file.default_type_name,
+                scripter.commented(
+                    get_tag_values(self.codegen_file.t_decon.t.tags, "description"),
+                    scripter.assignable(self.apply_expr(ref_import)),
                 ),
             )
             for ref_import in self.reference_import_expr
@@ -575,33 +548,26 @@ class IdolPyScaffoldFile(GeneratorFileContext):
         self.idol_py = idol_py
         super(IdolPyScaffoldFile, self).__init__(idol_py, path)
 
+        self.reserve_ident(self.default_type_name)
+
     @cached_property
     def declared_type_ident(self) -> Alt[Exported]:
         type_decon = get_material_type_deconstructor(self.idol_py.config.params.all_types, self.t)
 
         codegen_type_ident: Alt[str] = Alt(
-            self.state.import_ident(self.path, codegen_type, self.default_type_name + "Codegen")
+            self.import_ident(codegen_type, self.default_type_name + "Codegen")
             for codegen_type in self.idol_py.codegen_file(self.t.named).declared_type_ident
         )
 
         return Alt(
-            Exported(
-                self.path,
-                self.state.add_content_with_ident(
-                    self.path, self.default_type_name, scripter.assignable(codegen_ident)
-                ),
-            )
+            self.export(self.default_type_name, scripter.assignable(codegen_ident))
             for codegen_ident in codegen_type_ident
             if type_decon.get_typestruct() or type_decon.get_enum()
         ) ^ Alt(
-            Exported(
-                self.path,
-                self.state.add_content_with_ident(
-                    self.path,
-                    self.default_type_name,
-                    scripter.nameable_class_dec(
-                        [codegen_ident], [], doc_str=get_tag_values(self.t.tags, "description")
-                    ),
+            self.export(
+                self.default_type_name,
+                scripter.nameable_class_dec(
+                    [codegen_ident], [], doc_str=get_tag_values(self.t.tags, "description")
                 ),
             )
             for codegen_ident in codegen_type_ident
@@ -613,58 +579,38 @@ class IdolPyScaffoldFile(GeneratorFileContext):
         return self.t.named.type_name
 
 
-class IdolPyFile(GeneratorFileContext):
+class IdolPyFile(ExternFileContext):
     idol_py: IdolPy
+
+    EXTERN_FILE = os.path.join(os.path.dirname(__file__), "__idol__.py")
 
     def __init__(self, idol_py: IdolPy, path: Path):
         self.idol_py = idol_py
         super(IdolPyFile, self).__init__(idol_py, path)
 
     @cached_property
-    def dumped_file(self) -> Path:
-        content = open(
-            os.path.join(os.path.dirname(__file__), "__idol__.py"), encoding="utf-8"
-        ).read()
-
-        self.state.add_content(self.path, content)
-        return self.path
-
-    @cached_property
     def list(self) -> Exported:
-        return Exported(
-            self.dumped_file, self.state.idents.add_identifier(self.path, "List", "list()")
-        )
+        return self.export_extern("List")
 
     @cached_property
     def map(self) -> Exported:
-        return Exported(
-            self.dumped_file, self.state.idents.add_identifier(self.path, "Map", "map()")
-        )
+        return self.export_extern("Map")
 
     @cached_property
     def primitive(self) -> Exported:
-        return Exported(
-            self.dumped_file,
-            self.state.idents.add_identifier(self.path, "Primitive", "primitive()"),
-        )
+        return self.export_extern("Primitive")
 
     @cached_property
-    def literal(self) -> Exported:
-        return Exported(
-            self.dumped_file, self.state.idents.add_identifier(self.path, "Literal", "literal()")
-        )
+    def primitive(self) -> Exported:
+        return self.export_extern("Literal")
 
     @cached_property
     def enum(self) -> Exported:
-        return Exported(
-            self.dumped_file, self.state.idents.add_identifier(self.path, "Enum", "enum()")
-        )
+        return self.export_extern("Enum")
 
     @cached_property
     def struct(self) -> Exported:
-        return Exported(
-            self.dumped_file, self.state.idents.add_identifier(self.path, "Struct", "struct()")
-        )
+        return self.export_extern("Struct")
 
 
 def main():

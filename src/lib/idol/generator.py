@@ -1,3 +1,5 @@
+from cached_property import cached_property
+
 import idol.scripter as scripter
 from typing import Dict, List, Union, TypeVar, Callable, Tuple, Any, Optional, Iterable
 
@@ -9,6 +11,7 @@ from .build_env import BuildEnv
 from .functional import OrderedObj, Alt, StringSet, naive_object_concat
 from idol.py.schema.module import Module
 from idol.py.schema.type_struct import TypeStruct
+import os.path
 
 A = TypeVar("A")
 
@@ -145,14 +148,22 @@ class TypeStructContext:
     field_tags: List[str]
     type_tags: List[str]
     is_type_bound: bool
+    type_display_name: str
+    field_name: Optional[str]
 
     @property
     def is_declarable(self):
         return self.is_type_bound
 
     def __init__(
-        self, field_tags: Optional[List[str]] = None, type_tags: Optional[List[str]] = None
+        self,
+        type_display_name: str,
+        field_name: Optional[str] = None,
+        field_tags: Optional[List[str]] = None,
+        type_tags: Optional[List[str]] = None,
     ):
+        self.type_display_name = type_display_name
+        self.field_name = field_name
         self.field_tags = field_tags or []
         self.type_tags = type_tags or []
         self.is_type_bound = type_tags is not None and field_tags is None
@@ -240,7 +251,12 @@ class TypeDeconstructor:
             return Alt.empty()
 
         return Alt.lift(
-            TypeStructDeconstructor(self.t.is_a, TypeStructContext(type_tags=list(self.t.tags)))
+            TypeStructDeconstructor(
+                self.t.is_a,
+                TypeStructContext(
+                    type_display_name=self.t.named.qualified_name, type_tags=list(self.t.tags)
+                ),
+            )
         )
 
     def get_enum(self) -> Alt[List[str]]:
@@ -257,7 +273,12 @@ class TypeDeconstructor:
             OrderedObj(
                 {
                     k: TypeStructDeconstructor(
-                        v.type_struct, TypeStructContext(field_tags=list(v.tags))
+                        v.type_struct,
+                        TypeStructContext(
+                            type_display_name=v.type_struct.type_display_name,
+                            field_name=v.field_name,
+                            field_tags=list(v.tags),
+                        ),
                     )
                     for k, v in self.t.fields.items()
                 }
@@ -498,6 +519,10 @@ class GeneratorAcc:
         if as_ident is None:
             as_ident = ident
 
+        # No imports actually required.
+        if into_path == exported.path:
+            return exported.ident
+
         from_path = into_path.import_path_to(exported.path)
 
         if not from_path.is_module and not self.idents.get_identifier_sources(
@@ -569,6 +594,34 @@ class GeneratorFileContext:
     @property
     def config(self) -> GeneratorConfig:
         return self.parent.config
+
+    def reserve_ident(self, ident: str) -> str:
+        self.state.idents.add_identifier(self.path, ident, self.state.get_unique_source(self.path))
+        return ident
+
+    def export(self, ident: str, scriptable: Callable[[str], Union[str, List]]) -> Exported:
+        return Exported(self.path, self.state.add_content_with_ident(self.path, ident, scriptable))
+
+    def import_ident(self, exported: Exported, as_ident: Optional[str] = None) -> str:
+        return self.state.import_ident(self.path, exported, as_ident)
+
+    def apply_expr(self, expression: Expression) -> str:
+        return expression(self.state, self.path)
+
+
+class ExternFileContext(GeneratorFileContext):
+    EXTERN_FILE: str = ""
+
+    @cached_property
+    def dumped_file(self) -> Path:
+        content = open(self.EXTERN_FILE, encoding="utf-8").read()
+        self.state.add_content(self.path, content)
+        return self.path
+
+    def export_extern(self, ident: str) -> Exported:
+        return Exported(
+            self.dumped_file, self.state.idents.add_identifier(self.dumped_file, ident, "extern")
+        )
 
 
 def get_safe_ident(ident):

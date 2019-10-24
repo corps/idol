@@ -4,9 +4,11 @@ import { Type } from "./js/schema/Type";
 import { Reference } from "./js/schema/Reference";
 import { TypeStruct } from "./js/schema/TypeStruct";
 import { StructKind } from "./js/schema/StructKind";
-import { Alt, naiveObjectConcat, OrderedObj, StringSet } from "./functional";
+import { Alt, cachedProperty, naiveObjectConcat, OrderedObj, StringSet } from "./functional";
 import * as scripter from "./scripter";
 import { BuildEnv } from "./build_env";
+import fs from "fs";
+import path from "path";
 
 export class Path {
   path: string;
@@ -566,6 +568,10 @@ export class GeneratorAcc {
       asIdent = ident;
     }
 
+    if (intoPath.path === exported.path.path) {
+      return ident;
+    }
+
     const fromPath = intoPath.importPathTo(exported.path);
 
     if (!fromPath.isModule && this.idents.getIdentifierSources(fromPath.path, ident).isEmpty()) {
@@ -626,6 +632,48 @@ export class GeneratorFileContext<P: GeneratorContext> {
 
   get config(): GeneratorConfig {
     return this.parent.config;
+  }
+
+  export(ident: string, scriptable: string => string | Array<string>): Exported {
+    return {
+      path: this.path,
+      ident: this.state.addContentWithIdent(this.path, ident, scriptable),
+    };
+  }
+
+  reserveIdent(ident: string): string {
+    this.state.idents.addIdentifier(this.path, ident, this.state.getUniqueSource(this.path));
+    return ident;
+  }
+
+  importIdent(exported: Exported, asIdent: string | null = null): string {
+    return this.state.importIdent(this.path, exported, asIdent);
+  }
+
+  applyExpr(expr: Expression): string {
+    return expr(this.state, this.path);
+  }
+}
+
+export class ExternFileContext<P: GeneratorContext> extends GeneratorFileContext<P> {
+  // Subclasses required to provide this
+  static EXTERN_FILE = "";
+
+  get dumpedFile(): Path {
+    return cachedProperty(this, "dumpedFile", () => {
+      const content = fs
+          .readFileSync(this.constructor.EXTERN_FILE, "UTF-8")
+          .toString();
+      this.state.addContent(this.path, content);
+      return this.path;
+    });
+  }
+
+  exportExtern(ident: string): Exported {
+    return {
+      path: this.dumpedFile,
+      ident: this.state.idents.addIdentifier(this.dumpedFile, ident, "addExtern")
+    };
   }
 }
 
