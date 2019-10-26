@@ -52,7 +52,10 @@ export function propExpr(obj: string, ...exprs: string[]): string {
 export function comment(comment: string): string {
   if (!comment) return comment;
   comment = comment.replace(/\//g, "\\/");
-  return comment.split("\n").map(l => `// ${l}`).join("\n");
+  return comment
+    .split("\n")
+    .map(l => `// ${l}`)
+    .join("\n");
 }
 
 export function propDec(prop: string, expr: string): string {

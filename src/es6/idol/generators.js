@@ -287,7 +287,9 @@ export function getMaterialTypeDeconstructor(
       .getTypeStruct()
       .bind(ts => ts.getScalar())
       .bind(scalar => scalar.getAlias())
-      .map(alias => searchType(new TypeDeconstructor(allTypes.obj[alias.qualifiedName].withTags(t.tags))))
+      .map(alias =>
+        searchType(new TypeDeconstructor(allTypes.obj[alias.qualifiedName].withTags(t.tags)))
+      )
       .getOr(typeDecon);
   }
 
@@ -635,7 +637,9 @@ export class GeneratorFileContext<P: GeneratorContext> {
   }
 
   export(ident: string, scriptable: string => string | Array<string>): Exported {
-    if (!this.state.idents.getIdentifierSources(this.path, ident).getOr(new StringSet()).items.length) {
+    if (
+      !this.state.idents.getIdentifierSources(this.path, ident).getOr(new StringSet()).items.length
+    ) {
       throw new Error("GeneratorFileContext.export called before ident was reserved!");
     }
 
@@ -672,9 +676,7 @@ export class ExternFileContext<P: GeneratorContext> extends GeneratorFileContext
 
   get dumpedFile(): Path {
     return cachedProperty(this, "dumpedFile", () => {
-      const content = fs
-          .readFileSync(this.externFile, "UTF-8")
-          .toString();
+      const content = fs.readFileSync(this.externFile, "UTF-8").toString();
       this.state.addContent(this.path, content);
       return this.path;
     });
