@@ -37,6 +37,7 @@ models: $(MODELS)
 	cat build.json | ./src/lib/idol/idol_py --output src/lib/idol/py --target schema
 	cat build.json | ./src/lib/idol/idol_js.js --output src/es6/idol/js --target schema
 	cat build.json | ./src/lib/idol/idol_mar --output src/lib/idol/mar --target schema
+	cat build.json | ./src/lib/idol/idol_graphql.js --output src/lib/idol/graphql --target schema
 
 test: dev
 	cargo test

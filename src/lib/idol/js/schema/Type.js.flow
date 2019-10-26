@@ -5,7 +5,7 @@ export class Type extends SchemaType {
   constructor(val) {
     super(val);
   }
-  
+
   withTags(tags: string[]): Type {
     const newType = new Type(JSON.parse(JSON.stringify(Type.unwrap(this))));
     newType.tags = tags;

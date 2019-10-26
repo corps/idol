@@ -37,6 +37,10 @@ export function setProp(ident: string, arg: string, body: Array<string>): string
   return `set ${ident}(${arg}) { ${bodyRendered} }`;
 }
 
+export function spread(expr: string): string {
+  return `...${expr}`;
+}
+
 export function ret(expr: string): string {
   return `return ${expr}`;
 }

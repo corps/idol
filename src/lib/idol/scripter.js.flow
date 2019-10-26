@@ -37,6 +37,10 @@ export function setProp(ident: string, arg: string, body: Array<string>): string
   return `set ${ident}(${arg}) { ${bodyRendered} }`;
 }
 
+export function spread(expr: string): string {
+  return `...${expr}`;
+}
+
 export function ret(expr: string): string {
   return `return ${expr}`;
 }
@@ -52,7 +56,10 @@ export function propExpr(obj: string, ...exprs: string[]): string {
 export function comment(comment: string): string {
   if (!comment) return comment;
   comment = comment.replace(/\//g, "\\/");
-  return comment.split("\n").map(l => `// ${l}`).join("\n");
+  return comment
+    .split("\n")
+    .map(l => `// ${l}`)
+    .join("\n");
 }
 
 export function propDec(prop: string, expr: string): string {

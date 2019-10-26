@@ -58,8 +58,6 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-var idolGraphQlJs = "\nimport { GraphQLScalarType, Kind } from \"graphql\";\n\nexport function wrapValues(enumObj) {\n    return Object.keys(enumObj).reduce((obj, entity) => {\n        obj[entity] = { value: entity };\n        return obj;\n    }, {});\n}\n\nexport const Anything = new GraphQLScalarType({\n  name: 'IdolGraphQLAnything',\n  description: 'Any json value, untyped',\n  parseValue: (value) => value,\n  parseLiteral,\n  serialize: (value) => value,\n})\n\nfunction parseLiteral (ast) {\n  switch (ast.kind) {\n    case Kind.BOOLEAN:\n    case Kind.STRING:  \n      return ast.value\n    case Kind.INT:\n    case Kind.FLOAT:\n      return Number(ast.value)\n    case Kind.LIST:\n      return ast.values.map(parseLiteral)\n    case Kind.OBJECT:\n      return ast.fields.reduce((accumulator, field) => {\n        accumulator[field.name.value] = parseLiteral(field.value)\n        return accumulator\n      }, {})\n    case Kind.NULL:\n        return null\n    default:\n      throw new Error(\"Unexpected kind in parseLiteral: \" + ast.kind)\n  }\n}\n";
-
 function graphqlTypeOfPrimitive(primitiveType) {
   switch (primitiveType) {
     case _PrimitiveType.PrimitiveType.ANY:

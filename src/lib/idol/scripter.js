@@ -8,6 +8,7 @@ exports.variable = variable;
 exports.commented = commented;
 exports.getProp = getProp;
 exports.setProp = setProp;
+exports.spread = spread;
 exports.ret = ret;
 exports.propAccess = propAccess;
 exports.propExpr = propExpr;
@@ -64,6 +65,10 @@ function getProp(ident, body) {
 function setProp(ident, arg, body) {
   var bodyRendered = body.join(";\n");
   return "set ".concat(ident, "(").concat(arg, ") { ").concat(bodyRendered, " }");
+}
+
+function spread(expr) {
+  return "...".concat(expr);
 }
 
 function ret(expr) {
