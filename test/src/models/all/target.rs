@@ -4,6 +4,21 @@ use crate::models::idol;
 use std::convert::TryFrom;
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
+pub struct AssembledRequired(pub crate::models::all::required::Assembled);
+
+impl idol::ExpandsJson for AssembledRequired {
+  fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
+    crate::models::all::required::Assembled::expand_json(value)
+  }
+}
+
+impl idol::ValidatesJson for AssembledRequired {
+  fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
+    crate::models::all::required::Assembled::validate_json(value)
+  }
+}
+
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
 pub struct AssembledOptional(pub crate::models::all::optional::Assembled);
 
 impl idol::ExpandsJson for AssembledOptional {
@@ -19,16 +34,16 @@ impl idol::ValidatesJson for AssembledOptional {
 }
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
-pub struct AssembledRequired(pub crate::models::all::required::Assembled);
+pub struct AssembledOptionalInput(pub AssembledOptional);
 
-impl idol::ExpandsJson for AssembledRequired {
+impl idol::ExpandsJson for AssembledOptionalInput {
   fn expand_json(value: &mut serde_json::Value) -> Option<serde_json::Value> {
-    crate::models::all::required::Assembled::expand_json(value)
+    AssembledOptional::expand_json(value)
   }
 }
 
-impl idol::ValidatesJson for AssembledRequired {
+impl idol::ValidatesJson for AssembledOptionalInput {
   fn validate_json(value: &serde_json::Value) -> idol::ValidationResult {
-    crate::models::all::required::Assembled::validate_json(value)
+    AssembledOptional::validate_json(value)
   }
 }

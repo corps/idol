@@ -36,7 +36,9 @@ export class SchemaField {
   }
 
   get tags() {
-    return List.of(Primitive.of("string"), { atleastOne: false }).wrap(this._original["tags"]);
+    return List.of(Primitive.of("string"), { atleastOne: false }).wrap(
+      this._original["tags"]
+    );
   }
   set tags(val) {
     this._original["tags"] = List.of(Primitive.of("string"), {

@@ -3,3 +3,7 @@ is_a = "all.required.Assembled"
 
 [AssembledOptional]
 is_a = "all.optional.Assembled"
+
+[AssembledOptionalInput]
+is_a = "AssembledOptional"
+tags = ["input"]

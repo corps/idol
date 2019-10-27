@@ -3,6 +3,7 @@
 import { Anything } from "../__idol_graphql__";
 import { TypeStructType as ScaffoldTypeStructType } from "../../schema/TypeStruct";
 import { ReferenceType as ScaffoldReferenceType } from "../../schema/Reference";
+import { GraphQLList, GraphQLString } from "graphql";
 
 // A wrapper type containing fields that can describe a Type, as well as its tag metadata.;
 export const SchemaTypeFields = {
@@ -13,5 +14,15 @@ export const SchemaTypeFields = {
   // Exclusive with having values for options or fields.,
   is_a: ScaffoldTypeStructType,
   // The name and module information of this type's definition.,
-  named: ScaffoldReferenceType
+  named: ScaffoldReferenceType,
+  // When this type is an enum includes the string values for each enum entry.  Note that each
+  // target language may have different rules for the enum constant names, but these entries are
+  // canonical resident values.
+  // Exclusive with is_a and fields.,
+  options: new GraphQLList(GraphQLString),
+  // General metadata given to a type.  Currently, atleast_one for Repeated types is supported.
+  // Custom codegen can use these tags to implement semantic types on top of simple logic types.
+  // In general, however, tags are considred optional and should not be required to
+  // deserialize \/ serializeconsume correct logical values.,
+  tags: new GraphQLList(GraphQLString)
 };

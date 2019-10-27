@@ -1,9 +1,9 @@
 MODELS     := $(wildcard src/models/*.toml)
 SOURCE_FILES = $(shell find src -type f | egrep ".*\.rs" | grep -v "bin/")
 
-release: target/release/idol target/release/idol_rs src/lib/idol/idol_js.js
+release: target/release/idol target/release/idol_rs js
 
-dev: target/debug/idol target/debug/idol_rs src/lib/idol/idol_js.js models
+dev: target/debug/idol target/debug/idol_rs js models
 
 target/debug/idol: src/*.rs $(SOURCE_FILES) src/bin/idol.rs
 	cargo build --bin idol
@@ -17,7 +17,7 @@ target/release/idol: src/*.rs $(SOURCE_FILES) src/bin/idol.rs
 target/release/idol_rs: src/*.rs $(SOURCE_FILES) src/bin/idol_rs.rs
 	cargo build --bin idol_rs --release
 
-src/lib/idol/idol_js.js: src/es6/idol/*.js src/lib/idol/node_modules
+js: src/es6/idol/*.js src/lib/idol/node_modules
 	npm install
 	npm run compile
 
@@ -50,4 +50,4 @@ versions: target/debug/idol
 
 
 
-.PHONY: models dev test release
+.PHONY: models dev test release js
