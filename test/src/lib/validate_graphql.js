@@ -2,7 +2,6 @@
 
 import { GraphQLObjectType, GraphQLSchema, graphql } from 'graphql'
 import { OptionalServiceQueries } from './idol/graphql/all/target/OptionalService';
-import { AssembledOptionalType } from "./idol/graphql/all/target/AssembledOptional";
 import fs from 'fs';
 
 var data = fs.readFileSync(0, 'utf-8');

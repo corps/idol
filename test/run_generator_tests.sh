@@ -7,6 +7,7 @@ expand_rs=./target/debug/expand
 validate_rs=./target/debug/validate
 expand_py="python3 -m src.lib.expand"
 validate_py="python3 -m src.lib.validate"
+validate_marshmallow="python -m src.lib.validate_marshmallow"
 expand_js=./src/lib/expand.js
 validate_js=./src/lib/validate.js
 validate_graphql=./src/lib/validate_graphql.js
@@ -39,7 +40,7 @@ function test_expand() {
 function test_validate() {
   local case=$1
 
-  for validate in $validate_rs "$validate_py" $validate_js "$validate_graphql"; do
+  for validate in $validate_rs "$validate_py" $validate_js "$validate_graphql" "$validate_marshmallow"; do
     if failed="${failed}$(
       set -e
       if cat $case | $validate; then
