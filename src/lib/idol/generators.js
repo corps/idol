@@ -602,10 +602,12 @@ var ImportsAcc =
 function () {
   function ImportsAcc() {
     var imports = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+    var types = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
 
     _classCallCheck(this, ImportsAcc);
 
     this.imports = imports || new _functional.OrderedObj();
+    this.types = types || new _functional.OrderedObj();
   }
 
   _createClass(ImportsAcc, [{
@@ -616,7 +618,13 @@ function () {
   }, {
     key: "addImport",
     value: function addImport(intoPath, fromPath, fromIdent, intoIdent) {
-      this.imports = this.imports.concat(new _functional.OrderedObj(_defineProperty({}, intoPath.path, new _functional.OrderedObj(_defineProperty({}, fromPath.relPath, new _functional.OrderedObj(_defineProperty({}, fromIdent, new _functional.StringSet([intoIdent]))))))));
+      var isType = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
+      var entry = new _functional.OrderedObj(_defineProperty({}, intoPath.path, new _functional.OrderedObj(_defineProperty({}, fromPath.relPath, new _functional.OrderedObj(_defineProperty({}, fromIdent, new _functional.StringSet([intoIdent])))))));
+      this.imports = this.imports.concat(entry);
+
+      if (isType) {
+        this.types = this.types.concat(entry);
+      }
     }
   }, {
     key: "getImportedIdents",
@@ -772,7 +780,7 @@ function () {
       }
 
       asIdent = this.createIdent(intoPath, asIdent, fromPath.path.path);
-      this.imports.addImport(intoPath, fromPath, ident, asIdent);
+      this.imports.addImport(intoPath, fromPath, ident, asIdent, !!exported.isType);
       return asIdent;
     }
   }, {
@@ -816,6 +824,8 @@ function () {
   _createClass(GeneratorFileContext, [{
     key: "export",
     value: function _export(ident, scriptable) {
+      var isType = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
       if (!this.state.idents.getIdentifierSources(this.path, ident).getOr(new _functional.StringSet()).items.length) {
         throw new Error("GeneratorFileContext.export called before ident was reserved!");
       }
@@ -823,7 +833,8 @@ function () {
       this.state.addContent(this.path, scriptable(ident));
       return {
         path: this.path,
-        ident: ident
+        ident: ident,
+        isType: isType
       };
     }
   }, {
@@ -879,9 +890,11 @@ function (_GeneratorFileContext) {
   _createClass(ExternFileContext, [{
     key: "exportExtern",
     value: function exportExtern(ident) {
+      var isType = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       return {
         path: this.dumpedFile,
-        ident: this.state.idents.addIdentifier(this.dumpedFile, ident, "addExtern")
+        ident: this.state.idents.addIdentifier(this.dumpedFile, ident, "addExtern"),
+        isType: isType
       };
     }
   }, {

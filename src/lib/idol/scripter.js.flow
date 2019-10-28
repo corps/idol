@@ -9,10 +9,12 @@ export function render(lines: Array<string>, prettierOptions: any = { parser: "b
 export function variable(
   expr: string,
   kind: string = "const",
-  exported: boolean = true
+  exported: boolean = true,
+  typing: string | null = null
 ): (ident: string) => string {
   return (ident: string) => {
-    let result = `${kind} ${ident} = ${expr}`;
+    typing = typing != null ? `: ${typing}` : "";
+    let result = `${kind} ${ident}${typing} = ${expr}`;
     if (exported) result = `export ${result}`;
     return result;
   };
@@ -60,6 +62,10 @@ export function comment(comment: string): string {
     .split("\n")
     .map(l => `// ${l}`)
     .join("\n");
+}
+
+export function typeSum(...options: string[]): string {
+  return options.join(" | ");
 }
 
 export function propDec(prop: string, expr: string): string {

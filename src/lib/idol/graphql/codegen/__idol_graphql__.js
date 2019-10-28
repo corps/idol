@@ -1,4 +1,6 @@
-("use strict");
+"use strict";
+
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
@@ -10,7 +12,7 @@ exports.Anything = void 0;
 var _graphql = require("graphql");
 
 function wrapValues(enumObj) {
-  return Object.keys(enumObj).reduce(function(obj, k) {
+  return Object.keys(enumObj).reduce(function (obj, k) {
     obj[enumObj[k]] = {
       value: enumObj[k]
     };
@@ -45,7 +47,7 @@ function parseLiteral(ast) {
       return ast.values.map(parseLiteral);
 
     case _graphql.Kind.OBJECT:
-      return ast.fields.reduce(function(accumulator, field) {
+      return ast.fields.reduce(function (accumulator, field) {
         accumulator[field.name.value] = parseLiteral(field.value);
         return accumulator;
       }, {});

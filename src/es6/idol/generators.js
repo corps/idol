@@ -85,7 +85,8 @@ export class ImportPath {
 
 export type Exported = {
   path: Path,
-  ident: string
+  ident: string,
+  isType?: boolean
 };
 
 export type GeneratorParams = {
@@ -403,23 +404,37 @@ export class IdentifiersAcc {
 
 export class ImportsAcc {
   imports: OrderedObj<OrderedObj<OrderedObj<StringSet>>>;
+  types: OrderedObj<OrderedObj<OrderedObj<StringSet>>>;
 
-  constructor(imports: OrderedObj<OrderedObj<OrderedObj<StringSet>>> | null = null) {
+  constructor(
+    imports: OrderedObj<OrderedObj<OrderedObj<StringSet>>> | null = null,
+    types: OrderedObj<OrderedObj<OrderedObj<StringSet>>> | null = null
+  ) {
     this.imports = imports || new OrderedObj<OrderedObj<OrderedObj<StringSet>>>();
+    this.types = types || new OrderedObj<OrderedObj<OrderedObj<StringSet>>>();
   }
 
   concat(other: ImportsAcc): ImportsAcc {
     return naiveObjectConcat(this, other);
   }
 
-  addImport(intoPath: Path, fromPath: ImportPath, fromIdent: string, intoIdent: string) {
-    this.imports = this.imports.concat(
-      new OrderedObj({
-        [intoPath.path]: new OrderedObj({
-          [fromPath.relPath]: new OrderedObj({ [fromIdent]: new StringSet([intoIdent]) })
-        })
+  addImport(
+    intoPath: Path,
+    fromPath: ImportPath,
+    fromIdent: string,
+    intoIdent: string,
+    isType: boolean = false
+  ) {
+    const entry = new OrderedObj({
+      [intoPath.path]: new OrderedObj({
+        [fromPath.relPath]: new OrderedObj({ [fromIdent]: new StringSet([intoIdent]) })
       })
-    );
+    });
+    this.imports = this.imports.concat(entry);
+
+    if (isType) {
+      this.types = this.types.concat(entry);
+    }
   }
 
   getImportedIdents(intoPath: Path, fromPath: ImportPath, fromIdent: string): Alt<StringSet> {
@@ -591,7 +606,7 @@ export class GeneratorAcc {
     }
 
     asIdent = this.createIdent(intoPath, asIdent, fromPath.path.path);
-    this.imports.addImport(intoPath, fromPath, ident, asIdent);
+    this.imports.addImport(intoPath, fromPath, ident, asIdent, !!exported.isType);
     return asIdent;
   }
 
@@ -636,7 +651,11 @@ export class GeneratorFileContext<P: GeneratorContext> {
     return this.parent.config;
   }
 
-  export(ident: string, scriptable: string => string | Array<string>): Exported {
+  export(
+    ident: string,
+    scriptable: string => string | Array<string>,
+    isType: boolean = false
+  ): Exported {
     if (
       !this.state.idents.getIdentifierSources(this.path, ident).getOr(new StringSet()).items.length
     ) {
@@ -647,7 +666,8 @@ export class GeneratorFileContext<P: GeneratorContext> {
 
     return {
       path: this.path,
-      ident
+      ident,
+      isType
     };
   }
 
@@ -682,10 +702,11 @@ export class ExternFileContext<P: GeneratorContext> extends GeneratorFileContext
     });
   }
 
-  exportExtern(ident: string): Exported {
+  exportExtern(ident: string, isType: boolean = false): Exported {
     return {
       path: this.dumpedFile,
-      ident: this.state.idents.addIdentifier(this.dumpedFile, ident, "addExtern")
+      ident: this.state.idents.addIdentifier(this.dumpedFile, ident, "addExtern"),
+      isType
     };
   }
 }

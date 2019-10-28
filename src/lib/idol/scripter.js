@@ -13,6 +13,7 @@ exports.ret = ret;
 exports.propAccess = propAccess;
 exports.propExpr = propExpr;
 exports.comment = comment;
+exports.typeSum = typeSum;
 exports.propDec = propDec;
 exports.propExprDec = propExprDec;
 exports.objLiteral = objLiteral;
@@ -45,8 +46,10 @@ function render(lines) {
 function variable(expr) {
   var kind = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "const";
   var exported = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+  var typing = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
   return function (ident) {
-    var result = "".concat(kind, " ").concat(ident, " = ").concat(expr);
+    typing = typing != null ? ": ".concat(typing) : "";
+    var result = "".concat(kind, " ").concat(ident).concat(typing, " = ").concat(expr);
     if (exported) result = "export ".concat(result);
     return result;
   };
@@ -102,6 +105,14 @@ function comment(comment) {
   }).join("\n");
 }
 
+function typeSum() {
+  for (var _len3 = arguments.length, options = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+    options[_key3] = arguments[_key3];
+  }
+
+  return options.join(" | ");
+}
+
 function propDec(prop, expr) {
   return "".concat(prop, ": ").concat(expr);
 }
@@ -111,8 +122,8 @@ function propExprDec(prop, expr) {
 }
 
 function objLiteral() {
-  for (var _len3 = arguments.length, parts = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-    parts[_key3] = arguments[_key3];
+  for (var _len4 = arguments.length, parts = new Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+    parts[_key4] = arguments[_key4];
   }
 
   return "{".concat(parts.map(function (p) {
@@ -143,8 +154,8 @@ var newMod = "new ";
 exports.newMod = newMod;
 
 function invocation(ident) {
-  for (var _len4 = arguments.length, args = new Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
-    args[_key4 - 1] = arguments[_key4];
+  for (var _len5 = arguments.length, args = new Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
+    args[_key5 - 1] = arguments[_key5];
   }
 
   return "".concat(ident, "(").concat(args.join(","), ")");
@@ -172,16 +183,16 @@ function literal(val) {
 }
 
 function arrayLiteral() {
-  for (var _len5 = arguments.length, vals = new Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
-    vals[_key5] = arguments[_key5];
+  for (var _len6 = arguments.length, vals = new Array(_len6), _key6 = 0; _key6 < _len6; _key6++) {
+    vals[_key6] = arguments[_key6];
   }
 
   return "[".concat(vals.join(","), "]");
 }
 
 function importDecon(from) {
-  for (var _len6 = arguments.length, deconstructors = new Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
-    deconstructors[_key6 - 1] = arguments[_key6];
+  for (var _len7 = arguments.length, deconstructors = new Array(_len7 > 1 ? _len7 - 1 : 0), _key7 = 1; _key7 < _len7; _key7++) {
+    deconstructors[_key7 - 1] = arguments[_key7];
   }
 
   return "import {".concat(deconstructors.join(", "), "} from ").concat(JSON.stringify(from));
