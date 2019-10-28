@@ -11,33 +11,35 @@ import { TestsBasicTestMapType as CodegenTestsBasicTestMapType } from "../../tes
 import { TestsBasicTestOptionalFieldType as CodegenTestsBasicTestOptionalFieldType } from "../../tests/basic/TestOptionalField";
 import { TestsBasicTestStructType as CodegenTestsBasicTestStructType } from "../../tests/basic/TestStruct";
 import { AllRequiredTripletOfSideImport2Type as CodegenAllRequiredTripletOfSideImport2Type } from "./TripletOfSideImport2";
-import { GraphQLObjectType } from "graphql";
 
 export const AllRequiredAssembledFields = {
-  test_atleast_one: CodegenTestsBasicTestAtleastOneType,
-
-  test_enum: CodegenTestsBasicTestEnumType,
-
-  test_kind: CodegenTestsBasicTestKindType,
-
-  test_list_of: CodegenAllRequiredListOfTestKindType,
-
-  test_list_of_list_struct: CodegenTestsBasicTestListOfListStructType,
-
-  test_literal_struct: CodegenTestsBasicTestLiteralStructType,
-
-  test_literal_top: CodegenTestsBasicTestLiteralTopType,
-
-  test_map: CodegenTestsBasicTestMapType,
-
-  test_optional_field: CodegenTestsBasicTestOptionalFieldType,
-
-  test_struct: CodegenTestsBasicTestStructType,
-
-  test_triplet: CodegenAllRequiredTripletOfSideImport2Type
+  test_atleast_one: {
+    type: CodegenTestsBasicTestAtleastOneType,
+    description: ""
+  },
+  test_enum: { type: CodegenTestsBasicTestEnumType, description: "" },
+  test_kind: { type: CodegenTestsBasicTestKindType, description: "" },
+  test_list_of: { type: CodegenAllRequiredListOfTestKindType, description: "" },
+  test_list_of_list_struct: {
+    type: CodegenTestsBasicTestListOfListStructType,
+    description: ""
+  },
+  test_literal_struct: {
+    type: CodegenTestsBasicTestLiteralStructType,
+    description: ""
+  },
+  test_literal_top: {
+    type: CodegenTestsBasicTestLiteralTopType,
+    description: ""
+  },
+  test_map: { type: CodegenTestsBasicTestMapType, description: "" },
+  test_optional_field: {
+    type: CodegenTestsBasicTestOptionalFieldType,
+    description: ""
+  },
+  test_struct: { type: CodegenTestsBasicTestStructType, description: "" },
+  test_triplet: {
+    type: CodegenAllRequiredTripletOfSideImport2Type,
+    description: ""
+  }
 };
-export const AllRequiredAssembledType = new GraphQLObjectType({
-  name: "AllRequiredAssembledType",
-  description: "",
-  fields: { ...AllRequiredAssembledFields }
-});

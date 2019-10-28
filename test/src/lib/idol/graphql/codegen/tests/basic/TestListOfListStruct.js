@@ -11,19 +11,25 @@ import {
 } from "./TestAtleastOne";
 
 export const TestsBasicTestListOfListStructFields = {
-  list_of_list: new GraphQLList(CodegenTestsBasicTestAtleastOneType)
+  list_of_list: {
+    type: new GraphQLList(CodegenTestsBasicTestAtleastOneType),
+    description: ""
+  }
 };
 export const TestsBasicTestListOfListStructType = new GraphQLObjectType({
-  name: "TestsBasicTestListOfListStructType",
+  name: "TestsBasicTestListOfListStruct",
   description: "",
   fields: { ...TestsBasicTestListOfListStructFields }
 });
 export const TestsBasicTestListOfListStructInputFields = {
-  list_of_list: new GraphQLList(CodegenTestsBasicTestAtleastOneInputType)
+  list_of_list: {
+    type: new GraphQLList(CodegenTestsBasicTestAtleastOneInputType),
+    description: ""
+  }
 };
 export const TestsBasicTestListOfListStructInputType = new GraphQLInputObjectType(
   {
-    name: "TestsBasicTestListOfListStructInputType",
+    name: "TestsBasicTestListOfListStructInput",
     description: "",
     fields: { ...TestsBasicTestListOfListStructInputFields }
   }

@@ -5,9 +5,10 @@ import { Anything } from "../__idol_graphql__";
 
 // Metadata contained about a module.;
 export const SchemaModuleFields = {
-  module_name: GraphQLString,
-
-  types_by_name: Anything,
-
-  types_dependency_ordering: new GraphQLList(GraphQLString)
+  module_name: { type: GraphQLString, description: "" },
+  types_by_name: { type: Anything, description: "" },
+  types_dependency_ordering: {
+    type: new GraphQLList(GraphQLString),
+    description: ""
+  }
 };

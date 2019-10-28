@@ -163,7 +163,7 @@ export class IdolJsScaffoldFile extends GeneratorFileContext<IdolJs> {
 
   get declaredTypeIdent(): Alt<Exported> {
     return cachedProperty(this, "declaredTypeIdent", () => {
-      const codegenFile = this.parent.codegenFile(this.type.named);
+      const codegenFile = this.parent.codegenFile(this.typeDecon.t.named);
       return codegenFile.declaredTypeIdent.bind(codegenType =>
         codegenFile.struct
           .map(codegenStruct =>

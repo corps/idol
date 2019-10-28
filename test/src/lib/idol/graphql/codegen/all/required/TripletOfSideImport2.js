@@ -13,27 +13,29 @@ import { TestsBasicTestLiteralTopType as CodegenTestsBasicTestLiteralTopType } f
 import { Anything } from "../../__idol_graphql__";
 
 export const AllRequiredTripletOfSideImport2Fields = {
-  a: CodegenTestsAbsThreeSideImport2Type,
-
-  b: new GraphQLList(CodegenTestsBasicTestLiteralTopType),
-
-  c: Anything
+  a: { type: CodegenTestsAbsThreeSideImport2Type, description: "" },
+  b: {
+    type: new GraphQLList(CodegenTestsBasicTestLiteralTopType),
+    description: ""
+  },
+  c: { type: Anything, description: "" }
 };
 export const AllRequiredTripletOfSideImport2Type = new GraphQLObjectType({
-  name: "AllRequiredTripletOfSideImport2Type",
+  name: "AllRequiredTripletOfSideImport2",
   description: "",
   fields: { ...AllRequiredTripletOfSideImport2Fields }
 });
 export const AllRequiredTripletOfSideImport2InputFields = {
-  a: CodegenTestsAbsThreeSideImport2InputType,
-
-  b: new GraphQLList(CodegenTestsBasicTestLiteralTopType),
-
-  c: Anything
+  a: { type: CodegenTestsAbsThreeSideImport2InputType, description: "" },
+  b: {
+    type: new GraphQLList(CodegenTestsBasicTestLiteralTopType),
+    description: ""
+  },
+  c: { type: Anything, description: "" }
 };
 export const AllRequiredTripletOfSideImport2InputType = new GraphQLInputObjectType(
   {
-    name: "AllRequiredTripletOfSideImport2InputType",
+    name: "AllRequiredTripletOfSideImport2Input",
     description: "",
     fields: { ...AllRequiredTripletOfSideImport2InputFields }
   }

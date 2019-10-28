@@ -14,7 +14,7 @@ export const SchemaStructKind = {
   MAP: "Map"
 };
 export const SchemaStructKindType = new GraphQLEnumType({
-  name: "StructKindType",
+  name: "StructKind",
   description:
     "Scalars are non contained values\nRepeated are homogenous lists.  They can be upgraded or downgraded to and from Scalars.\nA repeated is indicated in a TypeDec by ending with '[]'\nMaps are homogenous 'dictionaries', whose key is always a string, mapping to js objects.\nA map is indicated in a TypeDec by ending with '{}'",
   values: wrapValues(SchemaStructKind)

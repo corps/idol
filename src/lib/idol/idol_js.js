@@ -254,7 +254,7 @@ function (_GeneratorFileContext2) {
       var _this11 = this;
 
       return (0, _functional.cachedProperty)(this, "declaredTypeIdent", function () {
-        var codegenFile = _this11.parent.codegenFile(_this11.type.named);
+        var codegenFile = _this11.parent.codegenFile(_this11.typeDecon.t.named);
 
         return codegenFile.declaredTypeIdent.bind(function (codegenType) {
           return codegenFile.struct.map(function (codegenStruct) {

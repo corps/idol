@@ -6,11 +6,8 @@ import { ReferenceType as ScaffoldReferenceType } from "../../schema/Reference";
 import { StructKindType as ScaffoldStructKindType } from "../../schema/StructKind";
 
 export const SchemaTypeStructFields = {
-  literal: ScaffoldLiteralType,
-
-  primitive_type: ScaffoldPrimitiveTypeType,
-
-  reference: ScaffoldReferenceType,
-
-  struct_kind: ScaffoldStructKindType
+  literal: { type: ScaffoldLiteralType, description: "" },
+  primitive_type: { type: ScaffoldPrimitiveTypeType, description: "" },
+  reference: { type: ScaffoldReferenceType, description: "" },
+  struct_kind: { type: ScaffoldStructKindType, description: "" }
 };

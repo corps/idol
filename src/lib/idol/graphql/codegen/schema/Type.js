@@ -7,22 +7,28 @@ import { GraphQLList, GraphQLString } from "graphql";
 
 // A wrapper type containing fields that can describe a Type, as well as its tag metadata.;
 export const SchemaTypeFields = {
-  // When this type is a struct, each of its fields and the type of that field is included
-  // Exclusive with is_a and options,
-  fields: Anything,
-  // Set when this is type is an alias or simply an type expression (such as a generic).
-  // Exclusive with having values for options or fields.,
-  is_a: ScaffoldTypeStructType,
-  // The name and module information of this type's definition.,
-  named: ScaffoldReferenceType,
-  // When this type is an enum includes the string values for each enum entry.  Note that each
-  // target language may have different rules for the enum constant names, but these entries are
-  // canonical resident values.
-  // Exclusive with is_a and fields.,
-  options: new GraphQLList(GraphQLString),
-  // General metadata given to a type.  Currently, atleast_one for Repeated types is supported.
-  // Custom codegen can use these tags to implement semantic types on top of simple logic types.
-  // In general, however, tags are considred optional and should not be required to
-  // deserialize \/ serializeconsume correct logical values.,
-  tags: new GraphQLList(GraphQLString)
+  fields: {
+    type: Anything,
+    description:
+      "When this type is a struct, each of its fields and the type of that field is included\nExclusive with is_a and options"
+  },
+  is_a: {
+    type: ScaffoldTypeStructType,
+    description:
+      "Set when this is type is an alias or simply an type expression (such as a generic).\nExclusive with having values for options or fields."
+  },
+  named: {
+    type: ScaffoldReferenceType,
+    description: "The name and module information of this type's definition."
+  },
+  options: {
+    type: new GraphQLList(GraphQLString),
+    description:
+      "When this type is an enum includes the string values for each enum entry.  Note that each\ntarget language may have different rules for the enum constant names, but these entries are\ncanonical resident values.\nExclusive with is_a and fields."
+  },
+  tags: {
+    type: new GraphQLList(GraphQLString),
+    description:
+      "General metadata given to a type.  Currently, atleast_one for Repeated types is supported.\nCustom codegen can use these tags to implement semantic types on top of simple logic types.\nIn general, however, tags are considred optional and should not be required to\ndeserialize / serializeconsume correct logical values."
+  }
 };

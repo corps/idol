@@ -11,7 +11,7 @@ export const SchemaPrimitiveType = {
   ANY: "any"
 };
 export const SchemaPrimitiveTypeType = new GraphQLEnumType({
-  name: "PrimitiveTypeType",
+  name: "PrimitiveType",
   description: "",
   values: wrapValues(SchemaPrimitiveType)
 });

@@ -3,7 +3,7 @@
 import { LiteralTypeOf } from "../../__idol_graphql__";
 
 export const TestsBasicLiteralFiveType = LiteralTypeOf(
-  "TestsBasicLiteralFiveType",
+  "TestsBasicLiteralFive",
   5,
   ""
 );

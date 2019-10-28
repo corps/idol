@@ -5,7 +5,7 @@ import { wrapValues } from "../../__idol_graphql__";
 
 export const TestsBasicTestEnum = { A: "a", B: "b", C: "c" };
 export const TestsBasicTestEnumType = new GraphQLEnumType({
-  name: "TestsBasicTestEnumType",
+  name: "TestsBasicTestEnum",
   description: "",
   values: wrapValues(TestsBasicTestEnum)
 });

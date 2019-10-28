@@ -8,34 +8,26 @@ import { TestsBasicLiteralHelloType as CodegenTestsBasicLiteralHelloType } from 
 import { GraphQLObjectType, GraphQLInputObjectType } from "graphql";
 
 export const TestsBasicTestLiteralStructFields = {
-  five: CodegenTestsBasicLiteralFiveType,
-
-  four: CodegenTestsBasicLiteralTrueType,
-
-  one: CodegenTestsBasicLiteral1Type,
-
-  three: CodegenTestsBasicLiteralThreeOType,
-
-  two: CodegenTestsBasicLiteralHelloType
+  five: { type: CodegenTestsBasicLiteralFiveType, description: "" },
+  four: { type: CodegenTestsBasicLiteralTrueType, description: "" },
+  one: { type: CodegenTestsBasicLiteral1Type, description: "" },
+  three: { type: CodegenTestsBasicLiteralThreeOType, description: "" },
+  two: { type: CodegenTestsBasicLiteralHelloType, description: "" }
 };
 export const TestsBasicTestLiteralStructType = new GraphQLObjectType({
-  name: "TestsBasicTestLiteralStructType",
+  name: "TestsBasicTestLiteralStruct",
   description: "",
   fields: { ...TestsBasicTestLiteralStructFields }
 });
 export const TestsBasicTestLiteralStructInputFields = {
-  five: CodegenTestsBasicLiteralFiveType,
-
-  four: CodegenTestsBasicLiteralTrueType,
-
-  one: CodegenTestsBasicLiteral1Type,
-
-  three: CodegenTestsBasicLiteralThreeOType,
-
-  two: CodegenTestsBasicLiteralHelloType
+  five: { type: CodegenTestsBasicLiteralFiveType, description: "" },
+  four: { type: CodegenTestsBasicLiteralTrueType, description: "" },
+  one: { type: CodegenTestsBasicLiteral1Type, description: "" },
+  three: { type: CodegenTestsBasicLiteralThreeOType, description: "" },
+  two: { type: CodegenTestsBasicLiteralHelloType, description: "" }
 };
 export const TestsBasicTestLiteralStructInputType = new GraphQLInputObjectType({
-  name: "TestsBasicTestLiteralStructInputType",
+  name: "TestsBasicTestLiteralStructInput",
   description: "",
   fields: { ...TestsBasicTestLiteralStructInputFields }
 });

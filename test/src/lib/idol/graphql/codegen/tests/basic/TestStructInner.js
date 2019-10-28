@@ -9,26 +9,22 @@ import {
 } from "graphql";
 
 export const TestsBasicTestStructInnerFields = {
-  d: GraphQLBoolean,
-
-  e: GraphQLFloat,
-
-  f: GraphQLInt
+  d: { type: GraphQLBoolean, description: "" },
+  e: { type: GraphQLFloat, description: "" },
+  f: { type: GraphQLInt, description: "" }
 };
 export const TestsBasicTestStructInnerType = new GraphQLObjectType({
-  name: "TestsBasicTestStructInnerType",
+  name: "TestsBasicTestStructInner",
   description: "",
   fields: { ...TestsBasicTestStructInnerFields }
 });
 export const TestsBasicTestStructInnerInputFields = {
-  d: GraphQLBoolean,
-
-  e: GraphQLFloat,
-
-  f: GraphQLInt
+  d: { type: GraphQLBoolean, description: "" },
+  e: { type: GraphQLFloat, description: "" },
+  f: { type: GraphQLInt, description: "" }
 };
 export const TestsBasicTestStructInnerInputType = new GraphQLInputObjectType({
-  name: "TestsBasicTestStructInnerInputType",
+  name: "TestsBasicTestStructInnerInput",
   description: "",
   fields: { ...TestsBasicTestStructInnerInputFields }
 });

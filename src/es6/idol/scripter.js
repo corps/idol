@@ -110,6 +110,10 @@ export function methodDec(
   return staticDec ? `static ${dec}` : dec;
 }
 
+export function arrowFunc(args: string[], expr: string): string {
+  return `(${args.join(",")}) => (${expr})`;
+}
+
 export function functionDec(
   ident: string,
   args: string[],

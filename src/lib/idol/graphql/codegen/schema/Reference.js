@@ -4,10 +4,10 @@ import { GraphQLString } from "graphql";
 
 // A reference describes the location of a type in the module system.;
 export const SchemaReferenceFields = {
-  // Just the module name,
-  module_name: GraphQLString,
-  // The module_name.type_name string,
-  qualified_name: GraphQLString,
-  // Just the type name,
-  type_name: GraphQLString
+  module_name: { type: GraphQLString, description: "Just the module name" },
+  qualified_name: {
+    type: GraphQLString,
+    description: "The module_name.type_name string"
+  },
+  type_name: { type: GraphQLString, description: "Just the type name" }
 };

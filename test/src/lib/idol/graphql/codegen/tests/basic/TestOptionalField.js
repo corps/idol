@@ -7,18 +7,18 @@ import {
 } from "graphql";
 
 export const TestsBasicTestOptionalFieldFields = {
-  optional: GraphQLString
+  optional: { type: GraphQLString, description: "" }
 };
 export const TestsBasicTestOptionalFieldType = new GraphQLObjectType({
-  name: "TestsBasicTestOptionalFieldType",
+  name: "TestsBasicTestOptionalField",
   description: "",
   fields: { ...TestsBasicTestOptionalFieldFields }
 });
 export const TestsBasicTestOptionalFieldInputFields = {
-  optional: GraphQLString
+  optional: { type: GraphQLString, description: "" }
 };
 export const TestsBasicTestOptionalFieldInputType = new GraphQLInputObjectType({
-  name: "TestsBasicTestOptionalFieldInputType",
+  name: "TestsBasicTestOptionalFieldInput",
   description: "",
   fields: { ...TestsBasicTestOptionalFieldInputFields }
 });

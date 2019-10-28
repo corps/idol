@@ -35,61 +35,69 @@ import {
   AllRequiredTripletOfSideImport2Type as CodegenAllRequiredTripletOfSideImport2Type,
   AllRequiredTripletOfSideImport2InputType as CodegenAllRequiredTripletOfSideImport2InputType
 } from "../required/TripletOfSideImport2";
-import { GraphQLObjectType, GraphQLInputObjectType } from "graphql";
 
 export const AllOptionalAssembledFields = {
-  test_atleast_one: CodegenTestsBasicTestAtleastOneType,
-
-  test_enum: CodegenTestsBasicTestEnumType,
-
-  test_kind: CodegenTestsBasicTestKindType,
-
-  test_list_of: CodegenAllRequiredListOfTestKindType,
-
-  test_list_of_list_struct: CodegenTestsBasicTestListOfListStructType,
-
-  test_literal_struct: CodegenTestsBasicTestLiteralStructType,
-
-  test_literal_top: CodegenTestsBasicTestLiteralTopType,
-
-  test_map: CodegenTestsBasicTestMapType,
-
-  test_optional_field: CodegenTestsBasicTestOptionalFieldType,
-
-  test_struct: CodegenTestsBasicTestStructType,
-
-  test_triplet: CodegenAllRequiredTripletOfSideImport2Type
+  test_atleast_one: {
+    type: CodegenTestsBasicTestAtleastOneType,
+    description: ""
+  },
+  test_enum: { type: CodegenTestsBasicTestEnumType, description: "" },
+  test_kind: { type: CodegenTestsBasicTestKindType, description: "" },
+  test_list_of: { type: CodegenAllRequiredListOfTestKindType, description: "" },
+  test_list_of_list_struct: {
+    type: CodegenTestsBasicTestListOfListStructType,
+    description: ""
+  },
+  test_literal_struct: {
+    type: CodegenTestsBasicTestLiteralStructType,
+    description: ""
+  },
+  test_literal_top: {
+    type: CodegenTestsBasicTestLiteralTopType,
+    description: ""
+  },
+  test_map: { type: CodegenTestsBasicTestMapType, description: "" },
+  test_optional_field: {
+    type: CodegenTestsBasicTestOptionalFieldType,
+    description: ""
+  },
+  test_struct: { type: CodegenTestsBasicTestStructType, description: "" },
+  test_triplet: {
+    type: CodegenAllRequiredTripletOfSideImport2Type,
+    description: ""
+  }
 };
-export const AllOptionalAssembledType = new GraphQLObjectType({
-  name: "AllOptionalAssembledType",
-  description: "",
-  fields: { ...AllOptionalAssembledFields }
-});
 export const AllOptionalAssembledInputFields = {
-  test_atleast_one: CodegenTestsBasicTestAtleastOneInputType,
-
-  test_enum: CodegenTestsBasicTestEnumType,
-
-  test_kind: CodegenTestsBasicTestKindType,
-
-  test_list_of: CodegenAllRequiredListOfTestKindInputType,
-
-  test_list_of_list_struct: CodegenTestsBasicTestListOfListStructInputType,
-
-  test_literal_struct: CodegenTestsBasicTestLiteralStructInputType,
-
-  test_literal_top: CodegenTestsBasicTestLiteralTopType,
-
-  test_map: CodegenTestsBasicTestMapInputType,
-
-  test_optional_field: CodegenTestsBasicTestOptionalFieldInputType,
-
-  test_struct: CodegenTestsBasicTestStructInputType,
-
-  test_triplet: CodegenAllRequiredTripletOfSideImport2InputType
+  test_atleast_one: {
+    type: CodegenTestsBasicTestAtleastOneInputType,
+    description: ""
+  },
+  test_enum: { type: CodegenTestsBasicTestEnumType, description: "" },
+  test_kind: { type: CodegenTestsBasicTestKindType, description: "" },
+  test_list_of: {
+    type: CodegenAllRequiredListOfTestKindInputType,
+    description: ""
+  },
+  test_list_of_list_struct: {
+    type: CodegenTestsBasicTestListOfListStructInputType,
+    description: ""
+  },
+  test_literal_struct: {
+    type: CodegenTestsBasicTestLiteralStructInputType,
+    description: ""
+  },
+  test_literal_top: {
+    type: CodegenTestsBasicTestLiteralTopType,
+    description: ""
+  },
+  test_map: { type: CodegenTestsBasicTestMapInputType, description: "" },
+  test_optional_field: {
+    type: CodegenTestsBasicTestOptionalFieldInputType,
+    description: ""
+  },
+  test_struct: { type: CodegenTestsBasicTestStructInputType, description: "" },
+  test_triplet: {
+    type: CodegenAllRequiredTripletOfSideImport2InputType,
+    description: ""
+  }
 };
-export const AllOptionalAssembledInputType = new GraphQLInputObjectType({
-  name: "AllOptionalAssembledInputType",
-  description: "",
-  fields: { ...AllOptionalAssembledInputFields }
-});

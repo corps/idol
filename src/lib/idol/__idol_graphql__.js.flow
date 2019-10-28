@@ -2,7 +2,7 @@ import { GraphQLScalarType, Kind } from "graphql";
 
 export function wrapValues(enumObj) {
   return Object.keys(enumObj).reduce((obj, k) => {
-    obj[k] = { value: enumObj[k] };
+    obj[enumObj[k]] = { value: enumObj[k] };
     return obj;
   }, {});
 }

@@ -9,6 +9,7 @@ expand_py="python3 -m src.lib.expand"
 validate_py="python3 -m src.lib.validate"
 expand_js=./src/lib/expand.js
 validate_js=./src/lib/validate.js
+validate_graphql=./src/lib/validate_graphql.js
 failed=
 
 function test_expand() {
@@ -38,7 +39,7 @@ function test_expand() {
 function test_validate() {
   local case=$1
 
-  for validate in $validate_rs "$validate_py" $validate_js; do
+  for validate in $validate_rs "$validate_py" $validate_js "$validate_graphql"; do
     if failed="${failed}$(
       set -e
       if cat $case | $validate; then

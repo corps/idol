@@ -11,7 +11,7 @@ var _graphql = require("graphql");
 
 function wrapValues(enumObj) {
   return Object.keys(enumObj).reduce(function (obj, k) {
-    obj[k] = {
+    obj[enumObj[k]] = {
       value: enumObj[k]
     };
     return obj;

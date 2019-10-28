@@ -4,6 +4,13 @@ is_a = "all.required.Assembled"
 [AssembledOptional]
 is_a = "all.optional.Assembled"
 
-[AssembledOptionalInput]
-is_a = "AssembledOptional"
-tags = ["input"]
+[OptionalParams]
+fields.optional = "AssembledOptional"
+
+[OptionalMethod]
+fields.input = "OptionalParams"
+fields.output = "AssembledOptional"
+
+[OptionalService]
+tags = ["service"]
+fields.optional = "OptionalMethod"

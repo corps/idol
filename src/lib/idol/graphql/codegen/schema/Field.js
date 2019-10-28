@@ -4,9 +4,7 @@ import { GraphQLString, GraphQLList } from "graphql";
 import { TypeStructType as ScaffoldTypeStructType } from "../../schema/TypeStruct";
 
 export const SchemaFieldFields = {
-  field_name: GraphQLString,
-
-  tags: new GraphQLList(GraphQLString),
-
-  type_struct: ScaffoldTypeStructType
+  field_name: { type: GraphQLString, description: "" },
+  tags: { type: new GraphQLList(GraphQLString), description: "" },
+  type_struct: { type: ScaffoldTypeStructType, description: "" }
 };

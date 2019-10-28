@@ -12,26 +12,22 @@ import {
 } from "./TestStructInner";
 
 export const TestsBasicTestStructFields = {
-  a: GraphQLString,
-
-  b: GraphQLInt,
-
-  c: CodegenTestsBasicTestStructInnerType
+  a: { type: GraphQLString, description: "" },
+  b: { type: GraphQLInt, description: "" },
+  c: { type: CodegenTestsBasicTestStructInnerType, description: "" }
 };
 export const TestsBasicTestStructType = new GraphQLObjectType({
-  name: "TestsBasicTestStructType",
+  name: "TestsBasicTestStruct",
   description: "",
   fields: { ...TestsBasicTestStructFields }
 });
 export const TestsBasicTestStructInputFields = {
-  a: GraphQLString,
-
-  b: GraphQLInt,
-
-  c: CodegenTestsBasicTestStructInnerInputType
+  a: { type: GraphQLString, description: "" },
+  b: { type: GraphQLInt, description: "" },
+  c: { type: CodegenTestsBasicTestStructInnerInputType, description: "" }
 };
 export const TestsBasicTestStructInputType = new GraphQLInputObjectType({
-  name: "TestsBasicTestStructInputType",
+  name: "TestsBasicTestStructInput",
   description: "",
   fields: { ...TestsBasicTestStructInputFields }
 });

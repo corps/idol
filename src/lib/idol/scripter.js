@@ -20,6 +20,7 @@ exports.assignment = assignment;
 exports.classDec = classDec;
 exports.invocation = invocation;
 exports.methodDec = methodDec;
+exports.arrowFunc = arrowFunc;
 exports.functionDec = functionDec;
 exports.literal = literal;
 exports.arrayLiteral = arrayLiteral;
@@ -153,6 +154,10 @@ function methodDec(ident, args, body) {
   var staticDec = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
   var dec = "".concat(ident, "(").concat(args.join(","), ") {").concat(body.join("\n"), "}");
   return staticDec ? "static ".concat(dec) : dec;
+}
+
+function arrowFunc(args, expr) {
+  return "(".concat(args.join(","), ") => (").concat(expr, ")");
 }
 
 function functionDec(ident, args, body) {

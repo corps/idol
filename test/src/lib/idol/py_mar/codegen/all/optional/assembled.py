@@ -12,6 +12,8 @@ from ...tests.basic.test_map import TestsBasicTestMapField
 from ...tests.basic.test_optional_field import TestsBasicTestOptionalFieldField
 from ...tests.basic.test_struct import TestsBasicTestStructField
 from ..required.triplet_of_side_import2 import AllRequiredTripletOfSideImport2Field
+from ...__idol__ import wrap_field
+from marshmallow.fields import Nested
 
 
 class AllOptionalAssembledSchema(Schema):
@@ -50,3 +52,8 @@ class AllOptionalAssembledSchema(Schema):
     test_triplet = AllRequiredTripletOfSideImport2Field(
         dump_to="test_triplet", load_from="test_triplet", allow_none=True
     )
+
+
+AllOptionalAssembledField = wrap_field(
+    Nested, "AllOptionalAssembledField", (lambda: AllOptionalAssembledSchema)
+)

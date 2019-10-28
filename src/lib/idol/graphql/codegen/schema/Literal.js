@@ -8,11 +8,8 @@ import {
 } from "graphql";
 
 export const SchemaLiteralFields = {
-  bool: GraphQLBoolean,
-
-  double: GraphQLFloat,
-
-  int: GraphQLInt,
-
-  string: GraphQLString
+  bool: { type: GraphQLBoolean, description: "" },
+  double: { type: GraphQLFloat, description: "" },
+  int: { type: GraphQLInt, description: "" },
+  string: { type: GraphQLString, description: "" }
 };
