@@ -8,7 +8,9 @@
     "regenerator-runtime": "^0.13.3"
   },
   "bin": {
-    "idol_js": "./idol_js.js"
+    "idol_js": "./idol_js.js",
+    "idol_graphql": "./idol_graphql.js",
+    "idol_flow": "./idol_flow.js"
   },
   "files": [
     "js/*.js",
