@@ -425,15 +425,16 @@ export class ImportsAcc {
     intoIdent: string,
     isType: boolean = false
   ) {
-    const entry = new OrderedObj({
-      [intoPath.path]: new OrderedObj({
-        [fromPath.relPath]: new OrderedObj({ [fromIdent]: new StringSet([intoIdent]) })
-      })
-    });
-    this.imports = this.imports.concat(entry);
+    const newEntry = () =>
+      new OrderedObj({
+        [intoPath.path]: new OrderedObj({
+          [fromPath.relPath]: new OrderedObj({ [fromIdent]: new StringSet([intoIdent]) })
+        })
+      });
+    this.imports = this.imports.concat(newEntry());
 
     if (isType) {
-      this.types = this.types.concat(entry);
+      this.types = this.types.concat(newEntry());
     }
   }
 
@@ -451,24 +452,57 @@ export class ImportsAcc {
         imports
           .keys()
           .filter(Boolean)
-          .map(relPath => {
+          .reduce((lines, relPath) => {
             const decons: OrderedObj<StringSet> = imports.obj[relPath];
 
-            if (relPath.endsWith(".js")) {
-              relPath = relPath.slice(0, relPath.length - 3);
+            const importPath = relPath.endsWith(".js")
+              ? relPath.slice(0, relPath.length - 3)
+              : relPath;
+
+            const typeDecons = this.types
+              .get(intoPath)
+              .bind(imports => imports.get(relPath))
+              .getOr(new OrderedObj<StringSet>());
+
+            if (!typeDecons.isEmpty()) {
+              lines.push(
+                scripter.typeImportDecon(
+                  importPath,
+                  ...typeDecons
+                    .keys()
+                    .map(ident =>
+                      typeDecons.obj[ident].items
+                        .map(asIdent => (asIdent === ident ? ident : `${ident} as ${asIdent}`))
+                        .join(", ")
+                    )
+                )
+              );
             }
 
-            return scripter.importDecon(
-              relPath,
-              ...decons
-                .keys()
-                .map(ident =>
-                  decons.obj[ident].items
-                    .map(asIdent => (asIdent === ident ? ident : `${ident} as ${asIdent}`))
-                    .join(", ")
-                )
+            const nonTypeDecons = OrderedObj.fromIterable(
+              decons.mapIntoIterable((fromIdent, intoIdents) => {
+                if (fromIdent in typeDecons.obj) return new OrderedObj();
+                return new OrderedObj({ [fromIdent]: intoIdents });
+              })
             );
-          })
+
+            if (!nonTypeDecons.isEmpty()) {
+              lines.push(
+                scripter.importDecon(
+                  importPath,
+                  ...nonTypeDecons
+                    .keys()
+                    .map(ident =>
+                      decons.obj[ident].items
+                        .map(asIdent => (asIdent === ident ? ident : `${ident} as ${asIdent}`))
+                        .join(", ")
+                    )
+                )
+              );
+            }
+
+            return lines;
+          }, [])
       )
       .getOr([]);
   }
@@ -623,6 +657,10 @@ export class GeneratorAcc {
 }
 
 export type Expression = (state: GeneratorAcc, path: Path) => string;
+
+export function wrapExpression(expr: Expression, wrapper: string => string): Expression {
+  return (state: GeneratorAcc, path: Path) => wrapper(expr(state, path));
+}
 
 export function getSafeIdent(ident: string): string {
   while (RESERVED_WORDS.indexOf(ident) !== -1) ident += "_";

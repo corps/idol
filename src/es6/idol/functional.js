@@ -11,9 +11,9 @@ export class OrderedObj<I> {
 
   isEmpty(): boolean {
     for (let k in this.obj) {
-      return true;
+      return false;
     }
-    return false;
+    return true;
   }
 
   get length(): number {

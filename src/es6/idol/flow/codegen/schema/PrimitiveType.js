@@ -8,10 +8,14 @@ export type SchemaPrimitiveTypePayload =
   | "string"
   | "bool"
   | "any";
-export const SchemaPrimitiveType: SchemaPrimitiveTypePayload = {
+export const SchemaPrimitiveType: {
+  [k: string]: SchemaPrimitiveTypePayload
+} = {
   INT: "int",
   DOUBLE: "double",
   STRING: "string",
   BOOL: "bool",
   ANY: "any"
 };
+export const SchemaPrimitiveTypeFactory: () => SchemaPrimitiveTypePayload = () =>
+  "int";

@@ -68,6 +68,14 @@ export function typeSum(...options: string[]): string {
   return options.join(" | ");
 }
 
+export function iface(exported: boolean = true, extds: string | null = null, ...lines: string[]): (string) => string {
+  return ident => {
+    const exportPart = exported ? "export " : "";
+    const extendPart = extds ? ` extends ${extds} ` : "";
+    return `${exportPart}interface ${ident}${extendPart} {${lines.join(";\n")}}`;
+  };
+}
+
 export function propDec(prop: string, expr: string): string {
   return `${prop}: ${expr}`;
 }
@@ -117,7 +125,7 @@ export function methodDec(
 }
 
 export function arrowFunc(args: string[], expr: string): string {
-  return `(${args.join(",")}) => (${expr})`;
+  return `((${args.join(",")}) => (${expr}))`;
 }
 
 export function functionDec(
@@ -135,12 +143,20 @@ export function literal(val: any): string {
   return JSON.stringify(val);
 }
 
+export function flowAs(expr: string, type: string): string {
+  return `(${expr}: ${type})`;
+}
+
 export function arrayLiteral(...vals: string[]): string {
   return `[${vals.join(",")}]`;
 }
 
 export function importDecon(from: string, ...deconstructors: string[]) {
   return `import {${deconstructors.join(", ")}} from ${JSON.stringify(from)}`;
+}
+
+export function typeImportDecon(from: string, ...deconstructors: string[]) {
+  return `import type {${deconstructors.join(", ")}} from ${JSON.stringify(from)}`;
 }
 
 export function exportImportDecon(from: string, deconstructors: string[]) {
