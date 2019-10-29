@@ -30,6 +30,6 @@ models: $(MODELS)
 	cat build.json | idol_mar --output src/lib/idol/py_mar --target all.target
 	cat build.json | $$(npm bin)/idol_js --output src/lib/idol/js --target all.target
 	cat build.json | $$(npm bin)/idol_graphql --output src/lib/idol/graphql --target all.target
-	cat build.json | $$(npm bin)/idol_flow.js --output src/lib/idol/flow --target all.target
+	cat build.json | $$(npm bin)/idol_flow --output src/lib/idol/flow --target all.target
 
 .PHONY: models test_bins test clean
