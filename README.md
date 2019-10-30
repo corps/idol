@@ -76,18 +76,18 @@ cat build.json | idol_flow --output src/generated/models --target "my.model.modu
 cat build.json | idol_rs --output src/generated --target "my.model.module"
 ```
 
-You'll get auto generated classes / structs that look something like
+You'll get auto generated classes / enums that look something like
 
 ```python
 ...
 
-class StructKind(_Enum):
+class StructKind(Enum):
     MAP = 'Map'
     REPEATED = 'Repeated'
     SCALAR = 'Scalar'
 
 ...
-class TypeStruct(_Struct):
+class TypeStruct(Struct):
     is_literal: bool
     literal_bool: bool
     literal_double: float
@@ -175,21 +175,20 @@ is_a = "ListPageWrapper"
 fields.data = "MyModel[]"
 ```
 
-### 'Compile' a build.json
+### 'Compile' the models and run codegen
 
 Regardless of your target language, you need a single normalized
-json payload of all your types.  The default `idol` binary does this.
-I recommend setting up a `Makefile` similar to the following:
+json payload of all your types that can be passed to downstream codegen tools.
+`idol` takes input files and produces the compiled json to stdout, which you can
+capture into a file, conventionally named `build.json`.
+
+As an example, here's how idol builds itself using a `Makefile`:
 
 ```
-MODELS := $(wildcard src/models/*.toml)
-models: $(MODELS)
+MODELS:= $(wildcard src/models/*.toml)
+.PHONY:  models
+models:  $(MODELS)
 	idol $? > build.json
-	python --version
-	node --version
-	pip --version
-	npm install
-	pip install -e ./src/lib
 
 	cat build.json | ./target/debug/idol_rs --output src/models/ --mod "crate::models"
 	cat build.json | ./src/lib/idol/idol_py --output src/lib/idol/py --target schema
@@ -198,3 +197,150 @@ models: $(MODELS)
 	cat build.json | ./src/lib/idol/idol_graphql.js --output src/es6/idol/graphql --target schema
 	cat build.json | ./src/lib/idol/idol_flow.js --output src/es6/idol/flow --target schema
 ```
+
+## Modeling
+
+As mentioned above, modeling generally consists of creating module files whose top level keys are 
+model definitions (one of enum, struct, alias, or composition).
+
+A few less obvious features are explained further here.
+
+### Comments
+When using the `toml` format, any comment added before a field or model will be captured as
+documentation text and added to the code generation output, bringing useful context directly
+to the source code you produce.
+
+### Fields
+
+Structs contain an inner dictionary called `fields` whose keys are field names (attribute names)
+and whose value can either be a single string or an array of strings.
+
+Aliases also use a similar field type syntax to describe type aliases in the `is_a` key.
+
+In either case, the first string element of each field includes typing information for that field,
+while each other string element indicates a "tag", whose effect is entirely dependent on the codegenerators
+used.  By default, code generators support the "optional" field tag, but by extending the codegenerators
+you can use tags to create type specialization (say, indicating that a serialized string should be demarshalled into a Date object),
+or adding transport metadata (for instance, indicating that a string is base64 encoded).
+
+#### Field Types
+
+Field type strings are composed of two parts: the scalar type, and the (optional) container type.
+Scalars are either one of the listed below primitive types, or a reference to another idol type.
+Container decorators are one of the following strings that may be appended at the end.
+
+##### Primitives
+* `int` => Integer type.  Note that runtimes may have variable support for sizing.
+* `float` => Floating point type.  Note, again, that runtimes may have variable support for sizing.
+* `string` => String type.  Note again, idol does not assume anything about encoding.
+* `bool` => Boolean type.
+* `any` => Opaque "pass through" type, which contains any valid inhabitant of the transport.
+
+#### Containers
+* `[]` => A "repeated", or list.
+* `{}` => A `String -> T` mapping.  Unfortunately many transports do not support this natively, and
+thus this is often translated (either to an `any` or a `[]` of k-v pairs) by codegenerators.
+
+#### Nested Containers
+
+idol does support nested containers, but for codegenerator simplicity, it is required that separate
+types capture each level of nesting.  ie:
+
+NG:
+```toml
+fields.nested_list = "int[][]"
+```
+
+OK:
+```toml
+[ArrayOfInts]
+is_a = "int[]"
+
+[ArrayOfArrayOfInts]
+is_a = "ArrayOfInts[]"
+```
+
+This is mild inconvenience makes code generation much simpler for most targets, as it doesn't require
+the generator to maintain stable name mangling for intermediate types.
+
+#### References
+
+Using one idol model as the type of another idol model's field or type is pretty straightforward.
+If the two types are local to the same module, you can simple use the model name as the field type.
+
+ie
+
+```toml
+[A]
+fields.b = "B"
+
+[B]
+fields.c = "string"
+```
+
+If you need to refer to a model that belongs to a separate module, you simply use prepend that
+module's name to the model name.
+
+models.one.toml
+```toml
+[A]
+is_a = "models.two.A"
+```
+
+models.two.toml
+```toml
+[A]
+is_a = "string"
+```
+
+idol will be smart and attempt to find any model references in other files that belong either to the
+same directory, or elsewhere on its "search path" (extended via the `-I` option).
+
+### Composition
+
+One of the more powerful features of idol is the ability to "compose" types together, similar to
+inheritance.
+
+There is one caveat to this process:
+"Super Classes" are not captured in the resulting output.  For instance, building type B from
+type A does not expose this A super class relationship to the resulting generated code for B.
+
+#### Composing Structs
+
+You can compose two or more structures together by including them
+as string list elements in the `is_a` clause and/or by also including `fields` on a type that 
+has a `is_a` clause.
+
+```toml
+[BaseType]
+fields.a = "int"
+fields.b = "float"
+
+[ExtendedBase]
+is_a = "BaseType"
+fields.c = "string"
+
+[ExtendedBase2]
+is_a = ["BaseType", "ExtendedBase"]
+```
+
+When fields overlap between structures, the `variance` attribute of the model is used to determine
+how those overlapping fields will behave.
+
+#### Covariant
+
+When fields overlap between two composed structures, and the variance is set to "Covariant",
+the resulting field will take the most "narrow" of the two.  For example, this means that
+if one field is `any[]` and the other is say `int[]`, the `int[]` type will be used.  Two types
+that share no inhabitants (say a `float` and a `boolean`) cannot be composed by covariance, and
+will result in an error.
+
+#### Contravariant
+
+When fields overlap between two composed structures, and the variance is set to "Contravariant",
+the result field will take the most narrow, but common typing.  For example, this means that if one field
+is `int[]` and the other is `string[]`, the type is widened to `any[]`.  But if one is `int[]` and
+the other is `string`, the type becomes just `any` since the containers do not agree.
+
+Furthermore, any fields that do not belong to both structures will automatically be tagged as `optional`.
+

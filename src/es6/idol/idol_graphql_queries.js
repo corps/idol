@@ -75,12 +75,12 @@ export class IdolGraphqlQueries implements GeneratorContext {
         const scaffoldTypes = this.config.params.scaffoldTypes.values();
         scaffoldTypes.forEach((t, i) => {
             const scaffoldFile = this.scaffoldFile(t.named);
-            if (!scaffoldFile.declaredTypeIdent.isEmpty()) {
+            if (!scaffoldFile.declaredFragments.isEmpty()) {
                 console.log(
-                    `Generated ${scaffoldFile.defaultTypeName} (${i + 1} / ${scaffoldTypes.length})`
+                    `Generated ${scaffoldFile.declaredFragments.unwrap().ident} (${i + 1} / ${scaffoldTypes.length})`
                 );
             } else {
-                console.log(`Skipped ${scaffoldFile.defaultTypeName} (${i + 1} / ${scaffoldTypes.length})`);
+                console.log(`Skipped ${scaffoldFile.defaultFragmentName} (${i + 1} / ${scaffoldTypes.length})`);
             }
         });
 
@@ -210,13 +210,7 @@ export class IdolGraphqlQueriesScaffoldFile extends GeneratorFileContext<IdolGra
     get declaredFragments(): Alt<Exported> {
         return cachedProperty(this, "declaredFragments", () => {
             const codegenFile = this.parent.codegenFile(this.typeDecon.t.named);
-            return this.struct
-                .bind(struct => struct.declaredType)
-                .either(
-                    codegenFile.declaredFragments
-                        .map(declaredType => scripter.variable(this.importIdent(declaredType)))
-                        .map(scriptable => this.export(this.defaultFragmentName, scriptable))
-                );
+            return codegenFile.declaredFragments.map(fragment => this.export(this.defaultFragmentName, scripter.variable(this.importIdent(fragment))))
         });
     }
 }
@@ -261,7 +255,7 @@ export class IdolGraphqlQueriesCodegenStruct extends GeneratorFileContext<IdolGr
                                 []
                             ),
                             "}",
-                            ...fragments.map(fragmentIdent => "`${" + fragmentIdent + "}`"),
+                            ...fragments.map(fragmentIdent => "${" + fragmentIdent + "}"),
                         ))
                     )(ident)
                 ])
@@ -292,7 +286,7 @@ export class IdolGraphQLQueriesCodegenTypeStruct implements GeneratorContext {
     }
 
     get graphqlFieldsName(): Alt<string> {
-        concat(this.innerScalar.bind(scalar => scalar.graphqlFieldsName));
+        return this.innerScalar.bind(scalar => scalar.graphqlFieldsName);
     }
 
 
@@ -366,7 +360,7 @@ export class IdolGraphqlCodegenScalar implements GeneratorContext {
         return this.scalarDecon.getAlias().map(ref => getMaterialTypeDeconstructor(
             this.config.params.allTypes,
             this.config.params.allTypes.obj[ref.qualified_name]
-        )).map(tDecon => importExpr(this.idolGraphqlQueries.codegenFile(tDecon.t.named)));
+        )).bind(tDecon => this.idolGraphqlQueries.codegenFile(tDecon.t.named).declaredFragments.map(importExpr));
     }
 
     get graphqlFieldsName(): Alt<string> {
@@ -412,38 +406,16 @@ export class IdolGraphqlScaffoldStruct extends GeneratorFileContext<IdolGraphqlQ
         );
     }
 
-    get declaredFields(): Alt<Expression> {
-        return this.codegenFile.struct.bind(struct => struct.declaredFields).map(importExpr);
+    get fragmentsExpr(): Alt<Expression> {
+        return this.codegenFile.declaredFragments.map(importExpr);
     }
 
-    get declaredType(): Alt<Exported> {
-        return cachedProperty(this, "declaredType", () => {
-            return this.declaredFields.map(declaredFields =>
+    get declaredFragments(): Alt<Exported> {
+        return cachedProperty(this, "declaredFragments", () => {
+            return this.fragmentsExpr.map(fragments =>
                 this.export(
-                    this.scaffoldFile.defaultTypeIdentName,
-                    scripter.variable(
-                        "new " +
-                        scripter.invocation(
-                            this.importIdent(
-                                exportedFromGraphQL(
-                                    this.scaffoldFile.inputVariant ? "GraphQLInputObjectType" : "GraphQLObjectType"
-                                )
-                            ),
-                            scripter.objLiteral(
-                                scripter.propDec("name", scripter.literal(this.scaffoldFile.defaultTypeName)),
-                                scripter.propDec(
-                                    "description",
-                                    scripter.literal(
-                                        getTagValues(this.scaffoldFile.typeDecon.t.tags, "description").join("\n")
-                                    )
-                                ),
-                                scripter.propDec(
-                                    "fields",
-                                    scripter.objLiteral(scripter.spread(this.applyExpr(declaredFields)))
-                                )
-                            )
-                        )
-                    )
+                    this.scaffoldFile.defaultFragmentName,
+                    scripter.variable(this.applyExpr(fragments))
                 )
             );
         });
@@ -453,36 +425,6 @@ export class IdolGraphqlScaffoldStruct extends GeneratorFileContext<IdolGraphqlQ
 export class IdolGraphqlService extends IdolGraphqlScaffoldStruct {
     fields: OrderedObj<IdolGraphQLQueriesCodegenTypeStruct>;
     codegenFile: IdolGraphqlQueriesCodegenFile;
-
-    get declaredFields(): Alt<Expression> {
-        return cachedProperty(this, "declaredFields", () => {
-            const methods: OrderedObj<string> = this.fields
-                .mapAndFilter(codegenTypeStruct =>
-                    codegenTypeStruct.tsDecon
-                        .getScalar()
-                        .bind(scalar => scalar.getAlias())
-                        .map(ref =>
-                            getMaterialTypeDeconstructor(
-                                this.config.params.allTypes,
-                                this.config.params.allTypes.obj[ref.qualified_name]
-                            )
-                        )
-                        .bind(tDecon => new IdolGraphqlMethod(this.parent, tDecon).methodExpr)
-                )
-                .map(expr => this.applyExpr(expr));
-
-            return Alt.lift(
-                this.export(this.scaffoldFile.defaultQueriesName, (ident: string) => [
-                    scripter.comment(getTagValues(this.scaffoldFile.type.tags, "description").join("\n")),
-                    scripter.variable(
-                        scripter.objLiteral(
-                            ...methods.concatMap((fieldName, method) => [scripter.propDec(fieldName, method)], [])
-                        )
-                    )(ident)
-                ])
-            ).map(importExpr);
-        });
-    }
 }
 
 export class IdolGraphqlMethod implements GeneratorContext {
