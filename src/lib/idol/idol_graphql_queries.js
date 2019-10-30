@@ -251,7 +251,7 @@ function (_GeneratorFileContext2) {
   _createClass(IdolGraphqlQueriesScaffoldFile, [{
     key: "defaultGraphqlTypeName",
     value: function defaultGraphqlTypeName(inputVariant) {
-      return this.type.named.typeName + (inputVariant ? "Input" : "");
+      return this.typeDecon.t.named.typeName + (inputVariant ? "Input" : "");
     }
   }, {
     key: "defaultQueryName",
@@ -267,6 +267,11 @@ function (_GeneratorFileContext2) {
     key: "defaultFragmentName",
     get: function get() {
       return this.type.named.typeName + "Fragment";
+    }
+  }, {
+    key: "graphqlFieldsName",
+    get: function get() {
+      return this.typeDecon.t.named.typeName + "Fields";
     }
   }, {
     key: "struct",
@@ -466,44 +471,59 @@ var IdolGraphqlCodegenScalar =
 /*#__PURE__*/
 function () {
   function IdolGraphqlCodegenScalar(idolGraphqlQueries, scalarDecon) {
+    var _this17 = this;
+
     _classCallCheck(this, IdolGraphqlCodegenScalar);
 
     this.scalarDecon = scalarDecon;
     this.state = idolGraphqlQueries.state;
     this.config = idolGraphqlQueries.config;
     this.idolGraphqlQueries = idolGraphqlQueries;
+    this.materialTypeDecon = this.scalarDecon.getAlias().map(function (ref) {
+      return (0, _generators.getMaterialTypeDeconstructor)(_this17.config.params.allTypes, _this17.config.params.allTypes.obj[ref.qualified_name]);
+    });
+    this.aliasScaffoldFile = this.materialTypeDecon.map(function (tDecon) {
+      return tDecon.t.named;
+    }).filter(function (ref) {
+      return ref.qualified_name in _this17.config.params.scaffoldTypes.obj;
+    }).map(function (ref) {
+      return _this17.idolGraphqlQueries.scaffoldFile(ref);
+    });
+    this.aliasCodegenFile = this.materialTypeDecon.map(function (tDecon) {
+      return tDecon.t.named;
+    }).filter(function (ref) {
+      return !(ref.qualified_name in _this17.config.params.scaffoldTypes.obj);
+    }).map(function (ref) {
+      return _this17.idolGraphqlQueries.codegenFile(ref);
+    });
   }
 
   _createClass(IdolGraphqlCodegenScalar, [{
     key: "fragmentExpr",
     get: function get() {
-      var _this17 = this;
-
-      return this.scalarDecon.getAlias().map(function (ref) {
-        return (0, _generators.getMaterialTypeDeconstructor)(_this17.config.params.allTypes, _this17.config.params.allTypes.obj[ref.qualified_name]);
-      }).bind(function (tDecon) {
-        return _this17.idolGraphqlQueries.codegenFile(tDecon.t.named).declaredFragments.map(_generators.importExpr);
-      });
+      return this.aliasScaffoldFile.bind(function (sf) {
+        return sf.declaredFragments;
+      }).either(this.aliasCodegenFile.bind(function (cf) {
+        return cf.declaredFragments;
+      })).map(_generators.importExpr);
     }
   }, {
     key: "graphqlFieldsName",
     get: function get() {
-      var _this18 = this;
-
-      return this.scalarDecon.getAlias().map(function (ref) {
-        return (0, _generators.getMaterialTypeDeconstructor)(_this18.config.params.allTypes, _this18.config.params.allTypes.obj[ref.qualified_name]);
-      }).map(function (tDecon) {
-        return _this18.idolGraphqlQueries.codegenFile(tDecon.t.named).graphqlFieldsName;
-      });
+      return this.aliasScaffoldFile.map(function (sf) {
+        return sf.graphqlFieldsName;
+      }).either(this.aliasCodegenFile.map(function (cf) {
+        return cf.graphqlFieldsName;
+      }));
     }
   }, {
     key: "graphqlTypeName",
     get: function get() {
-      var _this19 = this;
+      var _this18 = this;
 
       return this.scalarDecon.getPrimitive().map(function (prim) {
         if (prim === _PrimitiveType.PrimitiveType.ANY) {
-          return _this19.idolGraphqlQueries.anythingGraphqlTypeName;
+          return _this18.idolGraphqlQueries.anythingGraphqlTypeName;
         } else if (prim === _PrimitiveType.PrimitiveType.BOOL) {
           return "GraphQLBoolean";
         } else if (prim === _PrimitiveType.PrimitiveType.DOUBLE) {
@@ -530,15 +550,15 @@ function (_GeneratorFileContext4) {
   _inherits(IdolGraphqlScaffoldStruct, _GeneratorFileContext4);
 
   function IdolGraphqlScaffoldStruct(scaffoldFile, fields) {
-    var _this20;
+    var _this19;
 
     _classCallCheck(this, IdolGraphqlScaffoldStruct);
 
-    _this20 = _possibleConstructorReturn(this, _getPrototypeOf(IdolGraphqlScaffoldStruct).call(this, scaffoldFile.parent, scaffoldFile.path));
-    _this20.fields = fields;
-    _this20.scaffoldFile = scaffoldFile;
-    _this20.codegenFile = _this20.parent.codegenFile(_this20.scaffoldFile.typeDecon.t.named);
-    return _this20;
+    _this19 = _possibleConstructorReturn(this, _getPrototypeOf(IdolGraphqlScaffoldStruct).call(this, scaffoldFile.parent, scaffoldFile.path));
+    _this19.fields = fields;
+    _this19.scaffoldFile = scaffoldFile;
+    _this19.codegenFile = _this19.parent.codegenFile(_this19.scaffoldFile.typeDecon.t.named);
+    return _this19;
   }
 
   _createClass(IdolGraphqlScaffoldStruct, [{
@@ -549,11 +569,11 @@ function (_GeneratorFileContext4) {
   }, {
     key: "declaredFragments",
     get: function get() {
-      var _this21 = this;
+      var _this20 = this;
 
       return (0, _functional.cachedProperty)(this, "declaredFragments", function () {
-        return _this21.fragmentsExpr.map(function (fragments) {
-          return _this21["export"](_this21.scaffoldFile.defaultFragmentName, scripter.variable(_this21.applyExpr(fragments)));
+        return _this20.fragmentsExpr.map(function (fragments) {
+          return _this20["export"](_this20.scaffoldFile.defaultFragmentName, scripter.variable(_this20.applyExpr(fragments)));
         });
       });
     }
@@ -595,19 +615,19 @@ function () {
   _createClass(IdolGraphqlMethod, [{
     key: "methodExpr",
     get: function get() {
-      var _this22 = this;
+      var _this21 = this;
 
       return this.tDecon.getStruct().bind(function (fields) {
         var outputTypeExpr = fields.get("output").bind(function (outputTs) {
-          return new IdolGraphQLQueriesCodegenTypeStruct(_this22.idolGraphqlQueries, outputTs, false).typeExpr;
+          return new IdolGraphQLQueriesCodegenTypeStruct(_this21.idolGraphqlQueries, outputTs, false).typeExpr;
         });
         var inputFields = fields.get("input").bind(function (inputTs) {
           return inputTs.getScalar().bind(function (scalar) {
             return scalar.getAlias();
           });
         }).bind(function (ref) {
-          var materialType = (0, _generators.getMaterialTypeDeconstructor)(_this22.config.params.allTypes, _this22.config.params.allTypes.obj[ref.qualified_name]);
-          return _this22.idolGraphqlQueries.codegenFile(materialType.t.named, true).struct.bind(function (struct) {
+          var materialType = (0, _generators.getMaterialTypeDeconstructor)(_this21.config.params.allTypes, _this21.config.params.allTypes.obj[ref.qualified_name]);
+          return _this21.idolGraphqlQueries.codegenFile(materialType.t.named, true).struct.bind(function (struct) {
             return struct.declaredFields;
           });
         });
@@ -619,7 +639,7 @@ function () {
         return outputTypeExpr.bind(function (output) {
           return inputFields.map(function (inputFields) {
             return function (state, path) {
-              return scripter.objLiteral(scripter.propDec("type", output(state, path)), scripter.propDec("resolve", scripter.arrowFunc(["root", "args", "context"], scripter.literal(null))), scripter.propDec("args", scripter.objLiteral(scripter.spread(state.importIdent(path, inputFields)))), scripter.propDec("description", scripter.literal((0, _generators.getTagValues)(_this22.tDecon.t.tags, "description").join("\n"))));
+              return scripter.objLiteral(scripter.propDec("type", output(state, path)), scripter.propDec("resolve", scripter.arrowFunc(["root", "args", "context"], scripter.literal(null))), scripter.propDec("args", scripter.objLiteral(scripter.spread(state.importIdent(path, inputFields)))), scripter.propDec("description", scripter.literal((0, _generators.getTagValues)(_this21.tDecon.t.tags, "description").join("\n"))));
             };
           });
         });

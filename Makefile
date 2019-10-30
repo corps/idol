@@ -1,7 +1,12 @@
 MODELS     := $(wildcard src/models/*.toml)
 SOURCE_FILES = $(shell find src -type f | egrep ".*\.rs" | grep -v "bin/")
 
-release: target/release/idol target/release/idol_rs js
+release: target/release/idol target/release/idol_rs js release-python
+
+release-python: versions
+	cp LICENSE src/lib/idol/LICENSE
+	cp README.md src/lib/idol/README
+	cd src/lib && rm -rf dist && python setup.py sdist && twine upload dist/*
 
 dev: target/debug/idol target/debug/idol_rs js models
 
@@ -52,4 +57,4 @@ versions: target/debug/idol
 
 
 
-.PHONY: models dev test release js
+.PHONY: models dev test release js release-python

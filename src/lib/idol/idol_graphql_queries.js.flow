@@ -174,7 +174,7 @@ export class IdolGraphqlQueriesScaffoldFile extends GeneratorFileContext<IdolGra
     }
 
     defaultGraphqlTypeName(inputVariant: boolean): string {
-        return this.type.named.typeName + (inputVariant ? "Input" : "");
+        return this.typeDecon.t.named.typeName + (inputVariant ? "Input" : "");
     }
 
     get defaultQueryName(): string {
@@ -187,6 +187,10 @@ export class IdolGraphqlQueriesScaffoldFile extends GeneratorFileContext<IdolGra
 
     get defaultFragmentName(): string {
         return this.type.named.typeName + "Fragment";
+    }
+
+    get graphqlFieldsName(): string {
+        return this.typeDecon.t.named.typeName + "Fields";
     }
 
     get struct(): Alt<IdolGraphqlScaffoldStruct> {
@@ -347,6 +351,9 @@ export class IdolGraphqlCodegenScalar implements GeneratorContext {
     state: GeneratorAcc;
     config: GeneratorConfig;
     idolGraphqlQueries: IdolGraphqlQueries;
+    materialTypeDecon: Alt<TypeDeconstructor>;
+    aliasScaffoldFile: Alt<IdolGraphqlQueriesScaffoldFile>;
+    aliasCodegenFile: Alt<IdolGraphqlQueriesCodegenFile>;
 
     constructor(idolGraphqlQueries: IdolGraphqlQueries, scalarDecon: ScalarDeconstructor) {
         this.scalarDecon = scalarDecon;
@@ -354,20 +361,28 @@ export class IdolGraphqlCodegenScalar implements GeneratorContext {
         this.config = idolGraphqlQueries.config;
         this.idolGraphqlQueries = idolGraphqlQueries;
 
+        this.materialTypeDecon = this.scalarDecon.getAlias().map(ref => getMaterialTypeDeconstructor(
+            this.config.params.allTypes,
+            this.config.params.allTypes.obj[ref.qualified_name]
+        ));
+
+        this.aliasScaffoldFile = this.materialTypeDecon
+            .map(tDecon => tDecon.t.named)
+            .filter(ref => ref.qualified_name in this.config.params.scaffoldTypes.obj)
+            .map(ref => this.idolGraphqlQueries.scaffoldFile(ref));
+
+        this.aliasCodegenFile = this.materialTypeDecon
+            .map(tDecon => tDecon.t.named)
+            .filter(ref => !(ref.qualified_name in this.config.params.scaffoldTypes.obj))
+            .map(ref => this.idolGraphqlQueries.codegenFile(ref));
     }
 
     get fragmentExpr(): Alt<Expression> {
-        return this.scalarDecon.getAlias().map(ref => getMaterialTypeDeconstructor(
-            this.config.params.allTypes,
-            this.config.params.allTypes.obj[ref.qualified_name]
-        )).bind(tDecon => this.idolGraphqlQueries.codegenFile(tDecon.t.named).declaredFragments.map(importExpr));
+        return this.aliasScaffoldFile.bind(sf => sf.declaredFragments).either(this.aliasCodegenFile.bind(cf => cf.declaredFragments)).map(importExpr);
     }
 
     get graphqlFieldsName(): Alt<string> {
-        return this.scalarDecon.getAlias().map(ref => getMaterialTypeDeconstructor(
-            this.config.params.allTypes,
-            this.config.params.allTypes.obj[ref.qualified_name]
-        )).map(tDecon => this.idolGraphqlQueries.codegenFile(tDecon.t.named).graphqlFieldsName);
+        return this.aliasScaffoldFile.map(sf => sf.graphqlFieldsName).either(this.aliasCodegenFile.map(cf => cf.graphqlFieldsName));
     }
 
     get graphqlTypeName(): Alt<string> {

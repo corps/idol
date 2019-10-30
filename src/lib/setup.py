@@ -1,7 +1,7 @@
 from setuptools import setup
 import os.path
 
-version = open(os.path.dirname(__file__) + "/idol/VERSION").read()
+version = open(os.path.dirname(os.path.abspath(__file__)) + "/idol/VERSION").read()
 
 setup(
     name="idol",
@@ -17,5 +17,5 @@ setup(
     scripts=["idol/idol_py", "idol/idol_mar"],
     zip_safe=False,
     include_package_data=True,
-    package_data={"": ["idol/LICENSE", "idol/idol_py", "idol/VERSION"]},
+    package_data={"": ["idol/LICENSE", "idol/idol_py", "idol/idol_mar", "idol/VERSION", "idol/README.md"]},
 )

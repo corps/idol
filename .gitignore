@@ -12,3 +12,4 @@ tmp*
 .local
 idol.egg-info
 test/actual
+src/lib/dist

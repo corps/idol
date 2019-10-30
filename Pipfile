@@ -10,6 +10,7 @@ black = "*"
 cached-property = "*"
 marshmallow = "==2.15.4"
 marshmallow-enum = "==1.4.1"
+twine = "*"
 
 [requires]
 python_version = "3.7"
