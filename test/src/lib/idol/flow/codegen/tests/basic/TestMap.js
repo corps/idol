@@ -6,4 +6,4 @@ import type { TestsBasicTestAtleastOnePayload as CodegenTestsBasicTestAtleastOne
 export type TestsBasicTestMapPayload = {
   [k: string]: CodegenTestsBasicTestAtleastOnePayload
 };
-export type TestsBasicTestMapFactory = () => {};
+export const TestsBasicTestMapFactory = () => ({});

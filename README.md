@@ -1,10 +1,15 @@
 # idol
 
-**idol is a minimalistic, language-agnostic, transport agnostic, IDL**
+**idol is an IDL and codegeneration framework for meta programming with your application models.**
+
+The IDL helps you define simple application models and services.
+The codegen tools help you morph those abstractions into extensible, modifiable code.
 
 ---
 
 Create a toml file, or a json file, _or an executable that outputs json_ (if you prefer config as code), describing your model
+
+For instance, here's the entire idol grammar described in itself:
 
 ```toml
 [ModuleDec]
@@ -50,23 +55,25 @@ fields.trim = "bool"
 enum = ["Covariant", "Invariant", "Contravariant"]
 ```
 
-Run idol 
+Run idol to create a build.json, which will contain a 'compiled' via of your models.
 
 ```bash
 idol src/models/declarations.toml > build.json
 ```
 
-Get a json output describing the schema of all modules, dependencies, and types
-
 ```json
 {"declarations":{"dependencies":[{"from":{"module_name":"declarations","qualified_name":"declarations.ModuleDec","type_name":"ModuleDec"},"is_local":true,"to":{"module_name":"declarations","qualified_name":"declarations.TypeDec","type_name":"TypeDec"}},{"from":{"module_name":"declarations","qualified_name":"declarations.TypeDec","type_name":"TypeDec"},"is_local":true,"to":{"module_name":"declarations","qualified_name":"declarations.FieldDec","type_name":"FieldDec"}}],"module_name":"declarations","types_by_name":{"ModuleDec":{"fields":{},"is_a":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int":0,"literal_int64":0,"literal_string":"","primitive_type":"int","reference":{"module_name":"declarations","qualified_name":"declarations.TypeDec","type_name":"TypeDec"},"struct_kind":"Map"},"options":[],"tags":[],"type_name":"ModuleDec"},"TypeDec":{"fields":{"is_a":{"field_name":"is_a","tags":[],"type_struct":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int":0,"literal_int64":0,"literal_string":"","primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Scalar"}},"enum":{"field_name":"enum","tags":[],"type_struct":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int":0,"literal_int64":0,"literal_string":"","primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Repeated"}},"tags":{"field_name":"tags","tags":[],"type_struct":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int":0,"literal_int64":0,"literal_string":"","primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Repeated"}},"fields":{"field_name":"fields","tags":[],"type_struct":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int":0,"literal_int64":0,"literal_string":"","primitive_type":"int","reference":{"module_name":"declarations","qualified_name":"declarations.FieldDec","type_name":"FieldDec"},"struct_kind":"Map"}}},"is_a":null,"options":[],"tags":[],"type_name":"TypeDec"},"FieldDec":{"fields":{},"is_a":{"is_literal":false,"literal_bool":false,"literal_double":0.0,"literal_int":0,"literal_int64":0,"literal_string":"","primitive_type":"string","reference":{"module_name":"","qualified_name":"","type_name":""},"struct_kind":"Repeated"},"options":[],"tags":[],"type_name":"FieldDec"}},"types_dependency_ordering":["FieldDec","TypeDec","ModuleDec"]}}
 ```
 
-Run that output through a codegen tool for each target language.
+Now you can pass that compiled output through one of many existing codegen tools, or write your own workflow by extending.
 
 ```bash
-cat build.json | idol_py.py --output src/generated/models --mod "project.generated.models"
-cat build.json | idol_rs --output src/generated --mod "mytomlproject.generated"
+cat build.json | idol_py --output src/generated/models --target "my.model.module"
+cat build.json | idol_marshmallow --output src/generated/models --target "my.model.module"
+cat build.json | idol_js --output src/generated/models --target "my.model.module"
+cat build.json | idol_graphql --output src/generated/models --target "my.model.module"
+cat build.json | idol_flow --output src/generated/models --target "my.model.module"
+cat build.json | idol_rs --output src/generated --target "my.model.module"
 ```
 
 You'll get auto generated classes / structs that look something like
@@ -94,42 +101,100 @@ class TypeStruct(_Struct):
 ...
 ```
 
-And additional interfaces:
+## Getting Started
 
-### validate
-Validates a raw json payload matches the given schema (ignores extra fields by default).
 
-### expand
-"Expands" a raw json by providing default values for missing fields, and negotiating arrays and scalars by performing 
-packing or unpacking as necessary.
+### Tools
+You'll need to install `idol` the binary, which is responsible for model compilation.
+Currently this binary is available under the Releases tab for Mac OSX and Linux amd64.
 
-## Model Files
+In addition, depending on your language, there is a supporting library for codegeneration:
 
-Defining idol models is very simple.  In fact, the entire grammar of idol is captured as idol models itself, in the example given above.
+#### Python
+```bash
+pip install idol
+```
 
-Type values that can be given to `TypeDec` include:
+#### Javascript
+```bash
+npm install @lyric-travel/idol_js
+```
 
-1. `int` a signed int type.  Defaults to 0 from `expand`
-2.  `string` a string type.  Defaults to "" from `expand`
-3.  `double` a 64 bit precision float type.  Defaults to 0.0 from `expand`.
-4.  `bool` a boolean type of true or false.  Defaults to false from `expand`
-5.  `any` type which can capture any other value opaquely.
+### Define some models
 
-Types can also be decorated with container types:
+Idol supports model definition in either of json, toml, or executable files that produce compatible json.
 
-1.  `int[]` is a list of ints.
-2.  `bool{}` is a map of string -> bool entries.
+Each file represents a 'module', or namespace of definitions.  Everything up to the last `.ext` is
+used from the filename to determine that module's name.
 
-There are also type and field specializations which can be set that codegen will respect in
-generating more specialized serialization and types.
+ie:
 
-1.  `atleast_one`.  When included in TypeDec.tags for a list type, the resulting list will validate only if atleast one entry exists, and `expand` will prefill atleast one value.  This is to support a safe upgrade path from a scalar to a list type in an existing field.
+```
+models.user.toml => models.users
+org.java.services.json => org.java.services
+```
 
-2.  `optional`.  When included in a FieldDec, the resulting field supports null as a default value.  Note: all fields are technically nullable in idol, however they will always be converted recursively into a default value when passed through `expand`.  When `optional` is added, the resulting codegen modifies that field's type to indicate the union with null explicitly, and the resulting `expand` will simply leave null values rather than change the into default values.
+Top level keys in a module's json or toml structure are models, and they are
+required to match `[A-Z]+[a-zA-Z0-9_]*`.
 
-## Project Status
+```toml
+[MyNewModel]
+```
 
-Very early development.
+Models themselves use top level keys to define one of the following fundamental kinds:
 
-Current support languages: python, rust, nodejs
-Target future languages: graphql, ruby, flowjs, etc
+1.  Enums
+```
+[MyNewEnum]
+enum = ["a_list", "of_enum_values"]
+```
+
+2.  Structs
+Each named field belongs as a key to the "fields" top level of model object.
+```
+[MyNewStruct]
+fields.field_a = "int"
+fields.field_b = "string"
+```
+
+3.  Aliases
+```
+[MyAliasType]
+is_a = "MyNewStruct[]"
+```
+
+4.  Compositions
+```
+[LostPageWrapper]
+fields.count = "int"
+fields.links = "Links"
+fields.data = "any[]"
+
+[MyListModel]
+is_a = "ListPageWrapper"
+fields.data = "MyModel[]"
+```
+
+### 'Compile' a build.json
+
+Regardless of your target language, you need a single normalized
+json payload of all your types.  The default `idol` binary does this.
+I recommend setting up a `Makefile` similar to the following:
+
+```
+MODELS := $(wildcard src/models/*.toml)
+models: $(MODELS)
+	idol $? > build.json
+	python --version
+	node --version
+	pip --version
+	npm install
+	pip install -e ./src/lib
+
+	cat build.json | ./target/debug/idol_rs --output src/models/ --mod "crate::models"
+	cat build.json | ./src/lib/idol/idol_py --output src/lib/idol/py --target schema
+	cat build.json | ./src/lib/idol/idol_js.js --output src/es6/idol/js --target schema
+	cat build.json | ./src/lib/idol/idol_mar --output src/lib/idol/mar --target schema
+	cat build.json | ./src/lib/idol/idol_graphql.js --output src/es6/idol/graphql --target schema
+	cat build.json | ./src/lib/idol/idol_flow.js --output src/es6/idol/flow --target schema
+```

@@ -371,8 +371,7 @@ export class IdolFlowCodegenTypeStructDecalaration extends IdolFlowCodegenTypest
       this.factoryExpr.map(factoryExpr =>
         this.export(
           this.codegenFile.defaultFactoryName,
-          scripter.variable(this.applyExpr(factoryExpr), "type"),
-          true
+          scripter.variable(this.applyExpr(factoryExpr), "const"),
         )
       )
     );
@@ -449,7 +448,7 @@ export class IdolFlowCodegenScalar implements GeneratorContext {
   }
 
   get literalType(): Alt<Expression> {
-    return this.scalarDecon.getLiteral().map((_, val) => () => scripter.literal(val));
+    return this.scalarDecon.getLiteral().map(([_, val]) => () => scripter.literal(val));
   }
 
   get primFactory(): Alt<Expression> {
@@ -475,7 +474,7 @@ export class IdolFlowCodegenScalar implements GeneratorContext {
   get literalFactory(): Alt<Expression> {
     return this.scalarDecon
       .getLiteral()
-      .map((_, val) => () => scripter.arrowFunc([], scripter.literal(val)));
+      .map(([_, val]) => () => scripter.arrowFunc([], scripter.literal(val)));
   }
 }
 

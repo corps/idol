@@ -4,4 +4,4 @@
 import type { TestsBasicTestKindPayload as CodegenTestsBasicTestKindPayload } from "../../tests/basic/TestKind";
 
 export type AllRequiredListOfTestKindPayload = Array<CodegenTestsBasicTestKindPayload>;
-export type AllRequiredListOfTestKindFactory = () => [];
+export const AllRequiredListOfTestKindFactory = () => [];
