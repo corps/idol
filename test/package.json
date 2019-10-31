@@ -10,6 +10,7 @@
     "@babel/preset-env": "^7.5.5",
     "@lyric-travel/idol_js": "../src/lib/idol",
     "babel-plugin-syntax-dynamic-import": "^6.18.0",
-    "graphql": "^14.4.2"
+    "graphql": "^14.4.2",
+    "graphql-tag": "^2.10.1"
   }
 }

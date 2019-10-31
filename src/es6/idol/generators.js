@@ -479,25 +479,17 @@ export class ImportsAcc {
               );
             }
 
-            const nonTypeDecons = OrderedObj.fromIterable(
-              decons.mapIntoIterable((fromIdent, intoIdents) => {
-                if (fromIdent in typeDecons.obj) return new OrderedObj();
-                return new OrderedObj({ [fromIdent]: intoIdents });
-              })
-            );
+            const nonTypeDecons =
+              [...decons.mapIntoIterable((fromIdent, intoIdents) => {
+                if (fromIdent === '@@default' || fromIdent in typeDecons.obj) return null;
+                return intoIdents.items.map(asIdent => `${fromIdent} as ${asIdent}`).join(', ');
+              })].filter(Boolean);
 
-            if (!nonTypeDecons.isEmpty()) {
+            const defaultDecon = decons.get("@@default").map(intoIdents => intoIdents.items.map(asIdent => `${asIdent}`).join(', '));
+
+            if (nonTypeDecons.length || !defaultDecon.isEmpty()) {
               lines.push(
-                scripter.importDecon(
-                  importPath,
-                  ...nonTypeDecons
-                    .keys()
-                    .map(ident =>
-                      decons.obj[ident].items
-                        .map(asIdent => (asIdent === ident ? ident : `${ident} as ${asIdent}`))
-                        .join(", ")
-                    )
-                )
+                  defaultDecon.isEmpty() ? scripter.importDecon(importPath, ...nonTypeDecons) : scripter.importDeconWithDefault(importPath, defaultDecon.unwrap(), ...nonTypeDecons)
               );
             }
 

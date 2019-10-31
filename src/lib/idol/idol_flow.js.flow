@@ -119,7 +119,10 @@ export class IdolFlowCodegenFile extends GeneratorFileContext<IdolFlow> {
 
   get declaredType(): Alt<Exported> {
     return cachedProperty(this, "declaredType", () =>
-      this.enum.bind(e => e.declaredType).either(this.typeStruct.bind(ts => ts.declaredType)).either(this.struct.bind(struct => struct.declaredType))
+      this.enum
+        .bind(e => e.declaredType)
+        .either(this.typeStruct.bind(ts => ts.declaredType))
+        .either(this.struct.bind(struct => struct.declaredType))
     );
   }
 
@@ -129,7 +132,10 @@ export class IdolFlowCodegenFile extends GeneratorFileContext<IdolFlow> {
 
   get declaredFactory(): Alt<Exported> {
     return cachedProperty(this, "declaredFactory", () =>
-      this.enum.bind(e => e.declaredFactory).either(this.typeStruct.bind(ts => ts.declaredFactory)).either(this.struct.bind(struct => struct.declaredFactory))
+      this.enum
+        .bind(e => e.declaredFactory)
+        .either(this.typeStruct.bind(ts => ts.declaredFactory))
+        .either(this.struct.bind(struct => struct.declaredFactory))
     );
   }
 
@@ -157,9 +163,15 @@ export class IdolFlowCodegenFile extends GeneratorFileContext<IdolFlow> {
 
   get struct(): Alt<IdolFlowCodegenStruct> {
     return cachedProperty(this, "struct", () =>
-        this.typeDecon
-            .getStruct()
-            .map(fields => new IdolFlowCodegenStruct(this, fields.map(tsDecon => new IdolFlowCodegenTypestruct(this.parent, tsDecon))))
+      this.typeDecon
+        .getStruct()
+        .map(
+          fields =>
+            new IdolFlowCodegenStruct(
+              this,
+              fields.map(tsDecon => new IdolFlowCodegenTypestruct(this.parent, tsDecon))
+            )
+        )
     );
   }
 }
@@ -233,17 +245,24 @@ export class IdolFlowCodegenStruct extends GeneratorFileContext<IdolFlow> {
     this.fields = fields;
   }
 
-
   get declaredType(): Alt<Exported> {
     return cachedProperty(this, "declaredType", () => {
       const fieldExprs = this.fields.mapAndFilter(f => f.typeExpr);
 
       return Alt.lift(
-          this.export(
-              this.codegenFile.defaultTypeName,
-              scripter.iface(true, null, ...fieldExprs.keys().map(fieldName => scripter.propDec(fieldName, this.applyExpr(fieldExprs.obj[fieldName])))),
-              true
-          )
+        this.export(
+          this.codegenFile.defaultTypeName,
+          scripter.iface(
+            true,
+            null,
+            ...fieldExprs
+              .keys()
+              .map(fieldName =>
+                scripter.propDec(fieldName, this.applyExpr(fieldExprs.obj[fieldName]))
+              )
+          ),
+          true
+        )
       );
     });
   }
@@ -253,22 +272,31 @@ export class IdolFlowCodegenStruct extends GeneratorFileContext<IdolFlow> {
       const fieldExprs = this.fields.mapAndFilter(f => f.factoryExpr);
 
       return this.codegenFile.declaredFactoryTyping.map(factoryTyping =>
-          this.export(
-              this.codegenFile.defaultFactoryName,
-              scripter.variable(
-                  scripter.arrowFunc([], scripter.objLiteral(
-                      ...fieldExprs.keys().map(fieldName => scripter.propDec(fieldName, scripter.invocation(this.applyExpr(fieldExprs.obj[fieldName])))
-                  ))),
-                  "const",
-                  true,
-                  this.applyExpr(factoryTyping)
+        this.export(
+          this.codegenFile.defaultFactoryName,
+          scripter.variable(
+            scripter.arrowFunc(
+              [],
+              scripter.objLiteral(
+                ...fieldExprs
+                  .keys()
+                  .map(fieldName =>
+                    scripter.propDec(
+                      fieldName,
+                      scripter.invocation(this.applyExpr(fieldExprs.obj[fieldName]))
+                    )
+                  )
               )
+            ),
+            "const",
+            true,
+            this.applyExpr(factoryTyping)
           )
+        )
       );
     });
   }
 }
-
 
 export class IdolFlowCodegenTypestruct implements GeneratorContext {
   tsDecon: TypeStructDeconstructor;
@@ -371,7 +399,7 @@ export class IdolFlowCodegenTypeStructDecalaration extends IdolFlowCodegenTypest
       this.factoryExpr.map(factoryExpr =>
         this.export(
           this.codegenFile.defaultFactoryName,
-          scripter.variable(this.applyExpr(factoryExpr), "const"),
+          scripter.variable(this.applyExpr(factoryExpr), "const")
         )
       )
     );
@@ -512,19 +540,13 @@ export class IdolFlowScaffoldFile extends GeneratorFileContext<IdolFlow> {
     return cachedProperty(this, "declaredType", () =>
       this.codegenFile.declaredType.bind(codegenType => {
         const codegenTypeIdent = this.importIdent(codegenType);
-        let scriptable: (string) => string = scripter.variable(codegenTypeIdent, "type", true);
+        let scriptable: string => string = scripter.variable(codegenTypeIdent, "type", true);
 
         if (!this.typeDecon.getStruct().isEmpty()) {
           scriptable = scripter.iface(true, codegenTypeIdent);
         }
 
-        return Alt.lift(
-          this.export(
-            this.defaultTypeName,
-            scriptable,
-            true
-          )
-        );
+        return Alt.lift(this.export(this.defaultTypeName, scriptable, true));
       })
     );
   }

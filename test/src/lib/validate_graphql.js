@@ -1,7 +1,8 @@
 #! /usr/bin/env babel-node
 
-import { GraphQLObjectType, GraphQLSchema, graphql } from 'graphql'
+import { GraphQLObjectType, GraphQLSchema, graphql, print } from 'graphql'
 import { OptionalServiceQueries } from './idol/graphql/all/target/OptionalService';
+import { OptionalServiceOptionalQuery } from './idol/graphql_queries/all/target/OptionalService';
 import fs from 'fs';
 
 var data = fs.readFileSync(0, 'utf-8');
@@ -18,12 +19,7 @@ const schema = new GraphQLSchema({
 });
 
 const finish = setTimeout(() => process.exit(1), 100000);
-graphql(schema, `
-  query($data: AssembledOptionalInput) {
-    optional(optional: $data) { 
-        test_kind
-    }
-  }`, null, null, { data }).then(({ data, errors }) => {
+graphql(schema, print(OptionalServiceOptionalQuery), null, null, { data }).then(({ data, errors }) => {
     if (errors && errors.length) {
         console.error(errors.join("\n"));
         process.exit(1);

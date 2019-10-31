@@ -8,7 +8,7 @@ exports.SchemaLiteralFragment = void 0;
 var _graphqlTag = require("graphql-tag");
 
 function _templateObject() {
-  var data = _taggedTemplateLiteral(["\n  fragment SchemaLiteralFields on SchemaLiteral {\n    bool\n    double\n    int\n    string\n  }\n"]);
+  var data = _taggedTemplateLiteral(["\n  fragment LiteralFields on Literal {\n    bool\n    double\n    int\n    string\n  }\n"]);
 
   _templateObject = function _templateObject() {
     return data;

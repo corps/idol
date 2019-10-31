@@ -806,7 +806,7 @@ function () {
         });
 
         if (outputTypeExpr.isEmpty() || inputFields.isEmpty()) {
-          throw new Error("GraphQL methods required input and output fields, which must be structs with fields.");
+          throw new Error("GraphQL methods required input and output fields.");
         }
 
         return outputTypeExpr.bind(function (output) {

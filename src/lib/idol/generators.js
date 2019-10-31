@@ -662,17 +662,21 @@ function () {
             })))));
           }
 
-          var nonTypeDecons = _functional.OrderedObj.fromIterable(decons.mapIntoIterable(function (fromIdent, intoIdents) {
-            if (fromIdent in typeDecons.obj) return new _functional.OrderedObj();
-            return new _functional.OrderedObj(_defineProperty({}, fromIdent, intoIdents));
-          }));
+          var nonTypeDecons = _toConsumableArray(decons.mapIntoIterable(function (fromIdent, intoIdents) {
+            if (fromIdent === '@@default' || fromIdent in typeDecons.obj) return null;
+            return intoIdents.items.map(function (asIdent) {
+              return "".concat(fromIdent, " as ").concat(asIdent);
+            }).join(', ');
+          })).filter(Boolean);
 
-          if (!nonTypeDecons.isEmpty()) {
-            lines.push(scripter.importDecon.apply(scripter, [importPath].concat(_toConsumableArray(nonTypeDecons.keys().map(function (ident) {
-              return decons.obj[ident].items.map(function (asIdent) {
-                return asIdent === ident ? ident : "".concat(ident, " as ").concat(asIdent);
-              }).join(", ");
-            })))));
+          var defaultDecon = decons.get("@@default").map(function (intoIdents) {
+            return intoIdents.items.map(function (asIdent) {
+              return "".concat(asIdent);
+            }).join(', ');
+          });
+
+          if (nonTypeDecons.length || !defaultDecon.isEmpty()) {
+            lines.push(defaultDecon.isEmpty() ? scripter.importDecon.apply(scripter, [importPath].concat(_toConsumableArray(nonTypeDecons))) : scripter.importDeconWithDefault.apply(scripter, [importPath, defaultDecon.unwrap()].concat(_toConsumableArray(nonTypeDecons))));
           }
 
           return lines;

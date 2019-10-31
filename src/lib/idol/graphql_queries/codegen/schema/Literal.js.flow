@@ -3,7 +3,7 @@
 import { gql } from "graphql-tag";
 
 export const SchemaLiteralFragment = gql`
-  fragment SchemaLiteralFields on SchemaLiteral {
+  fragment LiteralFields on Literal {
     bool
     double
     int

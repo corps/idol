@@ -11,7 +11,7 @@
     "idol_js": "./idol_js.js",
     "idol_graphql": "./idol_graphql.js",
     "idol_flow": "./idol_flow.js",
-    "idol_queries": "./idol_graphql_queries.js"
+    "idol_graphql_queries": "./idol_graphql_queries.js"
   },
   "files": [
     "js/*.js",

@@ -4,7 +4,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.IdolGraphqlMethod = exports.IdolGraphqlService = exports.IdolGraphqlScaffoldStruct = exports.IdolGraphqlCodegenScalar = exports.IdolGraphqlCodegenTypeStructDeclaration = exports.IdolGraphQLQueriesCodegenTypeStruct = exports.IdolGraphqlQueriesCodegenStruct = exports.IdolGraphqlQueriesScaffoldFile = exports.IdolGraphqlQueriesCodegenFile = exports.IdolGraphqlQueries = void 0;
+exports.IdolGraphqlMethod = exports.IdolGraphqlQueriesService = exports.IdolGraphqlCodegenScalar = exports.IdolGraphqlCodegenTypeStructDeclaration = exports.IdolGraphQLQueriesCodegenTypeStruct = exports.IdolGraphqlQueriesCodegenStruct = exports.IdolGraphqlQueriesScaffoldFile = exports.IdolGraphqlQueriesCodegenFile = exports.IdolGraphqlQueries = void 0;
 
 var _path = require("path");
 
@@ -27,6 +27,14 @@ var _TypeStruct = require("./js/schema/TypeStruct");
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = Object.defineProperty && Object.getOwnPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : {}; if (desc.get || desc.set) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj["default"] = obj; return newObj; } }
 
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
+
+function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
 function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
 
@@ -129,7 +137,7 @@ function () {
 
 exports.IdolGraphqlQueries = IdolGraphqlQueries;
 var gql = {
-  ident: "gql",
+  ident: "@@default",
   path: new _generators.Path("graphql-tag")
 };
 
@@ -139,7 +147,7 @@ function graphqlTag() {
   }
 
   return function (state, path) {
-    return state.importIdent(path, gql) + "`\n" + lines.join("\n") + "\n`;";
+    return state.importIdent(path, gql, "gql") + "`\n" + lines.join("\n") + "\n`;";
   };
 }
 
@@ -162,14 +170,18 @@ function (_GeneratorFileContext) {
   }
 
   _createClass(IdolGraphqlQueriesCodegenFile, [{
+    key: "graphqlTypeName",
+    value: function graphqlTypeName(inputVariant) {
+      if (this.type.named.qualifiedName in this.config.params.scaffoldTypes.obj) {
+        return this.parent.scaffoldFile(this.type.named).graphqlTypeName(inputVariant);
+      }
+
+      return this.type.named.asQualifiedIdent + (inputVariant ? "Input" : "");
+    }
+  }, {
     key: "type",
     get: function get() {
       return this.typeDecon.t;
-    }
-  }, {
-    key: "graphqlTypeName",
-    get: function get() {
-      return this.type.named.asQualifiedIdent;
     }
   }, {
     key: "defaultFragmentName",
@@ -239,29 +251,15 @@ function (_GeneratorFileContext2) {
     _this8.typeDecon = (0, _generators.getMaterialTypeDeconstructor)(idolGraphqlQueries.config.params.allTypes, type);
     _this8.type = type;
 
-    _this8.reserveIdent(_this8.defaultQueryName);
-
-    _this8.reserveIdent(_this8.defaultMutationName);
-
     _this8.reserveIdent(_this8.defaultFragmentName);
 
     return _this8;
   }
 
   _createClass(IdolGraphqlQueriesScaffoldFile, [{
-    key: "defaultGraphqlTypeName",
-    value: function defaultGraphqlTypeName(inputVariant) {
+    key: "graphqlTypeName",
+    value: function graphqlTypeName(inputVariant) {
       return this.typeDecon.t.named.typeName + (inputVariant ? "Input" : "");
-    }
-  }, {
-    key: "defaultQueryName",
-    get: function get() {
-      return this.type.named.typeName + "Query";
-    }
-  }, {
-    key: "defaultMutationName",
-    get: function get() {
-      return this.type.named.typeName + "Mutation";
     }
   }, {
     key: "defaultFragmentName",
@@ -271,16 +269,18 @@ function (_GeneratorFileContext2) {
   }, {
     key: "graphqlFieldsName",
     get: function get() {
-      return this.typeDecon.t.named.typeName + "Fields";
+      return this.type.named.typeName + "Fields";
     }
   }, {
-    key: "struct",
+    key: "service",
     get: function get() {
       var _this9 = this;
 
-      return (0, _functional.cachedProperty)(this, "struct", function () {
-        return _this9.typeDecon.getStruct().map(function (fields) {
-          return new ((0, _generators.includesTag)(_this9.type.tags, "service") ? IdolGraphqlService : IdolGraphqlScaffoldStruct)(_this9, fields.map(function (tsDecon) {
+      return (0, _functional.cachedProperty)(this, "service", function () {
+        return _this9.typeDecon.getStruct().filter(function (_) {
+          return (0, _generators.includesTag)(_this9.type.tags, "service");
+        }).map(function (fields) {
+          return new IdolGraphqlQueriesService(_this9, fields.map(function (tsDecon) {
             return new IdolGraphQLQueriesCodegenTypeStruct(_this9.parent, tsDecon);
           }));
         });
@@ -293,6 +293,12 @@ function (_GeneratorFileContext2) {
 
       return (0, _functional.cachedProperty)(this, "declaredFragments", function () {
         var codegenFile = _this10.parent.codegenFile(_this10.typeDecon.t.named);
+
+        if (!_this10.service.isEmpty()) {
+          return _this10.service.bind(function (service) {
+            return service.declaredFragments;
+          });
+        }
 
         return codegenFile.declaredFragments.map(function (fragment) {
           return _this10["export"](_this10.defaultFragmentName, scripter.variable(_this10.importIdent(fragment)));
@@ -341,7 +347,7 @@ function (_GeneratorFileContext3) {
           return o;
         }, {}));
         return _functional.Alt.lift(_this12["export"](_this12.codegenFile.defaultFragmentName, function (ident) {
-          return [scripter.comment((0, _generators.getTagValues)(_this12.codegenFile.typeDecon.t.tags, "description").join("\n")), scripter.variable(_this12.applyExpr(graphqlTag.apply(void 0, ["fragment ".concat(_this12.codegenFile.graphqlFieldsName, " on ").concat(_this12.codegenFile.graphqlTypeName, " {")].concat(_toConsumableArray(_this12.fields.concatMap(function (fieldName, _) {
+          return [scripter.comment((0, _generators.getTagValues)(_this12.codegenFile.typeDecon.t.tags, "description").join("\n")), scripter.variable(_this12.applyExpr(graphqlTag.apply(void 0, ["fragment ".concat(_this12.codegenFile.graphqlFieldsName, " on ").concat(_this12.codegenFile.graphqlTypeName(false), " {")].concat(_toConsumableArray(_this12.fields.concatMap(function (fieldName, _) {
             return ["    " + fieldName + (fieldName in fieldFragments.obj ? "{ ...".concat(fieldFragments.obj[fieldName][0], " }") : "")];
           }, [])), ["}"], _toConsumableArray(fragments.map(function (fragmentIdent) {
             return "${" + fragmentIdent + "}";
@@ -369,26 +375,26 @@ function () {
   }
 
   _createClass(IdolGraphQLQueriesCodegenTypeStruct, [{
+    key: "graphqlTypeName",
+    value: function graphqlTypeName(inputVariant) {
+      var _this13 = this;
+
+      return this.tsDecon.getRepeated().bind(function (_) {
+        return _this13.innerScalar.bind(function (scalar) {
+          return scalar.graphqlTypeName(inputVariant);
+        }).map(function (s) {
+          return s + "[]";
+        });
+      }).concat(this.innerScalar.bind(function (scalar) {
+        return scalar.graphqlTypeName(inputVariant);
+      }));
+    }
+  }, {
     key: "fragmentExpr",
     get: function get() {
       return this.innerScalar.bind(function (scalar) {
         return scalar.fragmentExpr;
       });
-    }
-  }, {
-    key: "graphqlTypeName",
-    get: function get() {
-      var _this13 = this;
-
-      return this.tsDecon.getRepeated().bind(function (_) {
-        return _this13.innerScalar.bind(function (scalar) {
-          return scalar.graphqlTypeName;
-        }).map(function (s) {
-          return s + "[]";
-        });
-      }).concat(this.innerScalar.bind(function (scalar) {
-        return scalar.graphqlTypeName;
-      }));
     }
   }, {
     key: "graphqlFieldsName",
@@ -499,6 +505,31 @@ function () {
   }
 
   _createClass(IdolGraphqlCodegenScalar, [{
+    key: "graphqlTypeName",
+    value: function graphqlTypeName(inputVariant) {
+      var _this18 = this;
+
+      return this.scalarDecon.getPrimitive().map(function (prim) {
+        if (prim === _PrimitiveType.PrimitiveType.ANY) {
+          return _this18.idolGraphqlQueries.anythingGraphqlTypeName;
+        } else if (prim === _PrimitiveType.PrimitiveType.BOOL) {
+          return "GraphQLBoolean";
+        } else if (prim === _PrimitiveType.PrimitiveType.DOUBLE) {
+          return "GraphQLFloat";
+        } else if (prim === _PrimitiveType.PrimitiveType.INT) {
+          return "GraphQLInt";
+        } else if (prim === _PrimitiveType.PrimitiveType.STRING) {
+          return "GraphQLString";
+        }
+
+        throw new Error("Unexpected primitive type ".concat(prim));
+      }).either(this.aliasScaffoldFile.map(function (sf) {
+        return sf.graphqlTypeName(inputVariant);
+      }).concat(this.aliasCodegenFile.map(function (cf) {
+        return cf.graphqlTypeName(inputVariant);
+      })));
+    }
+  }, {
     key: "fragmentExpr",
     get: function get() {
       return this.aliasScaffoldFile.bind(function (sf) {
@@ -516,27 +547,6 @@ function () {
         return cf.graphqlFieldsName;
       }));
     }
-  }, {
-    key: "graphqlTypeName",
-    get: function get() {
-      var _this18 = this;
-
-      return this.scalarDecon.getPrimitive().map(function (prim) {
-        if (prim === _PrimitiveType.PrimitiveType.ANY) {
-          return _this18.idolGraphqlQueries.anythingGraphqlTypeName;
-        } else if (prim === _PrimitiveType.PrimitiveType.BOOL) {
-          return "GraphQLBoolean";
-        } else if (prim === _PrimitiveType.PrimitiveType.DOUBLE) {
-          return "GraphQLFloat";
-        } else if (prim === _PrimitiveType.PrimitiveType.INT) {
-          return "GraphQLInt";
-        } else if (prim === _PrimitiveType.PrimitiveType.STRING) {
-          return "GraphQLString";
-        }
-
-        throw new Error("Unexpected primitive type ".concat(prim));
-      });
-    }
   }]);
 
   return IdolGraphqlCodegenScalar;
@@ -544,27 +554,41 @@ function () {
 
 exports.IdolGraphqlCodegenScalar = IdolGraphqlCodegenScalar;
 
-var IdolGraphqlScaffoldStruct =
+var IdolGraphqlQueriesService =
 /*#__PURE__*/
 function (_GeneratorFileContext4) {
-  _inherits(IdolGraphqlScaffoldStruct, _GeneratorFileContext4);
+  _inherits(IdolGraphqlQueriesService, _GeneratorFileContext4);
 
-  function IdolGraphqlScaffoldStruct(scaffoldFile, fields) {
+  function IdolGraphqlQueriesService(scaffoldFile, fields) {
     var _this19;
 
-    _classCallCheck(this, IdolGraphqlScaffoldStruct);
+    _classCallCheck(this, IdolGraphqlQueriesService);
 
-    _this19 = _possibleConstructorReturn(this, _getPrototypeOf(IdolGraphqlScaffoldStruct).call(this, scaffoldFile.parent, scaffoldFile.path));
+    _this19 = _possibleConstructorReturn(this, _getPrototypeOf(IdolGraphqlQueriesService).call(this, scaffoldFile.parent, scaffoldFile.path));
     _this19.fields = fields;
     _this19.scaffoldFile = scaffoldFile;
     _this19.codegenFile = _this19.parent.codegenFile(_this19.scaffoldFile.typeDecon.t.named);
+    _this19.methods = _toConsumableArray(_this19.fields.mapAndFilter(function (codegenTypeStruct) {
+      return codegenTypeStruct.tsDecon.getScalar().bind(function (scalar) {
+        return scalar.getAlias();
+      }).map(function (ref) {
+        return (0, _generators.getMaterialTypeDeconstructor)(_this19.config.params.allTypes, _this19.config.params.allTypes.obj[ref.qualified_name]);
+      });
+    }).mapIntoIterable(function (fieldName, tDecon) {
+      return _this19.methodFor(tDecon, fieldName, _this19.fields.obj[fieldName].tsDecon.context.fieldTags);
+    }));
+
+    _this19.methods.forEach(function (method) {
+      return _this19.reserveIdent(method.serviceMethodFragmentName);
+    });
+
     return _this19;
   }
 
-  _createClass(IdolGraphqlScaffoldStruct, [{
-    key: "fragmentsExpr",
-    get: function get() {
-      return this.codegenFile.declaredFragments.map(_generators.importExpr);
+  _createClass(IdolGraphqlQueriesService, [{
+    key: "methodFor",
+    value: function methodFor(tDecon, serviceFieldName, fieldTags) {
+      return new IdolGraphqlMethod(this.scaffoldFile, tDecon, this.codegenFile.type.named.typeName, serviceFieldName, (0, _generators.includesTag)(fieldTags, "mutation"));
     }
   }, {
     key: "declaredFragments",
@@ -572,75 +596,107 @@ function (_GeneratorFileContext4) {
       var _this20 = this;
 
       return (0, _functional.cachedProperty)(this, "declaredFragments", function () {
-        return _this20.fragmentsExpr.map(function (fragments) {
-          return _this20["export"](_this20.scaffoldFile.defaultFragmentName, scripter.variable(_this20.applyExpr(fragments)));
+        _this20.methods.forEach(function (method) {
+          return method.declaredMethodFragment;
         });
+
+        return _functional.Alt.empty();
       });
     }
   }]);
 
-  return IdolGraphqlScaffoldStruct;
+  return IdolGraphqlQueriesService;
 }(_generators.GeneratorFileContext);
 
-exports.IdolGraphqlScaffoldStruct = IdolGraphqlScaffoldStruct;
-
-var IdolGraphqlService =
-/*#__PURE__*/
-function (_IdolGraphqlScaffoldS) {
-  _inherits(IdolGraphqlService, _IdolGraphqlScaffoldS);
-
-  function IdolGraphqlService() {
-    _classCallCheck(this, IdolGraphqlService);
-
-    return _possibleConstructorReturn(this, _getPrototypeOf(IdolGraphqlService).apply(this, arguments));
-  }
-
-  return IdolGraphqlService;
-}(IdolGraphqlScaffoldStruct);
-
-exports.IdolGraphqlService = IdolGraphqlService;
+exports.IdolGraphqlQueriesService = IdolGraphqlQueriesService;
 
 var IdolGraphqlMethod =
 /*#__PURE__*/
 function () {
-  function IdolGraphqlMethod(idolGraphqlQueries, tDecon) {
+  function IdolGraphqlMethod(scaffoldFile, tDecon, serviceName, methodName, isMutation) {
     _classCallCheck(this, IdolGraphqlMethod);
 
     this.tDecon = tDecon;
+    this.scaffoldFile = scaffoldFile;
+    var idolGraphqlQueries = scaffoldFile.parent;
     this.state = idolGraphqlQueries.state;
     this.config = idolGraphqlQueries.config;
     this.idolGraphqlQueries = idolGraphqlQueries;
+    this.serviceName = serviceName;
+    this.methodName = methodName;
+    this.isMutation = isMutation;
   }
 
   _createClass(IdolGraphqlMethod, [{
-    key: "methodExpr",
+    key: "serviceMethodFragmentName",
+    get: function get() {
+      if (this.isMutation) {
+        return this.serviceName + this.methodName[0].toUpperCase() + this.methodName.slice(1) + "Mutation";
+      }
+
+      return this.serviceName + this.methodName[0].toUpperCase() + this.methodName.slice(1) + "Query";
+    }
+  }, {
+    key: "declaredMethodFragment",
     get: function get() {
       var _this21 = this;
 
-      return this.tDecon.getStruct().bind(function (fields) {
-        var outputTypeExpr = fields.get("output").bind(function (outputTs) {
-          return new IdolGraphQLQueriesCodegenTypeStruct(_this21.idolGraphqlQueries, outputTs, false).typeExpr;
-        });
-        var inputFields = fields.get("input").bind(function (inputTs) {
-          return inputTs.getScalar().bind(function (scalar) {
-            return scalar.getAlias();
+      return (0, _functional.cachedProperty)(this, "declaredMethod", function () {
+        return _this21.tDecon.getStruct().bind(function (fields) {
+          var outputFields = fields.get("output").bind(function (outputTs) {
+            return outputTs.getScalar().concat(outputTs.getRepeated());
+          }).bind(function (s) {
+            return s.getAlias();
+          }).map(function (ref) {
+            return _this21.idolGraphqlQueries.codegenFile(ref);
+          }).bind(function (codegenFile) {
+            return codegenFile.declaredFragments.map(function (fragments) {
+              return [fragments, codegenFile.graphqlFieldsName];
+            });
           });
-        }).bind(function (ref) {
-          var materialType = (0, _generators.getMaterialTypeDeconstructor)(_this21.config.params.allTypes, _this21.config.params.allTypes.obj[ref.qualified_name]);
-          return _this21.idolGraphqlQueries.codegenFile(materialType.t.named, true).struct.bind(function (struct) {
-            return struct.declaredFields;
+          var inputFields = fields.get("input").bind(function (inputTs) {
+            return inputTs.getScalar().bind(function (scalar) {
+              return scalar.getAlias();
+            });
+          }).bind(function (ref) {
+            var materialType = (0, _generators.getMaterialTypeDeconstructor)(_this21.config.params.allTypes, _this21.config.params.allTypes.obj[ref.qualified_name]);
+            return _this21.idolGraphqlQueries.codegenFile(materialType.t.named).struct;
+          }).map(function (struct) {
+            return struct.fields.map(function (f) {
+              return f.graphqlTypeName(true).unwrap();
+            });
           });
-        });
 
-        if (outputTypeExpr.isEmpty() || inputFields.isEmpty()) {
-          throw new Error("GraphQL methods required input and output fields, which must be structs with fields.");
-        }
+          if (outputFields.isEmpty() || inputFields.isEmpty()) {
+            throw new Error("GraphQL methods required input and output fields.");
+          }
 
-        return outputTypeExpr.bind(function (output) {
           return inputFields.map(function (inputFields) {
-            return function (state, path) {
-              return scripter.objLiteral(scripter.propDec("type", output(state, path)), scripter.propDec("resolve", scripter.arrowFunc(["root", "args", "context"], scripter.literal(null))), scripter.propDec("args", scripter.objLiteral(scripter.spread(state.importIdent(path, inputFields)))), scripter.propDec("description", scripter.literal((0, _generators.getTagValues)(_this21.tDecon.t.tags, "description").join("\n"))));
-            };
+            var operationArgs = _toConsumableArray(inputFields.mapIntoIterable(function (fieldName, fieldType) {
+              return "$".concat(fieldName, ": ").concat(fieldType);
+            }));
+
+            var callArgs = _toConsumableArray(inputFields.mapIntoIterable(function (fieldName, fieldType) {
+              return "".concat(fieldName, ": $").concat(fieldName);
+            }));
+
+            var outerHeaderLine = "".concat(_this21.isMutation ? "mutation" : "query", " ").concat(_this21.methodName, "(").concat(operationArgs.join(", "), ")");
+            var innerHeaderLine = "".concat(_this21.methodName, "(").concat(callArgs.join(", "), ")");
+            var fieldsSpread = outputFields.map(function (_ref) {
+              var _ref2 = _slicedToArray(_ref, 2),
+                  _ = _ref2[0],
+                  fieldsName = _ref2[1];
+
+              return "{ ...".concat(fieldsName, " }");
+            }).getOr("");
+            var fragment = outputFields.map(function (_ref3) {
+              var _ref4 = _slicedToArray(_ref3, 2),
+                  fragment = _ref4[0],
+                  _ = _ref4[1];
+
+              return "${" + _this21.scaffoldFile.importIdent(fragment) + "}";
+            }).getOr("");
+            return _this21.scaffoldFile["export"](_this21.serviceMethodFragmentName, scripter.variable(graphqlTag("  " + outerHeaderLine + " {", "    " + innerHeaderLine + " " + fieldsSpread, "  }", fragment)(_this21.state, _this21.scaffoldFile.path)));
           });
         });
       });

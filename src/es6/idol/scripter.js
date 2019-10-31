@@ -68,7 +68,11 @@ export function typeSum(...options: string[]): string {
   return options.join(" | ");
 }
 
-export function iface(exported: boolean = true, extds: string | null = null, ...lines: string[]): (string) => string {
+export function iface(
+  exported: boolean = true,
+  extds: string | null = null,
+  ...lines: string[]
+): string => string {
   return ident => {
     const exportPart = exported ? "export " : "";
     const extendPart = extds ? ` extends ${extds} ` : "";
@@ -149,6 +153,11 @@ export function flowAs(expr: string, type: string): string {
 
 export function arrayLiteral(...vals: string[]): string {
   return `[${vals.join(",")}]`;
+}
+
+export function importDeconWithDefault(from: string, defaultDecon: string, ...deconstructors: string[]) {
+  const decons = deconstructors.length ? `, {${deconstructors.join(", ")}}` : "";
+  return `import ${defaultDecon}${decons} from ${JSON.stringify(from)}`;
 }
 
 export function importDecon(from: string, ...deconstructors: string[]) {

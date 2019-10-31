@@ -27,6 +27,7 @@ exports.functionDec = functionDec;
 exports.literal = literal;
 exports.flowAs = flowAs;
 exports.arrayLiteral = arrayLiteral;
+exports.importDeconWithDefault = importDeconWithDefault;
 exports.importDecon = importDecon;
 exports.typeImportDecon = typeImportDecon;
 exports.exportImportDecon = exportImportDecon;
@@ -212,17 +213,26 @@ function arrayLiteral() {
   return "[".concat(vals.join(","), "]");
 }
 
+function importDeconWithDefault(from, defaultDecon) {
+  for (var _len8 = arguments.length, deconstructors = new Array(_len8 > 2 ? _len8 - 2 : 0), _key8 = 2; _key8 < _len8; _key8++) {
+    deconstructors[_key8 - 2] = arguments[_key8];
+  }
+
+  var decons = deconstructors.length ? ", {".concat(deconstructors.join(", "), "}") : "";
+  return "import ".concat(defaultDecon).concat(decons, " from ").concat(JSON.stringify(from));
+}
+
 function importDecon(from) {
-  for (var _len8 = arguments.length, deconstructors = new Array(_len8 > 1 ? _len8 - 1 : 0), _key8 = 1; _key8 < _len8; _key8++) {
-    deconstructors[_key8 - 1] = arguments[_key8];
+  for (var _len9 = arguments.length, deconstructors = new Array(_len9 > 1 ? _len9 - 1 : 0), _key9 = 1; _key9 < _len9; _key9++) {
+    deconstructors[_key9 - 1] = arguments[_key9];
   }
 
   return "import {".concat(deconstructors.join(", "), "} from ").concat(JSON.stringify(from));
 }
 
 function typeImportDecon(from) {
-  for (var _len9 = arguments.length, deconstructors = new Array(_len9 > 1 ? _len9 - 1 : 0), _key9 = 1; _key9 < _len9; _key9++) {
-    deconstructors[_key9 - 1] = arguments[_key9];
+  for (var _len10 = arguments.length, deconstructors = new Array(_len10 > 1 ? _len10 - 1 : 0), _key10 = 1; _key10 < _len10; _key10++) {
+    deconstructors[_key10 - 1] = arguments[_key10];
   }
 
   return "import type {".concat(deconstructors.join(", "), "} from ").concat(JSON.stringify(from));

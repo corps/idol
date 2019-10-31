@@ -8,7 +8,7 @@ exports.SchemaReferenceFragment = void 0;
 var _graphqlTag = require("graphql-tag");
 
 function _templateObject() {
-  var data = _taggedTemplateLiteral(["\n  fragment SchemaReferenceFields on SchemaReference {\n    module_name\n    qualified_name\n    type_name\n  }\n"]);
+  var data = _taggedTemplateLiteral(["\n  fragment ReferenceFields on Reference {\n    module_name\n    qualified_name\n    type_name\n  }\n"]);
 
   _templateObject = function _templateObject() {
     return data;
