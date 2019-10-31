@@ -5,7 +5,7 @@ import gql from "graphql-tag";
 export const OptionalServiceOptionalQuery = gql`
   query optional($optional: AllOptionalAssembledInput) {
     optional(optional: $optional) {
-      ...AllTargetAssembledOptionalFields
+      ...AllOptionalAssembledFields
     }
   }
   ${AllTargetAssembledOptionalFragment}

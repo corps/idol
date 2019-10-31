@@ -131,7 +131,9 @@ export class IdolGraphqlQueriesCodegenFile extends GeneratorFileContext<IdolGrap
   }
 
   get graphqlFieldsName(): string {
-    return this.type.named.asQualifiedIdent + "Fields";
+    return this.typeStruct.bind(ts => ts.graphqlFieldsName).getOr(
+    this.type.named.asQualifiedIdent + "Fields"
+    );
   }
 
   get declaredFragments(): Alt<Exported> {
@@ -186,7 +188,7 @@ export class IdolGraphqlQueriesScaffoldFile extends GeneratorFileContext<IdolGra
   }
 
   get graphqlFieldsName(): string {
-    return this.type.named.typeName + "Fields";
+    return this.typeDecon.t.named.typeName + "Fields";
   }
 
   get service(): Alt<IdolGraphqlQueriesService> {
@@ -296,6 +298,10 @@ export class IdolGraphQLQueriesCodegenTypeStruct implements GeneratorContext {
   }
 
   get fragmentExpr(): Alt<Expression> {
+    if (!this.tsDecon.getMap().isEmpty()) {
+      return Alt.empty();
+    }
+
     return this.innerScalar.bind(scalar => scalar.fragmentExpr);
   }
 
@@ -568,8 +574,12 @@ export class IdolGraphqlMethod implements GeneratorContext {
           })
           .map(struct => struct.fields.map(f => f.graphqlTypeName(true).unwrap()));
 
-        if (outputFields.isEmpty() || inputFields.isEmpty()) {
-          throw new Error("GraphQL methods required input and output fields.");
+        if (outputFields.isEmpty()) {
+          throw new Error(this.serviceName + " is missing a valid output field.");
+        }
+
+        if (inputFields.isEmpty()) {
+          throw new Error(this.serviceName + " is missing a valid input field.");
         }
 
         return inputFields.map(inputFields => {

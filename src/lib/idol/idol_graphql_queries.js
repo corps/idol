@@ -191,7 +191,9 @@ function (_GeneratorFileContext) {
   }, {
     key: "graphqlFieldsName",
     get: function get() {
-      return this.type.named.asQualifiedIdent + "Fields";
+      return this.typeStruct.bind(function (ts) {
+        return ts.graphqlFieldsName;
+      }).getOr(this.type.named.asQualifiedIdent + "Fields");
     }
   }, {
     key: "declaredFragments",
@@ -269,7 +271,7 @@ function (_GeneratorFileContext2) {
   }, {
     key: "graphqlFieldsName",
     get: function get() {
-      return this.type.named.typeName + "Fields";
+      return this.typeDecon.t.named.typeName + "Fields";
     }
   }, {
     key: "service",
@@ -392,6 +394,10 @@ function () {
   }, {
     key: "fragmentExpr",
     get: function get() {
+      if (!this.tsDecon.getMap().isEmpty()) {
+        return _functional.Alt.empty();
+      }
+
       return this.innerScalar.bind(function (scalar) {
         return scalar.fragmentExpr;
       });
@@ -667,8 +673,12 @@ function () {
             });
           });
 
-          if (outputFields.isEmpty() || inputFields.isEmpty()) {
-            throw new Error("GraphQL methods required input and output fields.");
+          if (outputFields.isEmpty()) {
+            throw new Error(_this21.serviceName + " is missing a valid output field.");
+          }
+
+          if (inputFields.isEmpty()) {
+            throw new Error(_this21.serviceName + " is missing a valid input field.");
           }
 
           return inputFields.map(function (inputFields) {
