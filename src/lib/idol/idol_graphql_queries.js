@@ -172,11 +172,9 @@ function (_GeneratorFileContext) {
   _createClass(IdolGraphqlQueriesCodegenFile, [{
     key: "graphqlTypeName",
     value: function graphqlTypeName(inputVariant) {
-      if (this.type.named.qualifiedName in this.config.params.scaffoldTypes.obj) {
-        return this.parent.scaffoldFile(this.type.named).graphqlTypeName(inputVariant);
-      }
-
-      return this.type.named.asQualifiedIdent + (inputVariant ? "Input" : "");
+      return this.typeStruct.bind(function (ts) {
+        return ts.graphqlTypeName(inputVariant);
+      }).getOr(this.type.named.qualifiedName in this.config.params.scaffoldTypes ? this.type.named.typeName + (inputVariant ? "Input" : "") : this.type.named.asQualifiedIdent + (inputVariant ? "Input" : ""));
     }
   }, {
     key: "type",
@@ -415,7 +413,7 @@ function () {
       var _this14 = this;
 
       return (0, _functional.cachedProperty)(this, "innerScalar", function () {
-        return _this14.tsDecon.getScalar().concat(_this14.tsDecon.getMap()).concat(_this14.tsDecon.getRepeated()).map(function (scalarDecon) {
+        return _this14.tsDecon.getScalar().concat(_this14.tsDecon.getRepeated()).map(function (scalarDecon) {
           return new IdolGraphqlCodegenScalar(_this14.idolGraphqlQueries, scalarDecon);
         });
       }).concat(this.tsDecon.getMap().map(function (map) {
@@ -508,6 +506,9 @@ function () {
     }).map(function (ref) {
       return _this17.idolGraphqlQueries.codegenFile(ref);
     });
+    console.log("creating one", this.materialTypeDecon.map(function (d) {
+      return d.t.named;
+    }).getOr("no material"), this.aliasScaffoldFile.isEmpty(), this.aliasCodegenFile.isEmpty());
   }
 
   _createClass(IdolGraphqlCodegenScalar, [{
@@ -530,9 +531,9 @@ function () {
 
         throw new Error("Unexpected primitive type ".concat(prim));
       }).either(this.aliasScaffoldFile.map(function (sf) {
-        return sf.graphqlTypeName(inputVariant);
+        return console.log("yup field name was", sf.graphqlTypeName(inputVariant)) || sf.graphqlTypeName(inputVariant);
       }).concat(this.aliasCodegenFile.map(function (cf) {
-        return cf.graphqlTypeName(inputVariant);
+        return console.log("is codegen", cf.graphqlTypeName(inputVariant)) || cf.graphqlTypeName(inputVariant);
       })));
     }
   }, {
@@ -654,7 +655,8 @@ function () {
           }).bind(function (s) {
             return s.getAlias();
           }).map(function (ref) {
-            return _this21.idolGraphqlQueries.codegenFile(ref);
+            var materialType = (0, _generators.getMaterialTypeDeconstructor)(_this21.config.params.allTypes, _this21.config.params.allTypes.obj[ref.qualified_name]);
+            return _this21.idolGraphqlQueries.codegenFile(materialType.t.named);
           }).bind(function (codegenFile) {
             return codegenFile.declaredFragments.map(function (fragments) {
               return [fragments, codegenFile.graphqlFieldsName];

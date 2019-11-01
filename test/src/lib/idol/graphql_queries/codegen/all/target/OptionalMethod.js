@@ -5,7 +5,7 @@ import { AllOptionalAssembledFragment } from "../optional/Assembled";
 import gql from "graphql-tag";
 
 export const AllTargetOptionalMethodFragment = gql`
-  fragment AllTargetOptionalMethodFields on OptionalMethod {
+  fragment AllTargetOptionalMethodFields on AllTargetOptionalMethod {
     input {
       ...OptionalParamsFields
     }

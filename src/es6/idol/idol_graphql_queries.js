@@ -119,11 +119,11 @@ export class IdolGraphqlQueriesCodegenFile extends GeneratorFileContext<IdolGrap
   }
 
   graphqlTypeName(inputVariant: boolean): string {
-    if (this.type.named.qualifiedName in this.config.params.scaffoldTypes.obj) {
-      return this.parent.scaffoldFile(this.type.named).graphqlTypeName(inputVariant);
-    }
-
-    return this.type.named.asQualifiedIdent + (inputVariant ? "Input" : "");
+      return this.typeStruct.bind(ts => ts.graphqlTypeName(inputVariant)).getOr(
+          this.type.named.qualifiedName in this.config.params.scaffoldTypes ?
+              this.type.named.typeName + (inputVariant ? "Input" : "") :
+              this.type.named.asQualifiedIdent + (inputVariant ? "Input" : "")
+      );
   }
 
   get defaultFragmentName(): string {
@@ -322,7 +322,6 @@ export class IdolGraphQLQueriesCodegenTypeStruct implements GeneratorContext {
     return cachedProperty(this, "innerScalar", () => {
       return this.tsDecon
         .getScalar()
-        .concat(this.tsDecon.getMap())
         .concat(this.tsDecon.getRepeated())
         .map(scalarDecon => new IdolGraphqlCodegenScalar(this.idolGraphqlQueries, scalarDecon));
     }).concat(
@@ -554,7 +553,13 @@ export class IdolGraphqlMethod implements GeneratorContext {
           .get("output")
           .bind(outputTs => outputTs.getScalar().concat(outputTs.getRepeated()))
           .bind(s => s.getAlias())
-          .map(ref => this.idolGraphqlQueries.codegenFile(ref))
+          .map(ref => {
+            const materialType = getMaterialTypeDeconstructor(
+                this.config.params.allTypes,
+                this.config.params.allTypes.obj[ref.qualified_name]
+            );
+            return this.idolGraphqlQueries.codegenFile(materialType.t.named);
+          })
           .bind(codegenFile =>
             codegenFile.declaredFragments.map(fragments => [
               fragments,
