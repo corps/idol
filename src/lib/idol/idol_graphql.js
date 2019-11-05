@@ -4,8 +4,12 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.withGraphqlType = withGraphqlType;
+exports.addGraphqlTypeToExpr = addGraphqlTypeToExpr;
+exports.wrapGraphqlExpression = wrapGraphqlExpression;
+exports.importGraphqlExpr = importGraphqlExpr;
 exports.exportedFromGraphQL = exportedFromGraphQL;
-exports.IdolGraphqlFile = exports.IdolGraphqlMethod = exports.IdolGraphqlService = exports.IdolGraphqlScaffoldStruct = exports.IdolGraphqlCodegenScalar = exports.IdolGraphqlCodegenTypeStructDeclaration = exports.IdolGraphQLCodegenTypeStruct = exports.IdolGraphqlCodegenEnum = exports.IdolGraphqlCodegenStruct = exports.IdolGraphqlScaffoldFile = exports.IdolGraphqlCodegenFile = exports.IdolGraphql = void 0;
+exports.IdolGraphqlFile = exports.IdolGraphqlMethod = exports.IdolGraphqlService = exports.IdolGraphqlScaffoldStruct = exports.IdolGraphqlCodegenScalar = exports.IdolGraphqlCodegenTypeStructDeclaration = exports.IdolGraphQLCodegenTypeStruct = exports.IdolGraphqlCodegenEnum = exports.IdolGraphqlCodegenStruct = exports.IdolGraphqlScaffoldFile = exports.IdolGraphqlCodegenFile = exports.IdolGraphqlGeneratorFileContext = exports.IdolGraphql = void 0;
 
 var _path = require("path");
 
@@ -62,6 +66,42 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(source, true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(source).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function withGraphqlType(exported, graphqlTypeName) {
+  return _objectSpread({}, exported, {
+    graphqlTypeName: graphqlTypeName
+  });
+}
+
+function addGraphqlTypeToExpr(expr, t) {
+  var wrapped = expr(t);
+  wrapped.graphqlTypeName = t.graphqlTypeName;
+  return wrapped;
+}
+
+function wrapGraphqlExpression(graphqlExpr, expr, wrapType) {
+  var newType = wrapType(graphqlExpr.graphqlTypeName);
+
+  var wrapper = function wrapper(state, path) {
+    return expr(graphqlExpr(state, path))(state, path);
+  };
+
+  wrapper.graphqlTypeName = newType;
+  return wrapper;
+}
+
+function importGraphqlExpr(exported) {
+  var asIdent = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+  return addGraphqlTypeToExpr(function (_) {
+    return (0, _generators.importExpr)(exported, asIdent);
+  }, exported);
+}
 
 var IdolGraphql =
 /*#__PURE__*/
@@ -121,7 +161,11 @@ function () {
   }, {
     key: "defaultGraphqlTypeName",
     value: function defaultGraphqlTypeName(type, inputTypeVariant) {
-      return type.named.typeName + (inputTypeVariant ? "Input" : "");
+      if (type.named.qualifiedName in this.config.params.scaffoldTypes.obj) {
+        return type.named.typeName + (inputTypeVariant ? "Input" : "");
+      }
+
+      return type.named.asQualifiedIdent + (inputTypeVariant ? "Input" : "");
     }
   }, {
     key: "render",
@@ -133,9 +177,9 @@ function () {
         var scaffoldFile = _this3.scaffoldFile(t.named, false);
 
         if (!scaffoldFile.declaredTypeIdent.isEmpty()) {
-          console.log("Generated ".concat(scaffoldFile.defaultTypeName, " (").concat(i + 1, " / ").concat(scaffoldTypes.length, ")"));
+          console.log("Generated ".concat(scaffoldFile.declaredGraphqlTypeName, " (").concat(i + 1, " / ").concat(scaffoldTypes.length, ")"));
         } else {
-          console.log("Skipped ".concat(scaffoldFile.defaultTypeName, " (").concat(i + 1, " / ").concat(scaffoldTypes.length, ")"));
+          console.log("Skipped ".concat(scaffoldFile.declaredGraphqlTypeName, " (").concat(i + 1, " / ").concat(scaffoldTypes.length, ")"));
         }
       });
       return this.state.render({
@@ -161,17 +205,41 @@ function () {
 
 exports.IdolGraphql = IdolGraphql;
 
-function exportedFromGraphQL(ident) {
+function exportedFromGraphQL(ident, graphqlTypeName) {
   return {
     ident: ident,
-    path: new _generators.Path("graphql")
+    path: new _generators.Path("graphql"),
+    graphqlTypeName: graphqlTypeName
   };
 }
 
-var IdolGraphqlCodegenFile =
+var IdolGraphqlGeneratorFileContext =
 /*#__PURE__*/
 function (_GeneratorFileContext) {
-  _inherits(IdolGraphqlCodegenFile, _GeneratorFileContext);
+  _inherits(IdolGraphqlGeneratorFileContext, _GeneratorFileContext);
+
+  function IdolGraphqlGeneratorFileContext() {
+    _classCallCheck(this, IdolGraphqlGeneratorFileContext);
+
+    return _possibleConstructorReturn(this, _getPrototypeOf(IdolGraphqlGeneratorFileContext).apply(this, arguments));
+  }
+
+  _createClass(IdolGraphqlGeneratorFileContext, [{
+    key: "exportGraphqlType",
+    value: function exportGraphqlType(ident, scriptable, t) {
+      return withGraphqlType(this["export"](ident, scriptable(t)), t.graphqlTypeName);
+    }
+  }]);
+
+  return IdolGraphqlGeneratorFileContext;
+}(_generators.GeneratorFileContext);
+
+exports.IdolGraphqlGeneratorFileContext = IdolGraphqlGeneratorFileContext;
+
+var IdolGraphqlCodegenFile =
+/*#__PURE__*/
+function (_IdolGraphqlGenerator) {
+  _inherits(IdolGraphqlCodegenFile, _IdolGraphqlGenerator);
 
   function IdolGraphqlCodegenFile(idolGraphql, path, type, inputTypeVariant) {
     var _this5;
@@ -203,21 +271,14 @@ function (_GeneratorFileContext) {
   }, {
     key: "defaultTypeIdentName",
     get: function get() {
-      return this.defaultTypeName + "Type";
+      return this.newDeclaration.graphqlTypeName + "Type";
     }
   }, {
-    key: "defaultTypeName",
+    key: "newDeclaration",
     get: function get() {
-      return this.type.named.asQualifiedIdent + (this.inputTypeVariant ? "Input" : "");
-    }
-  }, {
-    key: "defaultGraphQLTypeName",
-    get: function get() {
-      if (this.type.named.qualifiedName in this.config.params.scaffoldTypes.obj) {
-        return this.parent.defaultGraphqlTypeName(this.type, this.inputTypeVariant);
-      }
-
-      return this.defaultTypeName;
+      return {
+        graphqlTypeName: this.parent.defaultGraphqlTypeName(this.type, this.inputTypeVariant)
+      };
     }
   }, {
     key: "defaultFieldsName",
@@ -282,14 +343,14 @@ function (_GeneratorFileContext) {
   }]);
 
   return IdolGraphqlCodegenFile;
-}(_generators.GeneratorFileContext);
+}(IdolGraphqlGeneratorFileContext);
 
 exports.IdolGraphqlCodegenFile = IdolGraphqlCodegenFile;
 
 var IdolGraphqlScaffoldFile =
 /*#__PURE__*/
-function (_GeneratorFileContext2) {
-  _inherits(IdolGraphqlScaffoldFile, _GeneratorFileContext2);
+function (_IdolGraphqlGenerator2) {
+  _inherits(IdolGraphqlScaffoldFile, _IdolGraphqlGenerator2);
 
   function IdolGraphqlScaffoldFile(idolGraphql, path, type, inputVariant) {
     var _this10;
@@ -314,10 +375,10 @@ function (_GeneratorFileContext2) {
   _createClass(IdolGraphqlScaffoldFile, [{
     key: "defaultTypeIdentName",
     get: function get() {
-      return this.defaultTypeName + "Type";
+      return this.declaredGraphqlTypeName + "Type";
     }
   }, {
-    key: "defaultTypeName",
+    key: "declaredGraphqlTypeName",
     get: function get() {
       return this.parent.defaultGraphqlTypeName(this.type, this.inputVariant);
     } // Used exclusively by services.
@@ -355,23 +416,23 @@ function (_GeneratorFileContext2) {
         }).either(codegenFile["enum"].bind(function (e) {
           return e.declaredType;
         })).map(function (declaredType) {
-          return scripter.variable(_this12.importIdent(declaredType));
-        }).map(function (scriptable) {
-          return _this12["export"](_this12.defaultTypeIdentName, scriptable);
+          return _this12.exportGraphqlType(_this12.defaultTypeIdentName, function (dt) {
+            return scripter.variable(_this12.importIdent(dt));
+          }, declaredType);
         }));
       });
     }
   }]);
 
   return IdolGraphqlScaffoldFile;
-}(_generators.GeneratorFileContext);
+}(IdolGraphqlGeneratorFileContext);
 
 exports.IdolGraphqlScaffoldFile = IdolGraphqlScaffoldFile;
 
 var IdolGraphqlCodegenStruct =
 /*#__PURE__*/
-function (_GeneratorFileContext3) {
-  _inherits(IdolGraphqlCodegenStruct, _GeneratorFileContext3);
+function (_IdolGraphqlGenerator3) {
+  _inherits(IdolGraphqlCodegenStruct, _IdolGraphqlGenerator3);
 
   function IdolGraphqlCodegenStruct(codegenFile, fields) {
     var _this13;
@@ -410,21 +471,24 @@ function (_GeneratorFileContext3) {
 
       return (0, _functional.cachedProperty)(this, "declaredType", function () {
         return _this15.declaredFields.map(function (declaredFields) {
-          return _this15["export"](_this15.codegenFile.defaultTypeIdentName, scripter.variable("new " + scripter.invocation(_this15.importIdent(exportedFromGraphQL(_this15.codegenFile.inputTypeVariant ? "GraphQLInputObjectType" : "GraphQLObjectType")), scripter.objLiteral(scripter.propDec("name", scripter.literal(_this15.codegenFile.defaultGraphQLTypeName)), scripter.propDec("description", scripter.literal((0, _generators.getTagValues)(_this15.codegenFile.typeDecon.t.tags, "description").join("\n"))), scripter.propDec("fields", scripter.objLiteral(scripter.spread(_this15.importIdent(declaredFields))))))));
+          return _this15.exportGraphqlType(_this15.codegenFile.defaultTypeIdentName, function (_ref) {
+            var graphqlTypeName = _ref.graphqlTypeName;
+            return scripter.variable("new " + scripter.invocation(_this15.importIdent(exportedFromGraphQL(_this15.codegenFile.inputTypeVariant ? "GraphQLInputObjectType" : "GraphQLObjectType", "")), scripter.objLiteral(scripter.propDec("name", scripter.literal(graphqlTypeName)), scripter.propDec("description", scripter.literal((0, _generators.getTagValues)(_this15.codegenFile.typeDecon.t.tags, "description").join("\n"))), scripter.propDec("fields", scripter.objLiteral(scripter.spread(_this15.importIdent(declaredFields)))))));
+          }, _this15.codegenFile.newDeclaration);
         });
       });
     }
   }]);
 
   return IdolGraphqlCodegenStruct;
-}(_generators.GeneratorFileContext);
+}(IdolGraphqlGeneratorFileContext);
 
 exports.IdolGraphqlCodegenStruct = IdolGraphqlCodegenStruct;
 
 var IdolGraphqlCodegenEnum =
 /*#__PURE__*/
-function (_GeneratorFileContext4) {
-  _inherits(IdolGraphqlCodegenEnum, _GeneratorFileContext4);
+function (_IdolGraphqlGenerator4) {
+  _inherits(IdolGraphqlCodegenEnum, _IdolGraphqlGenerator4);
 
   function IdolGraphqlCodegenEnum(codegenFile, options) {
     var _this16;
@@ -457,16 +521,19 @@ function (_GeneratorFileContext4) {
 
       return (0, _functional.cachedProperty)(this, "declaredType", function () {
         return _this18.declaredEnum.map(function (declaredEnum) {
-          return _this18["export"](_this18.codegenFile.defaultTypeIdentName, function (ident) {
-            return [scripter.variable("new " + scripter.invocation(_this18.importIdent(exportedFromGraphQL("GraphQLEnumType")), scripter.objLiteral(scripter.propDec("name", scripter.literal(_this18.codegenFile.defaultGraphQLTypeName)), scripter.propDec("description", scripter.literal((0, _generators.getTagValues)(_this18.codegenFile.typeDecon.t.tags, "description").join("\n"))), scripter.propDec("values", scripter.invocation(_this18.importIdent(_this18.codegenFile.parent.idolGraphQlFile.wrapValues), _this18.importIdent(declaredEnum))))))(ident)];
-          });
+          return _this18.exportGraphqlType(_this18.codegenFile.defaultTypeIdentName, function (_ref2) {
+            var graphqlTypeName = _ref2.graphqlTypeName;
+            return function (ident) {
+              return [scripter.variable("new " + scripter.invocation(_this18.importIdent(exportedFromGraphQL("GraphQLEnumType", "")), scripter.objLiteral(scripter.propDec("name", scripter.literal(graphqlTypeName)), scripter.propDec("description", scripter.literal((0, _generators.getTagValues)(_this18.codegenFile.typeDecon.t.tags, "description").join("\n"))), scripter.propDec("values", scripter.invocation(_this18.importIdent(_this18.codegenFile.parent.idolGraphQlFile.wrapValues), _this18.importIdent(declaredEnum))))))(ident)];
+            };
+          }, _this18.codegenFile.newDeclaration);
         });
       });
     }
   }]);
 
   return IdolGraphqlCodegenEnum;
-}(_generators.GeneratorFileContext);
+}(IdolGraphqlGeneratorFileContext);
 
 exports.IdolGraphqlCodegenEnum = IdolGraphqlCodegenEnum;
 
@@ -502,7 +569,7 @@ function () {
       var _this19 = this;
 
       return this.tsDecon.getMap().map(function () {
-        return (0, _generators.importExpr)(_this19.idolGraphql.idolGraphQlFile.Anything);
+        return importGraphqlExpr(_this19.idolGraphql.idolGraphQlFile.Anything);
       });
     }
   }, {
@@ -515,9 +582,13 @@ function () {
           return innerScalar.typeExpr;
         });
       }).map(function (scalarExpr) {
-        return function (state, path) {
-          return "new " + scripter.invocation(state.importIdent(path, exportedFromGraphQL("GraphQLList")), scalarExpr(state, path));
-        };
+        return wrapGraphqlExpression(scalarExpr, function (scalarIdent) {
+          return function (state, path) {
+            return "new " + scripter.invocation(state.importIdent(path, exportedFromGraphQL("GraphQLList", "")), scalarIdent);
+          };
+        }, function (type) {
+          return type + "[]";
+        });
       });
     }
   }, {
@@ -556,7 +627,8 @@ function (_IdolGraphQLCodegenTy) {
     _this22 = _possibleConstructorReturn(this, _getPrototypeOf(IdolGraphqlCodegenTypeStructDeclaration).call(this, codegenFile.parent, tsDecon, codegenFile.inputTypeVariant));
     _this22.codegenFile = codegenFile;
     return _this22;
-  }
+  } // Eww, this ought to be a mixin or composition rather than subclass.
+
 
   _createClass(IdolGraphqlCodegenTypeStructDeclaration, [{
     key: "path",
@@ -564,9 +636,14 @@ function (_IdolGraphQLCodegenTy) {
       return this.codegenFile.path;
     }
   }, {
+    key: "exportGraphqlType",
+    get: function get() {
+      return IdolGraphqlGeneratorFileContext.prototype.exportGraphqlType;
+    }
+  }, {
     key: "export",
     get: function get() {
-      return _generators.GeneratorFileContext.prototype["export"];
+      return IdolGraphqlGeneratorFileContext.prototype["export"];
     }
   }, {
     key: "applyExpr",
@@ -580,7 +657,9 @@ function (_IdolGraphQLCodegenTy) {
 
       return (0, _functional.cachedProperty)(this, "declaredType", function () {
         return _this23.typeExpr.map(function (expr) {
-          return _this23["export"](_this23.codegenFile.defaultTypeIdentName, scripter.commented((0, _generators.getTagValues)(_this23.tsDecon.context.typeTags, "description").join("\n"), scripter.variable(_this23.applyExpr(expr))));
+          return _this23.exportGraphqlType(_this23.codegenFile.defaultTypeIdentName, function (expr) {
+            return scripter.commented((0, _generators.getTagValues)(_this23.tsDecon.context.typeTags, "description").join("\n"), scripter.variable(_this23.applyExpr(expr)));
+          }, expr);
         });
       });
     }
@@ -597,14 +676,17 @@ function (_IdolGraphQLCodegenTy) {
 
       return this.tsDecon.getScalar().bind(function (scalar) {
         return scalar.getLiteral();
-      }).map(function (_ref) {
-        var _ref2 = _slicedToArray(_ref, 2),
-            _ = _ref2[0],
-            val = _ref2[1];
+      }).map(function (_ref3) {
+        var _ref4 = _slicedToArray(_ref3, 2),
+            _ = _ref4[0],
+            val = _ref4[1];
 
-        return function (state, path) {
-          return scripter.invocation(state.importIdent(path, _this24.idolGraphql.idolGraphQlFile.LiteralTypeOf), scripter.literal(_this24.codegenFile.defaultTypeName), scripter.literal(val), scripter.literal((0, _generators.getTagValues)(_this24.tsDecon.context.typeTags, "description").join("\n")));
-        };
+        return addGraphqlTypeToExpr(function (_ref5) {
+          var graphqlTypeName = _ref5.graphqlTypeName;
+          return function (state, path) {
+            return scripter.invocation(state.importIdent(path, _this24.idolGraphql.idolGraphQlFile.LiteralTypeOf), scripter.literal(graphqlTypeName), scripter.literal(val), scripter.literal((0, _generators.getTagValues)(_this24.tsDecon.context.typeTags, "description").join("\n")));
+          };
+        }, _this24.codegenFile.newDeclaration);
       });
     }
   }]);
@@ -650,14 +732,14 @@ function () {
         return aliasCodegenFile.bind(function (codegenFile) {
           return codegenFile.declaredTypeIdent;
         }).map(function (codegenType) {
-          return (0, _generators.importExpr)(codegenType, "Codegen" + codegenType.ident);
+          return importGraphqlExpr(codegenType, "Codegen" + codegenType.ident);
         });
       }
 
       return aliasScaffoldFile.bind(function (scaffoldFile) {
         return scaffoldFile.declaredTypeIdent;
       }).map(function (scaffoldType) {
-        return (0, _generators.importExpr)(scaffoldType, "Scaffold" + scaffoldType.ident);
+        return importGraphqlExpr(scaffoldType, "Scaffold" + scaffoldType.ident);
       });
     }
   }, {
@@ -667,15 +749,15 @@ function () {
 
       return this.scalarDecon.getPrimitive().map(function (prim) {
         if (prim === _PrimitiveType.PrimitiveType.ANY) {
-          return (0, _generators.importExpr)(_this26.idolGraphql.idolGraphQlFile.Anything);
+          return importGraphqlExpr(_this26.idolGraphql.idolGraphQlFile.Anything);
         } else if (prim === _PrimitiveType.PrimitiveType.BOOL) {
-          return (0, _generators.importExpr)(exportedFromGraphQL("GraphQLBoolean"));
+          return importGraphqlExpr(exportedFromGraphQL("GraphQLBoolean", "Boolean"));
         } else if (prim === _PrimitiveType.PrimitiveType.DOUBLE) {
-          return (0, _generators.importExpr)(exportedFromGraphQL("GraphQLFloat"));
+          return importGraphqlExpr(exportedFromGraphQL("GraphQLFloat", "Float"));
         } else if (prim === _PrimitiveType.PrimitiveType.INT) {
-          return (0, _generators.importExpr)(exportedFromGraphQL("GraphQLInt"));
+          return importGraphqlExpr(exportedFromGraphQL("GraphQLInt", "Int"));
         } else if (prim === _PrimitiveType.PrimitiveType.STRING) {
-          return (0, _generators.importExpr)(exportedFromGraphQL("GraphQLString"));
+          return importGraphqlExpr(exportedFromGraphQL("GraphQLString", "String"));
         }
 
         throw new Error("Unexpected primitive type ".concat(prim));
@@ -690,8 +772,8 @@ exports.IdolGraphqlCodegenScalar = IdolGraphqlCodegenScalar;
 
 var IdolGraphqlScaffoldStruct =
 /*#__PURE__*/
-function (_GeneratorFileContext5) {
-  _inherits(IdolGraphqlScaffoldStruct, _GeneratorFileContext5);
+function (_IdolGraphqlGenerator5) {
+  _inherits(IdolGraphqlScaffoldStruct, _IdolGraphqlGenerator5);
 
   function IdolGraphqlScaffoldStruct(scaffoldFile, fields) {
     var _this27;
@@ -719,14 +801,17 @@ function (_GeneratorFileContext5) {
 
       return (0, _functional.cachedProperty)(this, "declaredType", function () {
         return _this28.declaredFields.map(function (declaredFields) {
-          return _this28["export"](_this28.scaffoldFile.defaultTypeIdentName, scripter.variable("new " + scripter.invocation(_this28.importIdent(exportedFromGraphQL(_this28.scaffoldFile.inputVariant ? "GraphQLInputObjectType" : "GraphQLObjectType")), scripter.objLiteral(scripter.propDec("name", scripter.literal(_this28.scaffoldFile.defaultTypeName)), scripter.propDec("description", scripter.literal((0, _generators.getTagValues)(_this28.scaffoldFile.typeDecon.t.tags, "description").join("\n"))), scripter.propDec("fields", scripter.objLiteral(scripter.spread(_this28.applyExpr(declaredFields))))))));
+          return _this28.exportGraphqlType(_this28.scaffoldFile.defaultTypeIdentName, function (_ref6) {
+            var graphqlTypeName = _ref6.graphqlTypeName;
+            return scripter.variable("new " + scripter.invocation(_this28.importIdent(exportedFromGraphQL(_this28.scaffoldFile.inputVariant ? "GraphQLInputObjectType" : "GraphQLObjectType", "")), scripter.objLiteral(scripter.propDec("name", scripter.literal(graphqlTypeName)), scripter.propDec("description", scripter.literal((0, _generators.getTagValues)(_this28.scaffoldFile.typeDecon.t.tags, "description").join("\n"))), scripter.propDec("fields", scripter.objLiteral(scripter.spread(_this28.applyExpr(declaredFields)))))));
+          }, _this28.codegenFile.newDeclaration);
         });
       });
     }
   }]);
 
   return IdolGraphqlScaffoldStruct;
-}(_generators.GeneratorFileContext);
+}(IdolGraphqlGeneratorFileContext);
 
 exports.IdolGraphqlScaffoldStruct = IdolGraphqlScaffoldStruct;
 
@@ -844,7 +929,7 @@ function (_ExternFileContext) {
   }, {
     key: "Anything",
     get: function get() {
-      return this.exportExtern("Anything");
+      return withGraphqlType(this.exportExtern("Anything"), "IdolGraphQLAnything");
     }
   }, {
     key: "LiteralTypeOf",

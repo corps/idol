@@ -62,9 +62,7 @@ export class SchemaType {
   // canonical resident values.
   // Exclusive with is_a and fields.
   get options() {
-    return List.of(Primitive.of("string"), { atleastOne: false }).wrap(
-      this._original["options"]
-    );
+    return List.of(Primitive.of("string"), { atleastOne: false }).wrap(this._original["options"]);
   }
   set options(val) {
     this._original["options"] = List.of(Primitive.of("string"), {
@@ -77,9 +75,7 @@ export class SchemaType {
   // In general, however, tags are considred optional and should not be required to
   // deserialize \/ serializeconsume correct logical values.
   get tags() {
-    return List.of(Primitive.of("string"), { atleastOne: false }).wrap(
-      this._original["tags"]
-    );
+    return List.of(Primitive.of("string"), { atleastOne: false }).wrap(this._original["tags"]);
   }
   set tags(val) {
     this._original["tags"] = List.of(Primitive.of("string"), {

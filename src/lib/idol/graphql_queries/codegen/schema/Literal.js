@@ -5,10 +5,12 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.SchemaLiteralFragment = void 0;
 
-var _graphqlTag = require("graphql-tag");
+var _graphqlTag = _interopRequireDefault(require("graphql-tag"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
 function _templateObject() {
-  var data = _taggedTemplateLiteral(["\n  fragment LiteralFields on Literal {\n    bool\n    double\n    int\n    string\n  }\n"]);
+  var data = _taggedTemplateLiteral(["\n  fragment SchemaLiteralFields on SchemaLiteral {\n    bool\n    double\n    int\n    string\n  }\n"]);
 
   _templateObject = function _templateObject() {
     return data;
@@ -19,5 +21,5 @@ function _templateObject() {
 
 function _taggedTemplateLiteral(strings, raw) { if (!raw) { raw = strings.slice(0); } return Object.freeze(Object.defineProperties(strings, { raw: { value: Object.freeze(raw) } })); }
 
-var SchemaLiteralFragment = (0, _graphqlTag.gql)(_templateObject());
+var SchemaLiteralFragment = (0, _graphqlTag["default"])(_templateObject());
 exports.SchemaLiteralFragment = SchemaLiteralFragment;

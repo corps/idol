@@ -6,12 +6,12 @@ import {
 } from "../../codegen/all/optional/Assembled";
 
 export const AssembledOptionalType = new GraphQLObjectType({
-  name: "AssembledOptional",
+  name: "AllOptionalAssembled",
   description: "",
   fields: { ...AllOptionalAssembledFields }
 });
 export const AssembledOptionalInputType = new GraphQLInputObjectType({
-  name: "AssembledOptionalInput",
+  name: "AllOptionalAssembledInput",
   description: "",
   fields: { ...AllOptionalAssembledInputFields }
 });

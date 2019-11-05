@@ -83,11 +83,11 @@ export class ImportPath {
   }
 }
 
-export type Exported = {
-  path: Path,
-  ident: string,
-  isType?: boolean
-};
+export interface Exported {
+  path: Path;
+  ident: string;
+  isType?: boolean;
+}
 
 export type GeneratorParams = {
   allModules: OrderedObj<Module>,
@@ -479,17 +479,26 @@ export class ImportsAcc {
               );
             }
 
-            const nonTypeDecons =
-              [...decons.mapIntoIterable((fromIdent, intoIdents) => {
-                if (fromIdent === '@@default' || fromIdent in typeDecons.obj) return null;
-                return intoIdents.items.map(asIdent => `${fromIdent} as ${asIdent}`).join(', ');
-              })].filter(Boolean);
+            const nonTypeDecons = [
+              ...decons.mapIntoIterable((fromIdent, intoIdents) => {
+                if (fromIdent === "@@default" || fromIdent in typeDecons.obj) return null;
+                return intoIdents.items.map(asIdent => `${fromIdent} as ${asIdent}`).join(", ");
+              })
+            ].filter(Boolean);
 
-            const defaultDecon = decons.get("@@default").map(intoIdents => intoIdents.items.map(asIdent => `${asIdent}`).join(', '));
+            const defaultDecon = decons
+              .get("@@default")
+              .map(intoIdents => intoIdents.items.map(asIdent => `${asIdent}`).join(", "));
 
             if (nonTypeDecons.length || !defaultDecon.isEmpty()) {
               lines.push(
-                  defaultDecon.isEmpty() ? scripter.importDecon(importPath, ...nonTypeDecons) : scripter.importDeconWithDefault(importPath, defaultDecon.unwrap(), ...nonTypeDecons)
+                defaultDecon.isEmpty()
+                  ? scripter.importDecon(importPath, ...nonTypeDecons)
+                  : scripter.importDeconWithDefault(
+                      importPath,
+                      defaultDecon.unwrap(),
+                      ...nonTypeDecons
+                    )
               );
             }
 
@@ -648,7 +657,9 @@ export class GeneratorAcc {
   }
 }
 
-export type Expression = (state: GeneratorAcc, path: Path) => string;
+export interface Expression {
+  (state: GeneratorAcc, path: Path): string;
+}
 
 export function wrapExpression(expr: Expression, wrapper: string => string): Expression {
   return (state: GeneratorAcc, path: Path) => wrapper(expr(state, path));

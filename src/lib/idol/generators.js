@@ -663,16 +663,16 @@ function () {
           }
 
           var nonTypeDecons = _toConsumableArray(decons.mapIntoIterable(function (fromIdent, intoIdents) {
-            if (fromIdent === '@@default' || fromIdent in typeDecons.obj) return null;
+            if (fromIdent === "@@default" || fromIdent in typeDecons.obj) return null;
             return intoIdents.items.map(function (asIdent) {
               return "".concat(fromIdent, " as ").concat(asIdent);
-            }).join(', ');
+            }).join(", ");
           })).filter(Boolean);
 
           var defaultDecon = decons.get("@@default").map(function (intoIdents) {
             return intoIdents.items.map(function (asIdent) {
               return "".concat(asIdent);
-            }).join(', ');
+            }).join(", ");
           });
 
           if (nonTypeDecons.length || !defaultDecon.isEmpty()) {

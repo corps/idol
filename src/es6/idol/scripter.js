@@ -155,7 +155,11 @@ export function arrayLiteral(...vals: string[]): string {
   return `[${vals.join(",")}]`;
 }
 
-export function importDeconWithDefault(from: string, defaultDecon: string, ...deconstructors: string[]) {
+export function importDeconWithDefault(
+  from: string,
+  defaultDecon: string,
+  ...deconstructors: string[]
+) {
   const decons = deconstructors.length ? `, {${deconstructors.join(", ")}}` : "";
   return `import ${defaultDecon}${decons} from ${JSON.stringify(from)}`;
 }

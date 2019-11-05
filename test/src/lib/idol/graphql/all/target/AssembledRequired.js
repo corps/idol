@@ -3,7 +3,7 @@ import { GraphQLObjectType } from "graphql";
 import { AllRequiredAssembledFields } from "../../codegen/all/required/Assembled";
 
 export const AssembledRequiredType = new GraphQLObjectType({
-  name: "AssembledRequired",
+  name: "AllRequiredAssembled",
   description: "",
   fields: { ...AllRequiredAssembledFields }
 });

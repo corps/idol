@@ -24,6 +24,53 @@ import type { Exported, Expression, GeneratorContext } from "./generators";
 import { Alt, cachedProperty, OrderedObj } from "./functional";
 import { PrimitiveType } from "./js/schema/PrimitiveType";
 
+export interface ExportedGraphqlType extends Exported {
+  graphqlTypeName: string;
+}
+
+export interface GraphqlTypeExpression extends Expression {
+  (state: GeneratorAcc, path: Path): string;
+  graphqlTypeName: string;
+}
+
+export interface HasGraphqlTypeName {
+  graphqlTypeName: string;
+}
+
+export function withGraphqlType(exported: Exported, graphqlTypeName: string): ExportedGraphqlType {
+  return ({ ...exported, graphqlTypeName }: any);
+}
+
+export function addGraphqlTypeToExpr<T: HasGraphqlTypeName>(
+  expr: T => Expression,
+  t: T
+): GraphqlTypeExpression {
+  const wrapped: any = expr(t);
+  wrapped.graphqlTypeName = t.graphqlTypeName;
+  return wrapped;
+}
+
+export function wrapGraphqlExpression(
+  graphqlExpr: GraphqlTypeExpression,
+  expr: string => Expression,
+  wrapType: string => string
+): GraphqlTypeExpression {
+  const newType = wrapType(graphqlExpr.graphqlTypeName);
+  const wrapper: any = (state: GeneratorAcc, path: Path) => {
+    return expr(graphqlExpr(state, path))(state, path);
+  };
+
+  wrapper.graphqlTypeName = newType;
+  return wrapper;
+}
+
+export function importGraphqlExpr(
+  exported: ExportedGraphqlType,
+  asIdent: string | null = null
+): GraphqlTypeExpression {
+  return addGraphqlTypeToExpr(_ => importExpr(exported, asIdent), exported);
+}
+
 export class IdolGraphql implements GeneratorContext {
   config: GeneratorConfig;
   state: GeneratorAcc;
@@ -95,7 +142,11 @@ export class IdolGraphql implements GeneratorContext {
   }
 
   defaultGraphqlTypeName(type: Type, inputTypeVariant: boolean): string {
-    return type.named.typeName + (inputTypeVariant ? "Input" : "");
+    if (type.named.qualifiedName in this.config.params.scaffoldTypes.obj) {
+      return type.named.typeName + (inputTypeVariant ? "Input" : "");
+    }
+
+    return type.named.asQualifiedIdent + (inputTypeVariant ? "Input" : "");
   }
 
   render(): OrderedObj<string> {
@@ -104,10 +155,12 @@ export class IdolGraphql implements GeneratorContext {
       const scaffoldFile = this.scaffoldFile(t.named, false);
       if (!scaffoldFile.declaredTypeIdent.isEmpty()) {
         console.log(
-          `Generated ${scaffoldFile.defaultTypeName} (${i + 1} / ${scaffoldTypes.length})`
+          `Generated ${scaffoldFile.declaredGraphqlTypeName} (${i + 1} / ${scaffoldTypes.length})`
         );
       } else {
-        console.log(`Skipped ${scaffoldFile.defaultTypeName} (${i + 1} / ${scaffoldTypes.length})`);
+        console.log(
+          `Skipped ${scaffoldFile.declaredGraphqlTypeName} (${i + 1} / ${scaffoldTypes.length})`
+        );
       }
     });
 
@@ -120,14 +173,25 @@ export class IdolGraphql implements GeneratorContext {
   }
 }
 
-export function exportedFromGraphQL(ident: string): Exported {
+export function exportedFromGraphQL(ident: string, graphqlTypeName: string): ExportedGraphqlType {
   return {
     ident,
-    path: new Path("graphql")
+    path: new Path("graphql"),
+    graphqlTypeName
   };
 }
 
-export class IdolGraphqlCodegenFile extends GeneratorFileContext<IdolGraphql> {
+export class IdolGraphqlGeneratorFileContext extends GeneratorFileContext<IdolGraphql> {
+  exportGraphqlType<T: HasGraphqlTypeName>(
+    ident: string,
+    scriptable: T => string => string | Array<string>,
+    t: T
+  ): ExportedGraphqlType {
+    return withGraphqlType(this.export(ident, scriptable(t)), t.graphqlTypeName);
+  }
+}
+
+export class IdolGraphqlCodegenFile extends IdolGraphqlGeneratorFileContext {
   typeDecon: TypeDeconstructor;
   inputTypeVariant: boolean;
 
@@ -150,19 +214,13 @@ export class IdolGraphqlCodegenFile extends GeneratorFileContext<IdolGraphql> {
   }
 
   get defaultTypeIdentName(): string {
-    return this.defaultTypeName + "Type";
+    return this.newDeclaration.graphqlTypeName + "Type";
   }
 
-  get defaultTypeName(): string {
-    return this.type.named.asQualifiedIdent + (this.inputTypeVariant ? "Input" : "");
-  }
-
-  get defaultGraphQLTypeName(): string {
-    if (this.type.named.qualifiedName in this.config.params.scaffoldTypes.obj) {
-      return this.parent.defaultGraphqlTypeName(this.type, this.inputTypeVariant);
-    }
-
-    return this.defaultTypeName;
+  get newDeclaration(): HasGraphqlTypeName {
+    return {
+      graphqlTypeName: this.parent.defaultGraphqlTypeName(this.type, this.inputTypeVariant)
+    };
   }
 
   get defaultFieldsName(): string {
@@ -173,7 +231,7 @@ export class IdolGraphqlCodegenFile extends GeneratorFileContext<IdolGraphql> {
     return this.type.named.asQualifiedIdent;
   }
 
-  get declaredTypeIdent(): Alt<Exported> {
+  get declaredTypeIdent(): Alt<ExportedGraphqlType> {
     return cachedProperty(this, "declaredTypeIdent", () => {
       return this.enum
         .bind(e => e.declaredType)
@@ -214,7 +272,7 @@ export class IdolGraphqlCodegenFile extends GeneratorFileContext<IdolGraphql> {
   }
 }
 
-export class IdolGraphqlScaffoldFile extends GeneratorFileContext<IdolGraphql> {
+export class IdolGraphqlScaffoldFile extends IdolGraphqlGeneratorFileContext {
   typeDecon: TypeDeconstructor;
   type: Type;
   inputVariant: boolean;
@@ -234,10 +292,10 @@ export class IdolGraphqlScaffoldFile extends GeneratorFileContext<IdolGraphql> {
   }
 
   get defaultTypeIdentName() {
-    return this.defaultTypeName + "Type";
+    return this.declaredGraphqlTypeName + "Type";
   }
 
-  get defaultTypeName() {
+  get declaredGraphqlTypeName() {
     return this.parent.defaultGraphqlTypeName(this.type, this.inputVariant);
   }
 
@@ -264,7 +322,7 @@ export class IdolGraphqlScaffoldFile extends GeneratorFileContext<IdolGraphql> {
     );
   }
 
-  get declaredTypeIdent(): Alt<Exported> {
+  get declaredTypeIdent(): Alt<ExportedGraphqlType> {
     return cachedProperty(this, "declaredTypeIdent", () => {
       const codegenFile = this.parent.codegenFile(this.typeDecon.t.named, this.inputVariant);
       return this.struct
@@ -273,14 +331,19 @@ export class IdolGraphqlScaffoldFile extends GeneratorFileContext<IdolGraphql> {
           codegenFile.typeStruct
             .bind(ts => ts.declaredType)
             .either(codegenFile.enum.bind(e => e.declaredType))
-            .map(declaredType => scripter.variable(this.importIdent(declaredType)))
-            .map(scriptable => this.export(this.defaultTypeIdentName, scriptable))
+            .map(declaredType =>
+              this.exportGraphqlType(
+                this.defaultTypeIdentName,
+                dt => scripter.variable(this.importIdent(dt)),
+                declaredType
+              )
+            )
         );
     });
   }
 }
 
-export class IdolGraphqlCodegenStruct extends GeneratorFileContext<IdolGraphql> {
+export class IdolGraphqlCodegenStruct extends IdolGraphqlGeneratorFileContext {
   fields: OrderedObj<IdolGraphQLCodegenTypeStruct>;
   codegenFile: IdolGraphqlCodegenFile;
 
@@ -333,46 +396,46 @@ export class IdolGraphqlCodegenStruct extends GeneratorFileContext<IdolGraphql> 
     });
   }
 
-  get declaredType(): Alt<Exported> {
+  get declaredType(): Alt<ExportedGraphqlType> {
     return cachedProperty(this, "declaredType", () => {
       return this.declaredFields.map(declaredFields =>
-        this.export(
+        this.exportGraphqlType(
           this.codegenFile.defaultTypeIdentName,
-          scripter.variable(
-            "new " +
-              scripter.invocation(
-                this.importIdent(
-                  exportedFromGraphQL(
-                    this.codegenFile.inputTypeVariant
-                      ? "GraphQLInputObjectType"
-                      : "GraphQLObjectType"
-                  )
-                ),
-                scripter.objLiteral(
-                  scripter.propDec(
-                    "name",
-                    scripter.literal(this.codegenFile.defaultGraphQLTypeName)
-                  ),
-                  scripter.propDec(
-                    "description",
-                    scripter.literal(
-                      getTagValues(this.codegenFile.typeDecon.t.tags, "description").join("\n")
+          ({ graphqlTypeName }) =>
+            scripter.variable(
+              "new " +
+                scripter.invocation(
+                  this.importIdent(
+                    exportedFromGraphQL(
+                      this.codegenFile.inputTypeVariant
+                        ? "GraphQLInputObjectType"
+                        : "GraphQLObjectType",
+                      ""
                     )
                   ),
-                  scripter.propDec(
-                    "fields",
-                    scripter.objLiteral(scripter.spread(this.importIdent(declaredFields)))
+                  scripter.objLiteral(
+                    scripter.propDec("name", scripter.literal(graphqlTypeName)),
+                    scripter.propDec(
+                      "description",
+                      scripter.literal(
+                        getTagValues(this.codegenFile.typeDecon.t.tags, "description").join("\n")
+                      )
+                    ),
+                    scripter.propDec(
+                      "fields",
+                      scripter.objLiteral(scripter.spread(this.importIdent(declaredFields)))
+                    )
                   )
                 )
-              )
-          )
+            ),
+          this.codegenFile.newDeclaration
         )
       );
     });
   }
 }
 
-export class IdolGraphqlCodegenEnum extends GeneratorFileContext<IdolGraphql> {
+export class IdolGraphqlCodegenEnum extends IdolGraphqlGeneratorFileContext {
   options: string[];
   codegenFile: IdolGraphqlCodegenFile;
 
@@ -401,36 +464,37 @@ export class IdolGraphqlCodegenEnum extends GeneratorFileContext<IdolGraphql> {
     );
   }
 
-  get declaredType(): Alt<Exported> {
+  get declaredType(): Alt<ExportedGraphqlType> {
     return cachedProperty(this, "declaredType", () =>
       this.declaredEnum.map(declaredEnum =>
-        this.export(this.codegenFile.defaultTypeIdentName, ident => [
-          scripter.variable(
-            "new " +
-              scripter.invocation(
-                this.importIdent(exportedFromGraphQL("GraphQLEnumType")),
-                scripter.objLiteral(
-                  scripter.propDec(
-                    "name",
-                    scripter.literal(this.codegenFile.defaultGraphQLTypeName)
-                  ),
-                  scripter.propDec(
-                    "description",
-                    scripter.literal(
-                      getTagValues(this.codegenFile.typeDecon.t.tags, "description").join("\n")
-                    )
-                  ),
-                  scripter.propDec(
-                    "values",
-                    scripter.invocation(
-                      this.importIdent(this.codegenFile.parent.idolGraphQlFile.wrapValues),
-                      this.importIdent(declaredEnum)
+        this.exportGraphqlType(
+          this.codegenFile.defaultTypeIdentName,
+          ({ graphqlTypeName }) => ident => [
+            scripter.variable(
+              "new " +
+                scripter.invocation(
+                  this.importIdent(exportedFromGraphQL("GraphQLEnumType", "")),
+                  scripter.objLiteral(
+                    scripter.propDec("name", scripter.literal(graphqlTypeName)),
+                    scripter.propDec(
+                      "description",
+                      scripter.literal(
+                        getTagValues(this.codegenFile.typeDecon.t.tags, "description").join("\n")
+                      )
+                    ),
+                    scripter.propDec(
+                      "values",
+                      scripter.invocation(
+                        this.importIdent(this.codegenFile.parent.idolGraphQlFile.wrapValues),
+                        this.importIdent(declaredEnum)
+                      )
                     )
                   )
                 )
-              )
-          )(ident)
-        ])
+            )(ident)
+          ],
+          this.codegenFile.newDeclaration
+        )
       )
     );
   }
@@ -451,33 +515,40 @@ export class IdolGraphQLCodegenTypeStruct implements GeneratorContext {
     this.inputVariant = inputVariant;
   }
 
-  get typeExpr(): Alt<Expression> {
+  get typeExpr(): Alt<GraphqlTypeExpression> {
     return this.scalarTypeExpr.concat(this.collectionTypeExpr);
   }
 
-  get scalarTypeExpr(): Alt<Expression> {
+  get scalarTypeExpr(): Alt<GraphqlTypeExpression> {
     if (this.tsDecon.getScalar().isEmpty()) return Alt.empty();
     return this.innerScalar.bind(scalar => scalar.typeExpr);
   }
 
-  get mapTypeExpr(): Alt<Expression> {
-    return this.tsDecon.getMap().map(() => importExpr(this.idolGraphql.idolGraphQlFile.Anything));
+  get mapTypeExpr(): Alt<GraphqlTypeExpression> {
+    return this.tsDecon
+      .getMap()
+      .map(() => importGraphqlExpr(this.idolGraphql.idolGraphQlFile.Anything));
   }
 
-  get repeatedTypeExpr(): Alt<Expression> {
+  get repeatedTypeExpr(): Alt<GraphqlTypeExpression> {
     return this.tsDecon
       .getRepeated()
       .bind(() => this.innerScalar.bind(innerScalar => innerScalar.typeExpr))
-      .map(scalarExpr => (state: GeneratorAcc, path: Path): string =>
-        "new " +
-        scripter.invocation(
-          state.importIdent(path, exportedFromGraphQL("GraphQLList")),
-          scalarExpr(state, path)
+      .map(scalarExpr =>
+        wrapGraphqlExpression(
+          scalarExpr,
+          scalarIdent => (state: GeneratorAcc, path: Path): string =>
+            "new " +
+            scripter.invocation(
+              state.importIdent(path, exportedFromGraphQL("GraphQLList", "")),
+              scalarIdent
+            ),
+          type => type + "[]"
         )
       );
   }
 
-  get collectionTypeExpr(): Alt<Expression> {
+  get collectionTypeExpr(): Alt<GraphqlTypeExpression> {
     return this.mapTypeExpr.either(this.repeatedTypeExpr);
   }
 
@@ -503,49 +574,63 @@ export class IdolGraphqlCodegenTypeStructDeclaration extends IdolGraphQLCodegenT
     this.codegenFile = codegenFile;
   }
 
+  // Eww, this ought to be a mixin or composition rather than subclass.
   get path(): Path {
     return this.codegenFile.path;
   }
 
+  get exportGraphqlType() {
+    return IdolGraphqlGeneratorFileContext.prototype.exportGraphqlType;
+  }
+
   get export() {
-    return GeneratorFileContext.prototype.export;
+    return IdolGraphqlGeneratorFileContext.prototype.export;
   }
 
   get applyExpr() {
     return GeneratorFileContext.prototype.applyExpr;
   }
 
-  get declaredType(): Alt<Exported> {
+  get declaredType(): Alt<ExportedGraphqlType> {
     return cachedProperty(this, "declaredType", () =>
       this.typeExpr.map(expr => {
-        return this.export(
+        return this.exportGraphqlType(
           this.codegenFile.defaultTypeIdentName,
-          scripter.commented(
-            getTagValues(this.tsDecon.context.typeTags, "description").join("\n"),
-            scripter.variable(this.applyExpr(expr))
-          )
+          expr =>
+            scripter.commented(
+              getTagValues(this.tsDecon.context.typeTags, "description").join("\n"),
+              scripter.variable(this.applyExpr(expr))
+            ),
+          expr
         );
       })
     );
   }
 
-  get scalarTypeExpr(): Alt<Expression> {
+  get scalarTypeExpr(): Alt<GraphqlTypeExpression> {
     if (this.tsDecon.getScalar().isEmpty()) return Alt.empty();
     return super.scalarTypeExpr.either(this.literalTypeExpr);
   }
 
-  get literalTypeExpr(): Alt<Expression> {
+  get literalTypeExpr(): Alt<GraphqlTypeExpression> {
     return this.tsDecon
       .getScalar()
       .bind(scalar => scalar.getLiteral())
-      .map(([_, val]) => (state: GeneratorAcc, path: Path) => {
-        return scripter.invocation(
-          state.importIdent(path, this.idolGraphql.idolGraphQlFile.LiteralTypeOf),
-          scripter.literal(this.codegenFile.defaultTypeName),
-          scripter.literal(val),
-          scripter.literal(getTagValues(this.tsDecon.context.typeTags, "description").join("\n"))
-        );
-      });
+      .map(([_, val]) =>
+        addGraphqlTypeToExpr(
+          ({ graphqlTypeName }) => (state: GeneratorAcc, path: Path) => {
+            return scripter.invocation(
+              state.importIdent(path, this.idolGraphql.idolGraphQlFile.LiteralTypeOf),
+              scripter.literal(graphqlTypeName),
+              scripter.literal(val),
+              scripter.literal(
+                getTagValues(this.tsDecon.context.typeTags, "description").join("\n")
+              )
+            );
+          },
+          this.codegenFile.newDeclaration
+        )
+      );
   }
 }
 
@@ -564,11 +649,11 @@ export class IdolGraphqlCodegenScalar implements GeneratorContext {
     this.inputVariant = inputVariant;
   }
 
-  get typeExpr(): Alt<Expression> {
+  get typeExpr(): Alt<GraphqlTypeExpression> {
     return this.referenceImportExpr.either(this.primTypeExpr);
   }
 
-  get referenceImportExpr(): Alt<Expression> {
+  get referenceImportExpr(): Alt<GraphqlTypeExpression> {
     const aliasScaffoldFile = this.scalarDecon
       .getAlias()
       .filter(ref => ref.qualified_name in this.config.params.scaffoldTypes.obj)
@@ -580,26 +665,26 @@ export class IdolGraphqlCodegenScalar implements GeneratorContext {
         .map(ref => this.idolGraphql.codegenFile(ref, this.inputVariant));
       return aliasCodegenFile
         .bind(codegenFile => codegenFile.declaredTypeIdent)
-        .map(codegenType => importExpr(codegenType, "Codegen" + codegenType.ident));
+        .map(codegenType => importGraphqlExpr(codegenType, "Codegen" + codegenType.ident));
     }
 
     return aliasScaffoldFile
       .bind(scaffoldFile => scaffoldFile.declaredTypeIdent)
-      .map(scaffoldType => importExpr(scaffoldType, "Scaffold" + scaffoldType.ident));
+      .map(scaffoldType => importGraphqlExpr(scaffoldType, "Scaffold" + scaffoldType.ident));
   }
 
-  get primTypeExpr(): Alt<Expression> {
+  get primTypeExpr(): Alt<GraphqlTypeExpression> {
     return this.scalarDecon.getPrimitive().map(prim => {
       if (prim === PrimitiveType.ANY) {
-        return importExpr(this.idolGraphql.idolGraphQlFile.Anything);
+        return importGraphqlExpr(this.idolGraphql.idolGraphQlFile.Anything);
       } else if (prim === PrimitiveType.BOOL) {
-        return importExpr(exportedFromGraphQL("GraphQLBoolean"));
+        return importGraphqlExpr(exportedFromGraphQL("GraphQLBoolean", "Boolean"));
       } else if (prim === PrimitiveType.DOUBLE) {
-        return importExpr(exportedFromGraphQL("GraphQLFloat"));
+        return importGraphqlExpr(exportedFromGraphQL("GraphQLFloat", "Float"));
       } else if (prim === PrimitiveType.INT) {
-        return importExpr(exportedFromGraphQL("GraphQLInt"));
+        return importGraphqlExpr(exportedFromGraphQL("GraphQLInt", "Int"));
       } else if (prim === PrimitiveType.STRING) {
-        return importExpr(exportedFromGraphQL("GraphQLString"));
+        return importGraphqlExpr(exportedFromGraphQL("GraphQLString", "String"));
       }
 
       throw new Error(`Unexpected primitive type ${prim}`);
@@ -607,7 +692,7 @@ export class IdolGraphqlCodegenScalar implements GeneratorContext {
   }
 }
 
-export class IdolGraphqlScaffoldStruct extends GeneratorFileContext<IdolGraphql> {
+export class IdolGraphqlScaffoldStruct extends IdolGraphqlGeneratorFileContext {
   fields: OrderedObj<IdolGraphQLCodegenTypeStruct>;
   codegenFile: IdolGraphqlCodegenFile;
   scaffoldFile: IdolGraphqlScaffoldFile;
@@ -629,34 +714,39 @@ export class IdolGraphqlScaffoldStruct extends GeneratorFileContext<IdolGraphql>
     return this.codegenFile.struct.bind(struct => struct.declaredFields).map(importExpr);
   }
 
-  get declaredType(): Alt<Exported> {
+  get declaredType(): Alt<ExportedGraphqlType> {
     return cachedProperty(this, "declaredType", () => {
       return this.declaredFields.map(declaredFields =>
-        this.export(
+        this.exportGraphqlType(
           this.scaffoldFile.defaultTypeIdentName,
-          scripter.variable(
-            "new " +
-              scripter.invocation(
-                this.importIdent(
-                  exportedFromGraphQL(
-                    this.scaffoldFile.inputVariant ? "GraphQLInputObjectType" : "GraphQLObjectType"
-                  )
-                ),
-                scripter.objLiteral(
-                  scripter.propDec("name", scripter.literal(this.scaffoldFile.defaultTypeName)),
-                  scripter.propDec(
-                    "description",
-                    scripter.literal(
-                      getTagValues(this.scaffoldFile.typeDecon.t.tags, "description").join("\n")
+          ({ graphqlTypeName }) =>
+            scripter.variable(
+              "new " +
+                scripter.invocation(
+                  this.importIdent(
+                    exportedFromGraphQL(
+                      this.scaffoldFile.inputVariant
+                        ? "GraphQLInputObjectType"
+                        : "GraphQLObjectType",
+                      ""
                     )
                   ),
-                  scripter.propDec(
-                    "fields",
-                    scripter.objLiteral(scripter.spread(this.applyExpr(declaredFields)))
+                  scripter.objLiteral(
+                    scripter.propDec("name", scripter.literal(graphqlTypeName)),
+                    scripter.propDec(
+                      "description",
+                      scripter.literal(
+                        getTagValues(this.scaffoldFile.typeDecon.t.tags, "description").join("\n")
+                      )
+                    ),
+                    scripter.propDec(
+                      "fields",
+                      scripter.objLiteral(scripter.spread(this.applyExpr(declaredFields)))
+                    )
                   )
                 )
-              )
-          )
+            ),
+          this.codegenFile.newDeclaration
         )
       );
     });
@@ -713,7 +803,7 @@ export class IdolGraphqlMethod implements GeneratorContext {
 
   get methodExpr(): Alt<Expression> {
     return this.tDecon.getStruct().bind(fields => {
-      const outputTypeExpr: Alt<Expression> = fields
+      const outputTypeExpr: Alt<GraphqlTypeExpression> = fields
         .get("output")
         .bind(
           outputTs => new IdolGraphQLCodegenTypeStruct(this.idolGraphql, outputTs, false).typeExpr
@@ -767,8 +857,8 @@ export class IdolGraphqlFile extends ExternFileContext<IdolGraphql> {
     return this.exportExtern("wrapValues");
   }
 
-  get Anything(): Exported {
-    return this.exportExtern("Anything");
+  get Anything(): ExportedGraphqlType {
+    return withGraphqlType(this.exportExtern("Anything"), "IdolGraphQLAnything");
   }
 
   get LiteralTypeOf(): Exported {

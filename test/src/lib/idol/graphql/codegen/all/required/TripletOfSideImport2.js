@@ -4,12 +4,12 @@ import {
   TestsAbsThreeSideImport2Type as CodegenTestsAbsThreeSideImport2Type,
   TestsAbsThreeSideImport2InputType as CodegenTestsAbsThreeSideImport2InputType
 } from "../../tests/abs/three/SideImport2";
+import { TestsBasicTestLiteralTopType as CodegenTestsBasicTestLiteralTopType } from "../../tests/basic/TestLiteralTop";
 import {
   GraphQLList,
   GraphQLObjectType,
   GraphQLInputObjectType
 } from "graphql";
-import { TestsBasicTestLiteralTopType as CodegenTestsBasicTestLiteralTopType } from "../../tests/basic/TestLiteralTop";
 import { Anything } from "../../__idol_graphql__";
 
 export const AllRequiredTripletOfSideImport2Fields = {
