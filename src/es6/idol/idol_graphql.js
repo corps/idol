@@ -850,7 +850,7 @@ export class IdolGraphqlMethod implements GeneratorContext {
 
 export class IdolGraphqlFile extends ExternFileContext<IdolGraphql> {
   constructor(parent: IdolGraphql, path: Path) {
-    super(resolve(__dirname, "../../lib/idol/__idol_graphql__.js"), parent, path);
+    super(resolve(__dirname, "__idol_graphql__.js"), parent, path);
   }
 
   get wrapValues(): Exported {
