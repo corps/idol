@@ -3,7 +3,7 @@
 import { Anything } from "../__idol_graphql__";
 import { TypeStructType as ScaffoldTypeStructType } from "../../schema/TypeStruct";
 import { ReferenceType as ScaffoldReferenceType } from "../../schema/Reference";
-import { GraphQLList, GraphQLString } from "graphql";
+import { GraphQLString, GraphQLList } from "graphql";
 
 // A wrapper type containing fields that can describe a Type, as well as its tag metadata.;
 export const SchemaTypeFields = {

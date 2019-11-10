@@ -10,7 +10,7 @@ export const SchemaPrimitiveType = {
   BOOL: "bool",
   ANY: "any"
 };
-export const SchemaPrimitiveTypeType = new GraphQLEnumType({
+export const PrimitiveTypeType = new GraphQLEnumType({
   name: "PrimitiveType",
   description: "",
   values: wrapValues(SchemaPrimitiveType)

@@ -13,7 +13,7 @@ export const SchemaStructKind = {
   REPEATED: "Repeated",
   MAP: "Map"
 };
-export const SchemaStructKindType = new GraphQLEnumType({
+export const StructKindType = new GraphQLEnumType({
   name: "StructKind",
   description:
     "Scalars are non contained values\nRepeated are homogenous lists.  They can be upgraded or downgraded to and from Scalars.\nA repeated is indicated in a TypeDec by ending with '[]'\nMaps are homogenous 'dictionaries', whose key is always a string, mapping to js objects.\nA map is indicated in a TypeDec by ending with '{}'",

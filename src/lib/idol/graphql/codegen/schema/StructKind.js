@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.SchemaStructKindType = exports.SchemaStructKind = void 0;
+exports.StructKindType = exports.SchemaStructKind = void 0;
 
 var _graphql = require("graphql");
 
@@ -22,9 +22,9 @@ var SchemaStructKind = {
   MAP: "Map"
 };
 exports.SchemaStructKind = SchemaStructKind;
-var SchemaStructKindType = new _graphql.GraphQLEnumType({
+var StructKindType = new _graphql.GraphQLEnumType({
   name: "StructKind",
   description: "Scalars are non contained values\nRepeated are homogenous lists.  They can be upgraded or downgraded to and from Scalars.\nA repeated is indicated in a TypeDec by ending with '[]'\nMaps are homogenous 'dictionaries', whose key is always a string, mapping to js objects.\nA map is indicated in a TypeDec by ending with '{}'",
   values: (0, _idol_graphql__.wrapValues)(SchemaStructKind)
 });
-exports.SchemaStructKindType = SchemaStructKindType;
+exports.StructKindType = StructKindType;

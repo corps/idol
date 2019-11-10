@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.SchemaPrimitiveTypeType = exports.SchemaPrimitiveType = void 0;
+exports.PrimitiveTypeType = exports.SchemaPrimitiveType = void 0;
 
 var _graphql = require("graphql");
 
@@ -19,9 +19,9 @@ var SchemaPrimitiveType = {
   ANY: "any"
 };
 exports.SchemaPrimitiveType = SchemaPrimitiveType;
-var SchemaPrimitiveTypeType = new _graphql.GraphQLEnumType({
+var PrimitiveTypeType = new _graphql.GraphQLEnumType({
   name: "PrimitiveType",
   description: "",
   values: (0, _idol_graphql__.wrapValues)(SchemaPrimitiveType)
 });
-exports.SchemaPrimitiveTypeType = SchemaPrimitiveTypeType;
+exports.PrimitiveTypeType = PrimitiveTypeType;

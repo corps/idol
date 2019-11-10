@@ -6,7 +6,7 @@ import gql from "graphql-tag";
 
 // A wrapper type containing fields that can describe a Type, as well as its tag metadata.;
 export const SchemaTypeFragment = gql`
-  fragment SchemaTypeFields on SchemaType {
+  fragment TypeFields on Type {
     fields
     is_a {
       ...TypeStructFields

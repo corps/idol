@@ -8,4 +8,5 @@ export const SchemaStructKind: { [k: string]: SchemaStructKindPayload } = {
   REPEATED: "Repeated",
   MAP: "Map"
 };
-export const SchemaStructKindFactory: () => SchemaStructKindPayload = () => "Scalar";
+export const SchemaStructKindFactory: () => SchemaStructKindPayload = () =>
+  "Scalar";

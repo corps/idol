@@ -8,9 +8,10 @@ is_a = "all.optional.Assembled"
 fields.optional = "AssembledOptional"
 
 [OptionalMethod]
+tags = ["path:/optional-method", "method:get"]
 fields.input = "OptionalParams"
 fields.output = "AssembledOptional"
 
 [OptionalService]
-tags = ["service", "root_path:"]
+tags = ["service", "path:/optional-service/"]
 fields.optional = "OptionalMethod"

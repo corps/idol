@@ -55,9 +55,10 @@ export class SchemaModule {
     );
   }
   set types_dependency_ordering(val) {
-    this._original["types_dependency_ordering"] = List.of(Primitive.of("string"), {
-      atleastOne: false
-    }).unwrap(val);
+    this._original["types_dependency_ordering"] = List.of(
+      Primitive.of("string"),
+      { atleastOne: false }
+    ).unwrap(val);
   }
   get typesDependencyOrdering() {
     return this.types_dependency_ordering;

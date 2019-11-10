@@ -553,7 +553,7 @@ export class GeneratorAcc {
     this.validate();
 
     return OrderedObj.fromIterable(
-      this.groupOfPath.keys().map(path => {
+      this.groupOfPath.keys().filter(path => !this.content.get(path).isEmpty()).map(path => {
         console.log(`Rendering / formatting output for ${path}`);
         return new OrderedObj({
           [path]: scripter.render(

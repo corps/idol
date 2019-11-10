@@ -5,7 +5,7 @@ import { ReferenceFragment } from "../../schema/Reference";
 import gql from "graphql-tag";
 
 export const SchemaTypeStructFragment = gql`
-  fragment SchemaTypeStructFields on SchemaTypeStruct {
+  fragment TypeStructFields on TypeStruct {
     literal {
       ...LiteralFields
     }

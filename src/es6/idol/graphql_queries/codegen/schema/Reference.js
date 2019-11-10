@@ -4,7 +4,7 @@ import gql from "graphql-tag";
 
 // A reference describes the location of a type in the module system.;
 export const SchemaReferenceFragment = gql`
-  fragment SchemaReferenceFields on SchemaReference {
+  fragment ReferenceFields on Reference {
     module_name
     qualified_name
     type_name

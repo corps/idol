@@ -1,3 +1,4 @@
+#! /usr/bin/env node
 // @flow
 import { start } from "./cli";
 import {
@@ -100,6 +101,9 @@ export class IdolJSHttpCodegenFile extends GeneratorFileContext<IdolJsHttp> {
   constructor(idolJsHttp: IdolJsHttp, path: Path, type: Type) {
     super(idolJsHttp, path);
     this.typeDecon = new TypeDeconstructor(type);
+    this.type = type;
+
+    this.reserveIdent(this.defaultServiceName);
   }
 
   get service(): Alt<Exported> {
@@ -199,10 +203,10 @@ export class IdolJSHttpCodegenMethod extends GeneratorFileContext<IdolJsHttp> {
 
   get methodConfiguration(): Alt<any> {
     return this.inputTypeDecon.map(inputTypeDecon => ({
-      servicePath: getTagValue(this.serviceTags, "path", "/"),
-      methodPath: getTagValue(this.typeDecon.t.tags, "path", ""),
+      servicePath: getTagValue(this.serviceTags, "/", "path"),
+      methodPath: getTagValue(this.typeDecon.t.tags, "", "path"),
       pathMappings: getTagValues(this.typeDecon.t.tags, "pathMapping"),
-      method: getTagValue(this.typeDecon.t.tags, "method", "POST").toUpperCase()
+      method: getTagValue(this.typeDecon.t.tags, "POST", "method").toUpperCase()
     }));
   }
 }
@@ -242,7 +246,7 @@ export class IdolJSHttpScaffoldFile extends GeneratorFileContext<IdolJsHttp> {
 
 export class HttpServiceBase extends ExternFileContext<IdolJsHttp> {
   constructor(parent: IdolJsHttp, path: Path) {
-    super(resolve(__dirname, "../../lib/idol/HttpServiceBase.js"), parent, path);
+    super(resolve(__dirname, "../../es6/idol/HttpServiceBase.js"), parent, path);
   }
 
   get HttpServiceBase(): Exported {

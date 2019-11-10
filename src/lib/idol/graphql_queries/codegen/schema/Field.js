@@ -12,7 +12,7 @@ var _graphqlTag = _interopRequireDefault(require("graphql-tag"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
 function _templateObject() {
-  var data = _taggedTemplateLiteral(["\n  fragment SchemaFieldFields on SchemaField {\n    field_name\n    tags\n    type_struct {\n      ...TypeStructFields\n    }\n  }\n  ", "\n"]);
+  var data = _taggedTemplateLiteral(["\n  fragment FieldFields on Field {\n    field_name\n    tags\n    type_struct {\n      ...TypeStructFields\n    }\n  }\n  ", "\n"]);
 
   _templateObject = function _templateObject() {
     return data;

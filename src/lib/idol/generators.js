@@ -738,7 +738,9 @@ function () {
       var _this5 = this;
 
       this.validate();
-      return _functional.OrderedObj.fromIterable(this.groupOfPath.keys().map(function (path) {
+      return _functional.OrderedObj.fromIterable(this.groupOfPath.keys().filter(function (path) {
+        return !_this5.content.get(path).isEmpty();
+      }).map(function (path) {
         console.log("Rendering / formatting output for ".concat(path));
         return new _functional.OrderedObj(_defineProperty({}, path, scripter.render(_this5.groupOfPath.obj[path].items.map(function (group) {
           return group in commentHeaders ? commentHeaders[group] : "";

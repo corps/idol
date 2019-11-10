@@ -4,7 +4,7 @@ import gql from "graphql-tag";
 
 // Metadata contained about a module.;
 export const SchemaModuleFragment = gql`
-  fragment SchemaModuleFields on SchemaModule {
+  fragment ModuleFields on Module {
     module_name
     types_by_name
     types_dependency_ordering

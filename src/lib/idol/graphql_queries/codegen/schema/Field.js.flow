@@ -4,7 +4,7 @@ import { TypeStructFragment } from "../../schema/TypeStruct";
 import gql from "graphql-tag";
 
 export const SchemaFieldFragment = gql`
-  fragment SchemaFieldFields on SchemaField {
+  fragment FieldFields on Field {
     field_name
     tags
     type_struct {

@@ -1,3 +1,4 @@
+#! /usr/bin/env node
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -146,6 +147,10 @@ function (_GeneratorFileContext) {
 
     _this5 = _possibleConstructorReturn(this, _getPrototypeOf(IdolJSHttpCodegenFile).call(this, idolJsHttp, path));
     _this5.typeDecon = new _generators.TypeDeconstructor(type);
+    _this5.type = type;
+
+    _this5.reserveIdent(_this5.defaultServiceName);
+
     return _this5;
   }
 
@@ -234,10 +239,10 @@ function (_GeneratorFileContext2) {
 
       return this.inputTypeDecon.map(function (inputTypeDecon) {
         return {
-          servicePath: (0, _generators.getTagValue)(_this10.serviceTags, "path", "/"),
-          methodPath: (0, _generators.getTagValue)(_this10.typeDecon.t.tags, "path", ""),
+          servicePath: (0, _generators.getTagValue)(_this10.serviceTags, "/", "path"),
+          methodPath: (0, _generators.getTagValue)(_this10.typeDecon.t.tags, "", "path"),
           pathMappings: (0, _generators.getTagValues)(_this10.typeDecon.t.tags, "pathMapping"),
-          method: (0, _generators.getTagValue)(_this10.typeDecon.t.tags, "method", "POST").toUpperCase()
+          method: (0, _generators.getTagValue)(_this10.typeDecon.t.tags, "POST", "method").toUpperCase()
         };
       });
     }
@@ -298,7 +303,7 @@ function (_ExternFileContext) {
   function HttpServiceBase(parent, path) {
     _classCallCheck(this, HttpServiceBase);
 
-    return _possibleConstructorReturn(this, _getPrototypeOf(HttpServiceBase).call(this, (0, _path.resolve)(__dirname, "../../lib/idol/HttpServiceBase.js"), parent, path));
+    return _possibleConstructorReturn(this, _getPrototypeOf(HttpServiceBase).call(this, (0, _path.resolve)(__dirname, "../../es6/idol/HttpServiceBase.js"), parent, path));
   }
 
   _createClass(HttpServiceBase, [{
