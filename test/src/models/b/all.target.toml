@@ -12,5 +12,5 @@ fields.input = "OptionalParams"
 fields.output = "AssembledOptional"
 
 [OptionalService]
-tags = ["service"]
+tags = ["service", "root_path:"]
 fields.optional = "OptionalMethod"

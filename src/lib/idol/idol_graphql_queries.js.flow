@@ -30,7 +30,7 @@ import {
   IdolGraphqlCodegenTypeStructDeclaration
 } from "./idol_graphql";
 
-export class IdolGraphqlQueries implements GeneratorContext {
+export class IdolGraphqlQueries {
   config: GeneratorConfig;
   state: GeneratorAcc;
   codegenImpl: (IdolGraphqlQueries, Path, Type) => IdolGraphqlQueriesCodegenFile;
@@ -399,18 +399,6 @@ export class IdolGraphqlCodegenScalar implements GeneratorContext {
       .map(ref => this.idolGraphqlQueries.codegenFile(ref));
   }
 
-  // TODO: REMOVE?
-  get materialTypeDecon(): Alt<TypeDeconstructor> {
-    return this.scalarDecon
-      .getAlias()
-      .map(ref =>
-        getMaterialTypeDeconstructor(
-          this.config.params.allTypes,
-          this.config.params.allTypes.obj[ref.qualified_name]
-        )
-      );
-  }
-
   get graphqlFieldsName(): Alt<string> {
     return this.scalarDecon
       .getAlias()
@@ -526,7 +514,7 @@ export class IdolGraphqlMethod implements GeneratorContext {
       return this.tDecon.getStruct().bind(fields => {
         const outputFields: Alt<[Exported, string]> = fields
           .get("output")
-          .bind(outputTs => outputTs.getScalar().concat(outputTs.getRepeated()))
+          .bind(outputTs => outputTs.getScalar())
           .bind(s => s.getAlias())
           .map(ref => {
             const materialType = getMaterialTypeDeconstructor(
