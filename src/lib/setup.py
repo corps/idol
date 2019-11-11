@@ -16,6 +16,5 @@ setup(
     python_require=">= 3.6",
     scripts=["idol/idol_py", "idol/idol_mar"],
     zip_safe=False,
-    include_package_data=True,
-    package_data={"": ["idol/LICENSE", "idol/idol_py", "idol/idol_mar", "idol/VERSION", "idol/README.md"]},
+    package_data={"": ["LICENSE", "idol_py", "idol_mar", "VERSION", "README"]},
 )
