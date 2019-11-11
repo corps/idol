@@ -1,6 +1,6 @@
 {
   "name": "@lyric-travel/idol_js",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "javascript codegen library and base code generators compatible with idol",
   "dependencies": {
     "esm": "^3.2.25",
@@ -15,10 +15,10 @@
     "idol_js_http": "./idol_js_http.js"
   },
   "files": [
-    "js/*.js",
+    "js/**/*.js",
+    "js/**/*.js.flow",
     "*.js",
-    "*.js.flow",
-    "js/*.js.flow"
+    "*.js.flow"
   ],
   "license": "MIT"
 }

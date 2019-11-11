@@ -65,7 +65,7 @@ dependencies = [
 
 [[package]]
 name = "idol"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "fs_extra 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "is_executable 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",

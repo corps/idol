@@ -11,7 +11,7 @@ setup(
     author="Zach Collins",
     author_email="zach.collins@lyric.com",
     license="MIT",
-    packages=["idol"],
+    packages=["idol", "idol/py", "idol/py/codegen", "idol/py/codegen/schema", "idol/py/schema"],
     install_requires=["black", "cached_property"],
     python_require=">= 3.6",
     scripts=["idol/idol_py", "idol/idol_mar"],
