@@ -3,7 +3,7 @@
     "enum": [
       "one"
     ],
-    "fields": {},
+    "fields": null,
     "is_a": [],
     "tags": [],
     "trim": false,
@@ -16,7 +16,7 @@
       "three",
       "two"
     ],
-    "fields": {},
+    "fields": null,
     "is_a": [],
     "tags": [],
     "trim": false,
@@ -24,7 +24,7 @@
   },
   "EnumOneWithCo": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "enums.EnumOne"
     ],
@@ -36,7 +36,7 @@
     "enum": [
       "two"
     ],
-    "fields": {},
+    "fields": null,
     "is_a": [],
     "tags": [],
     "trim": false,

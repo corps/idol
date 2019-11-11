@@ -7,6 +7,7 @@ exports.includesTag = includesTag;
 exports.getTagValue = getTagValue;
 exports.getTagValues = getTagValues;
 exports.getMaterialTypeDeconstructor = getMaterialTypeDeconstructor;
+exports.wrapExpression = wrapExpression;
 exports.getSafeIdent = getSafeIdent;
 exports.build = build;
 exports.importExpr = importExpr;
@@ -602,10 +603,12 @@ var ImportsAcc =
 function () {
   function ImportsAcc() {
     var imports = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+    var types = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
 
     _classCallCheck(this, ImportsAcc);
 
     this.imports = imports || new _functional.OrderedObj();
+    this.types = types || new _functional.OrderedObj();
   }
 
   _createClass(ImportsAcc, [{
@@ -616,7 +619,17 @@ function () {
   }, {
     key: "addImport",
     value: function addImport(intoPath, fromPath, fromIdent, intoIdent) {
-      this.imports = this.imports.concat(new _functional.OrderedObj(_defineProperty({}, intoPath.path, new _functional.OrderedObj(_defineProperty({}, fromPath.relPath, new _functional.OrderedObj(_defineProperty({}, fromIdent, new _functional.StringSet([intoIdent]))))))));
+      var isType = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
+
+      var newEntry = function newEntry() {
+        return new _functional.OrderedObj(_defineProperty({}, intoPath.path, new _functional.OrderedObj(_defineProperty({}, fromPath.relPath, new _functional.OrderedObj(_defineProperty({}, fromIdent, new _functional.StringSet([intoIdent])))))));
+      };
+
+      this.imports = this.imports.concat(newEntry());
+
+      if (isType) {
+        this.types = this.types.concat(newEntry());
+      }
     }
   }, {
     key: "getImportedIdents",
@@ -630,20 +643,44 @@ function () {
   }, {
     key: "render",
     value: function render(intoPath) {
-      return this.imports.get(intoPath).map(function (imports) {
-        return imports.keys().filter(Boolean).map(function (relPath) {
-          var decons = imports.obj[relPath];
+      var _this3 = this;
 
-          if (relPath.endsWith(".js")) {
-            relPath = relPath.slice(0, relPath.length - 3);
+      return this.imports.get(intoPath).map(function (imports) {
+        return imports.keys().filter(Boolean).reduce(function (lines, relPath) {
+          var decons = imports.obj[relPath];
+          var importPath = relPath.endsWith(".js") ? relPath.slice(0, relPath.length - 3) : relPath;
+
+          var typeDecons = _this3.types.get(intoPath).bind(function (imports) {
+            return imports.get(relPath);
+          }).getOr(new _functional.OrderedObj());
+
+          if (!typeDecons.isEmpty()) {
+            lines.push(scripter.typeImportDecon.apply(scripter, [importPath].concat(_toConsumableArray(typeDecons.keys().map(function (ident) {
+              return typeDecons.obj[ident].items.map(function (asIdent) {
+                return asIdent === ident ? ident : "".concat(ident, " as ").concat(asIdent);
+              }).join(", ");
+            })))));
           }
 
-          return scripter.importDecon.apply(scripter, [relPath].concat(_toConsumableArray(decons.keys().map(function (ident) {
-            return decons.obj[ident].items.map(function (asIdent) {
-              return asIdent === ident ? ident : "".concat(ident, " as ").concat(asIdent);
+          var nonTypeDecons = _toConsumableArray(decons.mapIntoIterable(function (fromIdent, intoIdents) {
+            if (fromIdent === "@@default" || fromIdent in typeDecons.obj) return null;
+            return intoIdents.items.map(function (asIdent) {
+              return "".concat(fromIdent, " as ").concat(asIdent);
             }).join(", ");
-          }))));
-        });
+          })).filter(Boolean);
+
+          var defaultDecon = decons.get("@@default").map(function (intoIdents) {
+            return intoIdents.items.map(function (asIdent) {
+              return "".concat(asIdent);
+            }).join(", ");
+          });
+
+          if (nonTypeDecons.length || !defaultDecon.isEmpty()) {
+            lines.push(defaultDecon.isEmpty() ? scripter.importDecon.apply(scripter, [importPath].concat(_toConsumableArray(nonTypeDecons))) : scripter.importDeconWithDefault.apply(scripter, [importPath, defaultDecon.unwrap()].concat(_toConsumableArray(nonTypeDecons))));
+          }
+
+          return lines;
+        }, []);
       }).getOr([]);
     }
   }]);
@@ -674,11 +711,11 @@ function () {
   }, {
     key: "validate",
     value: function validate() {
-      var _this3 = this;
+      var _this4 = this;
 
       var pathErrors = [];
       this.groupOfPath.keys().forEach(function (path) {
-        var groups = _this3.groupOfPath.obj[path];
+        var groups = _this4.groupOfPath.obj[path];
 
         if (groups.items.length > 1) {
           pathErrors.push("Conflict in paths: Multiple (".concat(groups.items.join(", "), ") for path ").concat(path));
@@ -698,14 +735,16 @@ function () {
   }, {
     key: "render",
     value: function render(commentHeaders) {
-      var _this4 = this;
+      var _this5 = this;
 
       this.validate();
-      return _functional.OrderedObj.fromIterable(this.groupOfPath.keys().map(function (path) {
+      return _functional.OrderedObj.fromIterable(this.groupOfPath.keys().filter(function (path) {
+        return !_this5.content.get(path).isEmpty();
+      }).map(function (path) {
         console.log("Rendering / formatting output for ".concat(path));
-        return new _functional.OrderedObj(_defineProperty({}, path, scripter.render(_this4.groupOfPath.obj[path].items.map(function (group) {
+        return new _functional.OrderedObj(_defineProperty({}, path, scripter.render(_this5.groupOfPath.obj[path].items.map(function (group) {
           return group in commentHeaders ? commentHeaders[group] : "";
-        }).filter(Boolean).map(scripter.comment).concat(_this4.imports.render(path)).concat(["\n"]).concat(_this4.content.get(path).getOr([])))));
+        }).filter(Boolean).map(scripter.comment).concat(_this5.imports.render(path)).concat(["\n"]).concat(_this5.content.get(path).getOr([])))));
       }));
     }
   }, {
@@ -772,7 +811,7 @@ function () {
       }
 
       asIdent = this.createIdent(intoPath, asIdent, fromPath.path.path);
-      this.imports.addImport(intoPath, fromPath, ident, asIdent);
+      this.imports.addImport(intoPath, fromPath, ident, asIdent, !!exported.isType);
       return asIdent;
     }
   }, {
@@ -795,6 +834,12 @@ function () {
 
 exports.GeneratorAcc = GeneratorAcc;
 
+function wrapExpression(expr, wrapper) {
+  return function (state, path) {
+    return wrapper(expr(state, path));
+  };
+}
+
 function getSafeIdent(ident) {
   while (RESERVED_WORDS.indexOf(ident) !== -1) {
     ident += "_";
@@ -816,6 +861,8 @@ function () {
   _createClass(GeneratorFileContext, [{
     key: "export",
     value: function _export(ident, scriptable) {
+      var isType = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
       if (!this.state.idents.getIdentifierSources(this.path, ident).getOr(new _functional.StringSet()).items.length) {
         throw new Error("GeneratorFileContext.export called before ident was reserved!");
       }
@@ -823,7 +870,8 @@ function () {
       this.state.addContent(this.path, scriptable(ident));
       return {
         path: this.path,
-        ident: ident
+        ident: ident,
+        isType: isType
       };
     }
   }, {
@@ -867,34 +915,36 @@ function (_GeneratorFileContext) {
 
   // Subclasses required to provide this
   function ExternFileContext(externFile, parent, path) {
-    var _this5;
+    var _this6;
 
     _classCallCheck(this, ExternFileContext);
 
-    _this5 = _possibleConstructorReturn(this, _getPrototypeOf(ExternFileContext).call(this, parent, path));
-    _this5.externFile = externFile;
-    return _this5;
+    _this6 = _possibleConstructorReturn(this, _getPrototypeOf(ExternFileContext).call(this, parent, path));
+    _this6.externFile = externFile;
+    return _this6;
   }
 
   _createClass(ExternFileContext, [{
     key: "exportExtern",
     value: function exportExtern(ident) {
+      var isType = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       return {
         path: this.dumpedFile,
-        ident: this.state.idents.addIdentifier(this.dumpedFile, ident, "addExtern")
+        ident: this.state.idents.addIdentifier(this.dumpedFile, ident, "addExtern"),
+        isType: isType
       };
     }
   }, {
     key: "dumpedFile",
     get: function get() {
-      var _this6 = this;
+      var _this7 = this;
 
       return (0, _functional.cachedProperty)(this, "dumpedFile", function () {
-        var content = _fs["default"].readFileSync(_this6.externFile, "UTF-8").toString();
+        var content = _fs["default"].readFileSync(_this7.externFile, "UTF-8").toString();
 
-        _this6.state.addContent(_this6.path, content);
+        _this7.state.addContent(_this7.path, content);
 
-        return _this6.path;
+        return _this7.path;
       });
     }
   }]);

@@ -7,7 +7,8 @@ import { Reference } from "./js/schema/Reference";
 import { Type } from "./js/schema/Type";
 import {
   build,
-  camelify, ExternFileContext,
+  camelify,
+  ExternFileContext,
   GeneratorAcc,
   GeneratorConfig,
   GeneratorFileContext,
@@ -162,7 +163,7 @@ export class IdolJsScaffoldFile extends GeneratorFileContext<IdolJs> {
 
   get declaredTypeIdent(): Alt<Exported> {
     return cachedProperty(this, "declaredTypeIdent", () => {
-      const codegenFile = this.parent.codegenFile(this.type.named);
+      const codegenFile = this.parent.codegenFile(this.typeDecon.t.named);
       return codegenFile.declaredTypeIdent.bind(codegenType =>
         codegenFile.struct
           .map(codegenStruct =>
@@ -172,16 +173,10 @@ export class IdolJsScaffoldFile extends GeneratorFileContext<IdolJs> {
             )
           )
           .concat(
-            codegenFile.typeStruct.map(tsDecon =>
-              scripter.variable(this.importIdent(codegenType))
-            )
+            codegenFile.typeStruct.map(tsDecon => scripter.variable(this.importIdent(codegenType)))
           )
-          .concat(
-            codegenFile.enum.map(options =>
-              scripter.variable(this.importIdent(codegenType))
-            )
-          )
-          .map(scriptable => (this.export(this.defaultTypeName, scriptable)))
+          .concat(codegenFile.enum.map(options => scripter.variable(this.importIdent(codegenType))))
+          .map(scriptable => this.export(this.defaultTypeName, scriptable))
       );
     });
   }
@@ -203,65 +198,58 @@ export class IdolJsCodegenStruct extends GeneratorFileContext<IdolJs> {
         .mapAndFilter(codegenTypeStruct => codegenTypeStruct.constructorExpr)
         .map(expr => this.applyExpr(expr));
 
-      return Alt.lift(this.export(
-          this.codegenFile.defaultTypeName,
-          (ident: string) => [
-            scripter.comment(
-              getTagValues(this.codegenFile.typeDecon.t.tags, "description").join("\n")
+      return Alt.lift(
+        this.export(this.codegenFile.defaultTypeName, (ident: string) => [
+          scripter.comment(
+            getTagValues(this.codegenFile.typeDecon.t.tags, "description").join("\n")
+          ),
+          scripter.classDec([
+            scripter.methodDec(
+              "constructor",
+              ["val"],
+              [scripter.assignment("this._original", "val")]
             ),
-            scripter.classDec([
-              scripter.methodDec(
-                "constructor",
-                ["val"],
-                [scripter.assignment("this._original", "val")]
-              ),
-              ...this.stubMethods,
-              ...fieldConstructorIdents.concatMap<Array<string>>((fieldName, constructor) => {
-                const camelFieldName = camelify(fieldName, false);
+            ...this.stubMethods,
+            ...fieldConstructorIdents.concatMap<Array<string>>((fieldName, constructor) => {
+              const camelFieldName = camelify(fieldName, false);
 
-                const fields = this.gettersAndSettersFor(fieldName, fieldName, constructor);
+              const fields = this.gettersAndSettersFor(fieldName, fieldName, constructor);
 
-                return [
-                  "\n",
-                  scripter.comment(
-                    getTagValues(
-                      this.fields.obj[fieldName].tsDecon.context.fieldTags,
-                      "description"
-                    ).join("\n")
-                  )
-                ].concat(
-                  fieldName === camelFieldName
-                    ? fields
-                    : fields.concat(
-                        this.gettersAndSettersFor(camelFieldName, fieldName, constructor)
-                      )
-                );
-              }, [])
-            ])(ident),
-            "\n",
-            scripter.invocation(
-              this.importIdent(this.parent.idolJsFile.struct),
-              ident,
-              scripter.arrayLiteral(
-                ...fieldConstructorIdents.mapIntoIterable((fieldName, constructor) =>
-                  scripter.objLiteral(
-                    scripter.propDec("fieldName", scripter.literal(fieldName)),
-                    scripter.propDec("type", constructor),
-                    scripter.propDec(
-                      "optional",
-                      scripter.literal(
-                        includesTag(
-                          this.fields.obj[fieldName].tsDecon.context.fieldTags,
-                          "optional"
-                        )
-                      )
+              return [
+                "\n",
+                scripter.comment(
+                  getTagValues(
+                    this.fields.obj[fieldName].tsDecon.context.fieldTags,
+                    "description"
+                  ).join("\n")
+                )
+              ].concat(
+                fieldName === camelFieldName
+                  ? fields
+                  : fields.concat(this.gettersAndSettersFor(camelFieldName, fieldName, constructor))
+              );
+            }, [])
+          ])(ident),
+          "\n",
+          scripter.invocation(
+            this.importIdent(this.parent.idolJsFile.struct),
+            ident,
+            scripter.arrayLiteral(
+              ...fieldConstructorIdents.mapIntoIterable((fieldName, constructor) =>
+                scripter.objLiteral(
+                  scripter.propDec("fieldName", scripter.literal(fieldName)),
+                  scripter.propDec("type", constructor),
+                  scripter.propDec(
+                    "optional",
+                    scripter.literal(
+                      includesTag(this.fields.obj[fieldName].tsDecon.context.fieldTags, "optional")
                     )
                   )
                 )
               )
             )
-          ]
-        )
+          )
+        ])
       );
     });
   }
@@ -315,37 +303,32 @@ export class IdolJsCodegenEnum extends GeneratorFileContext<IdolJs> {
 
   get declaredIdent(): Alt<Exported> {
     return cachedProperty(this, "declaredIdent", () =>
-      Alt.lift(this.export(
-          this.codegenFile.defaultTypeName,
-          ident => [
-            scripter.comment(
-              getTagValues(this.codegenFile.typeDecon.t.tags, "description").join("\n")
-            ),
-            scripter.variable(
-              scripter.objLiteral(
-                ...this.options.map(option =>
-                  scripter.propDec(option.toUpperCase(), scripter.literal(option))
-                ),
-                "\n",
-                scripter.propDec("options", scripter.literal(this.options)),
-                scripter.propDec("default", scripter.literal(this.options[0])),
-                "\n",
-                scripter.comment(
-                  "These methods are implemented via the runtime, stubs exist here for reference."
-                ),
-                scripter.methodDec("validate", ["val"], []),
-                scripter.methodDec("isValid", ["val"], [scripter.ret("true")]),
-                scripter.methodDec("expand", ["val"], [scripter.ret("val")]),
-                scripter.methodDec("wrap", ["val"], [scripter.ret("val")]),
-                scripter.methodDec("unwrap", ["val"], [scripter.ret("val")])
-              )
-            )(ident),
-            scripter.invocation(
-              this.importIdent(this.parent.idolJsFile.enum),
-              ident
+      Alt.lift(
+        this.export(this.codegenFile.defaultTypeName, ident => [
+          scripter.comment(
+            getTagValues(this.codegenFile.typeDecon.t.tags, "description").join("\n")
+          ),
+          scripter.variable(
+            scripter.objLiteral(
+              ...this.options.map(option =>
+                scripter.propDec(option.toUpperCase(), scripter.literal(option))
+              ),
+              "\n",
+              scripter.propDec("options", scripter.literal(this.options)),
+              scripter.propDec("default", scripter.literal(this.options[0])),
+              "\n",
+              scripter.comment(
+                "These methods are implemented via the runtime, stubs exist here for reference."
+              ),
+              scripter.methodDec("validate", ["val"], []),
+              scripter.methodDec("isValid", ["val"], [scripter.ret("true")]),
+              scripter.methodDec("expand", ["val"], [scripter.ret("val")]),
+              scripter.methodDec("wrap", ["val"], [scripter.ret("val")]),
+              scripter.methodDec("unwrap", ["val"], [scripter.ret("val")])
             )
-          ]
-        )
+          )(ident),
+          scripter.invocation(this.importIdent(this.parent.idolJsFile.enum), ident)
+        ])
       )
     );
   }
@@ -425,7 +408,7 @@ export class IdolJsCodegenTypeStructDeclaration extends IdolJsCodegenTypeStruct 
   get path(): Path {
     return this.codegenFile.path;
   }
-  
+
   get export() {
     return GeneratorFileContext.prototype.export;
   }
@@ -503,11 +486,11 @@ export class IdolJsCodegenScalar implements GeneratorContext {
 
 export class IdolJsFile extends ExternFileContext<IdolJs> {
   constructor(parent: IdolJs, path: Path) {
-    super(resolve(__dirname, "../../lib/idol/__idol__.js"), parent, path);
+    super(resolve(__dirname, "__idol__.js"), parent, path);
   }
 
   get literal(): Exported {
-      return this.exportExtern("Literal");
+    return this.exportExtern("Literal");
   }
 
   get primitive(): Exported {

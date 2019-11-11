@@ -1,15 +1,16 @@
 [ignore]
 .*\.json
-test/
-
-[include]
-src/es6/idol
-flow-typed
 
 [libs]
-
-[lints]
+flow-typed
 
 [options]
+module.system.node.resolve_dirname=node_modules
+module.system.node.resolve_dirname=./src
+server.max_workers=4
+sharedmemory.hash_table_pow=20
 
 [strict]
+
+[lints]
+deprecated-utility=off

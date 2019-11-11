@@ -1,9 +1,14 @@
 MODELS     := $(wildcard src/models/*.toml)
 SOURCE_FILES = $(shell find src -type f | egrep ".*\.rs" | grep -v "bin/")
 
-release: target/release/idol target/release/idol_rs src/lib/idol/idol_js.js
+release: target/release/idol target/release/idol_rs js
 
-dev: target/debug/idol target/debug/idol_rs src/lib/idol/idol_js.js models
+release-python: versions
+	cp LICENSE src/lib/idol/LICENSE
+	cp README.md src/lib/idol/README
+	cd src/lib && rm -rf dist && python setup.py sdist && twine upload dist/*
+
+dev: target/debug/idol target/debug/idol_rs js models
 
 target/debug/idol: src/*.rs $(SOURCE_FILES) src/bin/idol.rs
 	cargo build --bin idol
@@ -17,7 +22,7 @@ target/release/idol: src/*.rs $(SOURCE_FILES) src/bin/idol.rs
 target/release/idol_rs: src/*.rs $(SOURCE_FILES) src/bin/idol_rs.rs
 	cargo build --bin idol_rs --release
 
-src/lib/idol/idol_js.js: src/es6/idol/*.js src/lib/idol/node_modules
+js: src/es6/idol/*.js src/lib/idol/node_modules
 	npm install
 	npm run compile
 
@@ -37,6 +42,9 @@ models: $(MODELS)
 	cat build.json | ./src/lib/idol/idol_py --output src/lib/idol/py --target schema
 	cat build.json | ./src/lib/idol/idol_js.js --output src/es6/idol/js --target schema
 	cat build.json | ./src/lib/idol/idol_mar --output src/lib/idol/mar --target schema
+	cat build.json | ./src/lib/idol/idol_graphql.js --output src/es6/idol/graphql --target schema
+	cat build.json | ./src/lib/idol/idol_flow.js --output src/es6/idol/flow --target schema
+	cat build.json | ./src/lib/idol/idol_graphql_queries.js --output src/es6/idol/graphql_queries --target schema
 
 test: dev
 	cargo test
@@ -49,4 +57,4 @@ versions: target/debug/idol
 
 
 
-.PHONY: models dev test release
+.PHONY: models dev test release js release-python

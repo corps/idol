@@ -1,7 +1,7 @@
 {
   "AnyAlias": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "primitive_widens.BiggerWidens"
     ],
@@ -11,7 +11,7 @@
   },
   "BiggerWidens": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "any"
     ],
@@ -21,7 +21,7 @@
   },
   "IntAlias": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "int"
     ],
@@ -31,7 +31,7 @@
   },
   "ReferenceRemains": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "primitive_widens.IntAlias"
     ],
@@ -41,7 +41,7 @@
   },
   "ReferenceRemainsRight": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "int"
     ],
@@ -51,7 +51,7 @@
   },
   "StaysNarrow": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "string"
     ],
@@ -61,7 +61,7 @@
   },
   "Widens": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "any"
     ],

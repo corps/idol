@@ -1,6 +1,6 @@
 {
   "name": "@lyric-travel/idol_js",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "javascript codegen library and base code generators compatible with idol",
   "dependencies": {
     "esm": "^3.2.25",
@@ -8,7 +8,11 @@
     "regenerator-runtime": "^0.13.3"
   },
   "bin": {
-    "idol_js": "./idol_js.js"
+    "idol_js": "./idol_js.js",
+    "idol_graphql": "./idol_graphql.js",
+    "idol_flow": "./idol_flow.js",
+    "idol_graphql_queries": "./idol_graphql_queries.js",
+    "idol_js_http": "./idol_js_http.js"
   },
   "files": [
     "js/*.js",

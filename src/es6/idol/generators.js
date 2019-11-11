@@ -83,10 +83,11 @@ export class ImportPath {
   }
 }
 
-export type Exported = {
-  path: Path,
-  ident: string
-};
+export interface Exported {
+  path: Path;
+  ident: string;
+  isType?: boolean;
+}
 
 export type GeneratorParams = {
   allModules: OrderedObj<Module>,
@@ -287,7 +288,9 @@ export function getMaterialTypeDeconstructor(
       .getTypeStruct()
       .bind(ts => ts.getScalar())
       .bind(scalar => scalar.getAlias())
-      .map(alias => searchType(new TypeDeconstructor(allTypes.obj[alias.qualifiedName].withTags(t.tags))))
+      .map(alias =>
+        searchType(new TypeDeconstructor(allTypes.obj[alias.qualifiedName].withTags(t.tags)))
+      )
       .getOr(typeDecon);
   }
 
@@ -401,23 +404,38 @@ export class IdentifiersAcc {
 
 export class ImportsAcc {
   imports: OrderedObj<OrderedObj<OrderedObj<StringSet>>>;
+  types: OrderedObj<OrderedObj<OrderedObj<StringSet>>>;
 
-  constructor(imports: OrderedObj<OrderedObj<OrderedObj<StringSet>>> | null = null) {
+  constructor(
+    imports: OrderedObj<OrderedObj<OrderedObj<StringSet>>> | null = null,
+    types: OrderedObj<OrderedObj<OrderedObj<StringSet>>> | null = null
+  ) {
     this.imports = imports || new OrderedObj<OrderedObj<OrderedObj<StringSet>>>();
+    this.types = types || new OrderedObj<OrderedObj<OrderedObj<StringSet>>>();
   }
 
   concat(other: ImportsAcc): ImportsAcc {
     return naiveObjectConcat(this, other);
   }
 
-  addImport(intoPath: Path, fromPath: ImportPath, fromIdent: string, intoIdent: string) {
-    this.imports = this.imports.concat(
+  addImport(
+    intoPath: Path,
+    fromPath: ImportPath,
+    fromIdent: string,
+    intoIdent: string,
+    isType: boolean = false
+  ) {
+    const newEntry = () =>
       new OrderedObj({
         [intoPath.path]: new OrderedObj({
           [fromPath.relPath]: new OrderedObj({ [fromIdent]: new StringSet([intoIdent]) })
         })
-      })
-    );
+      });
+    this.imports = this.imports.concat(newEntry());
+
+    if (isType) {
+      this.types = this.types.concat(newEntry());
+    }
   }
 
   getImportedIdents(intoPath: Path, fromPath: ImportPath, fromIdent: string): Alt<StringSet> {
@@ -434,24 +452,58 @@ export class ImportsAcc {
         imports
           .keys()
           .filter(Boolean)
-          .map(relPath => {
+          .reduce((lines, relPath) => {
             const decons: OrderedObj<StringSet> = imports.obj[relPath];
 
-            if (relPath.endsWith(".js")) {
-              relPath = relPath.slice(0, relPath.length - 3);
+            const importPath = relPath.endsWith(".js")
+              ? relPath.slice(0, relPath.length - 3)
+              : relPath;
+
+            const typeDecons = this.types
+              .get(intoPath)
+              .bind(imports => imports.get(relPath))
+              .getOr(new OrderedObj<StringSet>());
+
+            if (!typeDecons.isEmpty()) {
+              lines.push(
+                scripter.typeImportDecon(
+                  importPath,
+                  ...typeDecons
+                    .keys()
+                    .map(ident =>
+                      typeDecons.obj[ident].items
+                        .map(asIdent => (asIdent === ident ? ident : `${ident} as ${asIdent}`))
+                        .join(", ")
+                    )
+                )
+              );
             }
 
-            return scripter.importDecon(
-              relPath,
-              ...decons
-                .keys()
-                .map(ident =>
-                  decons.obj[ident].items
-                    .map(asIdent => (asIdent === ident ? ident : `${ident} as ${asIdent}`))
-                    .join(", ")
-                )
-            );
-          })
+            const nonTypeDecons = [
+              ...decons.mapIntoIterable((fromIdent, intoIdents) => {
+                if (fromIdent === "@@default" || fromIdent in typeDecons.obj) return null;
+                return intoIdents.items.map(asIdent => `${fromIdent} as ${asIdent}`).join(", ");
+              })
+            ].filter(Boolean);
+
+            const defaultDecon = decons
+              .get("@@default")
+              .map(intoIdents => intoIdents.items.map(asIdent => `${asIdent}`).join(", "));
+
+            if (nonTypeDecons.length || !defaultDecon.isEmpty()) {
+              lines.push(
+                defaultDecon.isEmpty()
+                  ? scripter.importDecon(importPath, ...nonTypeDecons)
+                  : scripter.importDeconWithDefault(
+                      importPath,
+                      defaultDecon.unwrap(),
+                      ...nonTypeDecons
+                    )
+              );
+            }
+
+            return lines;
+          }, [])
       )
       .getOr([]);
   }
@@ -501,7 +553,7 @@ export class GeneratorAcc {
     this.validate();
 
     return OrderedObj.fromIterable(
-      this.groupOfPath.keys().map(path => {
+      this.groupOfPath.keys().filter(path => !this.content.get(path).isEmpty()).map(path => {
         console.log(`Rendering / formatting output for ${path}`);
         return new OrderedObj({
           [path]: scripter.render(
@@ -589,7 +641,7 @@ export class GeneratorAcc {
     }
 
     asIdent = this.createIdent(intoPath, asIdent, fromPath.path.path);
-    this.imports.addImport(intoPath, fromPath, ident, asIdent);
+    this.imports.addImport(intoPath, fromPath, ident, asIdent, !!exported.isType);
     return asIdent;
   }
 
@@ -605,7 +657,13 @@ export class GeneratorAcc {
   }
 }
 
-export type Expression = (state: GeneratorAcc, path: Path) => string;
+export interface Expression {
+  (state: GeneratorAcc, path: Path): string;
+}
+
+export function wrapExpression(expr: Expression, wrapper: string => string): Expression {
+  return (state: GeneratorAcc, path: Path) => wrapper(expr(state, path));
+}
 
 export function getSafeIdent(ident: string): string {
   while (RESERVED_WORDS.indexOf(ident) !== -1) ident += "_";
@@ -634,8 +692,14 @@ export class GeneratorFileContext<P: GeneratorContext> {
     return this.parent.config;
   }
 
-  export(ident: string, scriptable: string => string | Array<string>): Exported {
-    if (!this.state.idents.getIdentifierSources(this.path, ident).getOr(new StringSet()).items.length) {
+  export(
+    ident: string,
+    scriptable: string => string | Array<string>,
+    isType: boolean = false
+  ): Exported {
+    if (
+      !this.state.idents.getIdentifierSources(this.path, ident).getOr(new StringSet()).items.length
+    ) {
       throw new Error("GeneratorFileContext.export called before ident was reserved!");
     }
 
@@ -643,7 +707,8 @@ export class GeneratorFileContext<P: GeneratorContext> {
 
     return {
       path: this.path,
-      ident
+      ident,
+      isType
     };
   }
 
@@ -672,18 +737,17 @@ export class ExternFileContext<P: GeneratorContext> extends GeneratorFileContext
 
   get dumpedFile(): Path {
     return cachedProperty(this, "dumpedFile", () => {
-      const content = fs
-          .readFileSync(this.externFile, "UTF-8")
-          .toString();
+      const content = fs.readFileSync(this.externFile, "UTF-8").toString();
       this.state.addContent(this.path, content);
       return this.path;
     });
   }
 
-  exportExtern(ident: string): Exported {
+  exportExtern(ident: string, isType: boolean = false): Exported {
     return {
       path: this.dumpedFile,
-      ident: this.state.idents.addIdentifier(this.dumpedFile, ident, "addExtern")
+      ident: this.state.idents.addIdentifier(this.dumpedFile, ident, "addExtern"),
+      isType
     };
   }
 }

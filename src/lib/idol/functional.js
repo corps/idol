@@ -37,10 +37,10 @@ function () {
     key: "isEmpty",
     value: function isEmpty() {
       for (var _k in this.obj) {
-        return true;
+        return false;
       }
 
-      return false;
+      return true;
     }
   }, {
     key: "map",

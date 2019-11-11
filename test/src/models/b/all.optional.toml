@@ -1,12 +1,5 @@
-[Assembled.fields]
-test_literal_struct = ["tests.basic.TestLiteralStruct", "optional"]
-test_literal_top = ["tests.basic.TestLiteralTop", "optional"]
-test_kind = ["tests.basic.TestKind", "optional"]
-test_atleast_one = ["tests.basic.TestAtleastOne", "optional"]
-test_list_of_list_struct = ["tests.basic.TestListOfListStruct", "optional"]
-test_map = ["tests.basic.TestMap", "optional"]
-test_optional_field = ["tests.basic.TestOptionalField", "optional"]
-test_struct = ["tests.basic.TestStruct", "optional"]
-test_enum = ["tests.basic.TestEnum", "optional"]
-test_triplet = ["all.required.TripletOfSideImport2", "optional"]
-test_list_of = ["all.required.ListOfTestKind", "optional"]
+# All fields optional form of Assembled
+[Assembled]
+is_a = "all.required.Assembled"
+fields = {}
+variance = "Contravariant"

@@ -14,7 +14,7 @@ fields.enum = "string[]"
 fields.is_a = "string[]"
 
 # Defines the typestructures that compose the fields of this type.
-fields.fields = "FieldDec{}"
+fields.fields = ["FieldDec{}", "optional"]
 
 # Defines metadata and type specialization to the field specifically.
 fields.tags = "string[]"

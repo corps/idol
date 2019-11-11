@@ -9,10 +9,12 @@ export function render(lines: Array<string>, prettierOptions: any = { parser: "b
 export function variable(
   expr: string,
   kind: string = "const",
-  exported: boolean = true
+  exported: boolean = true,
+  typing: string | null = null
 ): (ident: string) => string {
   return (ident: string) => {
-    let result = `${kind} ${ident} = ${expr}`;
+    typing = typing != null ? `: ${typing}` : "";
+    let result = `${kind} ${ident}${typing} = ${expr}`;
     if (exported) result = `export ${result}`;
     return result;
   };
@@ -37,6 +39,10 @@ export function setProp(ident: string, arg: string, body: Array<string>): string
   return `set ${ident}(${arg}) { ${bodyRendered} }`;
 }
 
+export function spread(expr: string): string {
+  return `...${expr}`;
+}
+
 export function ret(expr: string): string {
   return `return ${expr}`;
 }
@@ -52,7 +58,26 @@ export function propExpr(obj: string, ...exprs: string[]): string {
 export function comment(comment: string): string {
   if (!comment) return comment;
   comment = comment.replace(/\//g, "\\/");
-  return comment.split("\n").map(l => `// ${l}`).join("\n");
+  return comment
+    .split("\n")
+    .map(l => `// ${l}`)
+    .join("\n");
+}
+
+export function typeSum(...options: string[]): string {
+  return options.join(" | ");
+}
+
+export function iface(
+  exported: boolean = true,
+  extds: string | null = null,
+  ...lines: string[]
+): string => string {
+  return ident => {
+    const exportPart = exported ? "export " : "";
+    const extendPart = extds ? ` extends ${extds} ` : "";
+    return `${exportPart}interface ${ident}${extendPart} {${lines.join(";\n")}}`;
+  };
 }
 
 export function propDec(prop: string, expr: string): string {
@@ -103,6 +128,10 @@ export function methodDec(
   return staticDec ? `static ${dec}` : dec;
 }
 
+export function arrowFunc(args: string[], expr: string): string {
+  return `((${args.join(",")}) => (${expr}))`;
+}
+
 export function functionDec(
   ident: string,
   args: string[],
@@ -118,12 +147,29 @@ export function literal(val: any): string {
   return JSON.stringify(val);
 }
 
+export function flowAs(expr: string, type: string): string {
+  return `(${expr}: ${type})`;
+}
+
 export function arrayLiteral(...vals: string[]): string {
   return `[${vals.join(",")}]`;
 }
 
+export function importDeconWithDefault(
+  from: string,
+  defaultDecon: string,
+  ...deconstructors: string[]
+) {
+  const decons = deconstructors.length ? `, {${deconstructors.join(", ")}}` : "";
+  return `import ${defaultDecon}${decons} from ${JSON.stringify(from)}`;
+}
+
 export function importDecon(from: string, ...deconstructors: string[]) {
   return `import {${deconstructors.join(", ")}} from ${JSON.stringify(from)}`;
+}
+
+export function typeImportDecon(from: string, ...deconstructors: string[]) {
+  return `import type {${deconstructors.join(", ")}} from ${JSON.stringify(from)}`;
 }
 
 export function exportImportDecon(from: string, deconstructors: string[]) {

@@ -1,7 +1,7 @@
 {
   "LitContraPrim": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "string"
     ],
@@ -11,7 +11,7 @@
   },
   "LitFitIntoPrim": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "literal:string:my words"
     ],
@@ -21,7 +21,7 @@
   },
   "LitWithTags": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "literal:double:2.4"
     ],
@@ -33,7 +33,7 @@
   },
   "LitWithTagsContraPrim": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "double"
     ],

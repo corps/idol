@@ -8,10 +8,13 @@ exports.variable = variable;
 exports.commented = commented;
 exports.getProp = getProp;
 exports.setProp = setProp;
+exports.spread = spread;
 exports.ret = ret;
 exports.propAccess = propAccess;
 exports.propExpr = propExpr;
 exports.comment = comment;
+exports.typeSum = typeSum;
+exports.iface = iface;
 exports.propDec = propDec;
 exports.propExprDec = propExprDec;
 exports.objLiteral = objLiteral;
@@ -19,10 +22,14 @@ exports.assignment = assignment;
 exports.classDec = classDec;
 exports.invocation = invocation;
 exports.methodDec = methodDec;
+exports.arrowFunc = arrowFunc;
 exports.functionDec = functionDec;
 exports.literal = literal;
+exports.flowAs = flowAs;
 exports.arrayLiteral = arrayLiteral;
+exports.importDeconWithDefault = importDeconWithDefault;
 exports.importDecon = importDecon;
+exports.typeImportDecon = typeImportDecon;
 exports.exportImportDecon = exportImportDecon;
 exports.newMod = void 0;
 
@@ -43,8 +50,10 @@ function render(lines) {
 function variable(expr) {
   var kind = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "const";
   var exported = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+  var typing = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
   return function (ident) {
-    var result = "".concat(kind, " ").concat(ident, " = ").concat(expr);
+    typing = typing != null ? ": ".concat(typing) : "";
+    var result = "".concat(kind, " ").concat(ident).concat(typing, " = ").concat(expr);
     if (exported) result = "export ".concat(result);
     return result;
   };
@@ -64,6 +73,10 @@ function getProp(ident, body) {
 function setProp(ident, arg, body) {
   var bodyRendered = body.join(";\n");
   return "set ".concat(ident, "(").concat(arg, ") { ").concat(bodyRendered, " }");
+}
+
+function spread(expr) {
+  return "...".concat(expr);
 }
 
 function ret(expr) {
@@ -96,6 +109,29 @@ function comment(comment) {
   }).join("\n");
 }
 
+function typeSum() {
+  for (var _len3 = arguments.length, options = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+    options[_key3] = arguments[_key3];
+  }
+
+  return options.join(" | ");
+}
+
+function iface() {
+  var exported = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+  var extds = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+  for (var _len4 = arguments.length, lines = new Array(_len4 > 2 ? _len4 - 2 : 0), _key4 = 2; _key4 < _len4; _key4++) {
+    lines[_key4 - 2] = arguments[_key4];
+  }
+
+  return function (ident) {
+    var exportPart = exported ? "export " : "";
+    var extendPart = extds ? " extends ".concat(extds, " ") : "";
+    return "".concat(exportPart, "interface ").concat(ident).concat(extendPart, " {").concat(lines.join(";\n"), "}");
+  };
+}
+
 function propDec(prop, expr) {
   return "".concat(prop, ": ").concat(expr);
 }
@@ -105,8 +141,8 @@ function propExprDec(prop, expr) {
 }
 
 function objLiteral() {
-  for (var _len3 = arguments.length, parts = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-    parts[_key3] = arguments[_key3];
+  for (var _len5 = arguments.length, parts = new Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
+    parts[_key5] = arguments[_key5];
   }
 
   return "{".concat(parts.map(function (p) {
@@ -137,8 +173,8 @@ var newMod = "new ";
 exports.newMod = newMod;
 
 function invocation(ident) {
-  for (var _len4 = arguments.length, args = new Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
-    args[_key4 - 1] = arguments[_key4];
+  for (var _len6 = arguments.length, args = new Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
+    args[_key6 - 1] = arguments[_key6];
   }
 
   return "".concat(ident, "(").concat(args.join(","), ")");
@@ -148,6 +184,10 @@ function methodDec(ident, args, body) {
   var staticDec = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
   var dec = "".concat(ident, "(").concat(args.join(","), ") {").concat(body.join("\n"), "}");
   return staticDec ? "static ".concat(dec) : dec;
+}
+
+function arrowFunc(args, expr) {
+  return "((".concat(args.join(","), ") => (").concat(expr, "))");
 }
 
 function functionDec(ident, args, body) {
@@ -161,20 +201,41 @@ function literal(val) {
   return JSON.stringify(val);
 }
 
+function flowAs(expr, type) {
+  return "(".concat(expr, ": ").concat(type, ")");
+}
+
 function arrayLiteral() {
-  for (var _len5 = arguments.length, vals = new Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
-    vals[_key5] = arguments[_key5];
+  for (var _len7 = arguments.length, vals = new Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
+    vals[_key7] = arguments[_key7];
   }
 
   return "[".concat(vals.join(","), "]");
 }
 
+function importDeconWithDefault(from, defaultDecon) {
+  for (var _len8 = arguments.length, deconstructors = new Array(_len8 > 2 ? _len8 - 2 : 0), _key8 = 2; _key8 < _len8; _key8++) {
+    deconstructors[_key8 - 2] = arguments[_key8];
+  }
+
+  var decons = deconstructors.length ? ", {".concat(deconstructors.join(", "), "}") : "";
+  return "import ".concat(defaultDecon).concat(decons, " from ").concat(JSON.stringify(from));
+}
+
 function importDecon(from) {
-  for (var _len6 = arguments.length, deconstructors = new Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
-    deconstructors[_key6 - 1] = arguments[_key6];
+  for (var _len9 = arguments.length, deconstructors = new Array(_len9 > 1 ? _len9 - 1 : 0), _key9 = 1; _key9 < _len9; _key9++) {
+    deconstructors[_key9 - 1] = arguments[_key9];
   }
 
   return "import {".concat(deconstructors.join(", "), "} from ").concat(JSON.stringify(from));
+}
+
+function typeImportDecon(from) {
+  for (var _len10 = arguments.length, deconstructors = new Array(_len10 > 1 ? _len10 - 1 : 0), _key10 = 1; _key10 < _len10; _key10++) {
+    deconstructors[_key10 - 1] = arguments[_key10];
+  }
+
+  return "import type {".concat(deconstructors.join(", "), "} from ").concat(JSON.stringify(from));
 }
 
 function exportImportDecon(from, deconstructors) {

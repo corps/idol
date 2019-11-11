@@ -494,6 +494,7 @@ class GeneratorAcc:
                 }
             )
             for path, groups in self.group_of_path
+            if self.content.get(path)
         )
 
     def add_content(self, path: Path, content: Union[str, List[str]]):

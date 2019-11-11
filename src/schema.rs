@@ -5,6 +5,7 @@ pub use crate::models::schema::*;
 use crate::type_builder::TypeBuilder;
 use regex::Regex;
 use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 
@@ -139,15 +140,18 @@ impl Type {
 
         if let Some(type_struct) = self.is_a.clone() {
             result.is_a = vec![type_struct.as_type_dec_str()];
+        } else if self.options.len() > 0 {
+            result.r#enum = self.options.clone();
+        } else {
+            let mut fields = HashMap::new();
+            for (k, v) in self.fields.iter() {
+                let mut field_parts = vec![v.type_struct.as_type_dec_str()];
+                field_parts.extend(v.tags.iter().cloned());
+                fields.insert(k.to_owned(), FieldDec(field_parts));
+            }
+            result.fields = Some(fields);
         }
 
-        for (k, v) in self.fields.iter() {
-            let mut field_parts = vec![v.type_struct.as_type_dec_str()];
-            field_parts.extend(v.tags.iter().cloned());
-            result.fields.insert(k.to_owned(), FieldDec(field_parts));
-        }
-
-        result.r#enum = self.options.clone();
         result.tags = self.tags.clone();
 
         return result;
@@ -209,7 +213,11 @@ impl Module {
             .cloned()
             .map(|from_name| (from_name, module_dec.0.get(from_name).unwrap()))
             .map(|(from_name, type_dec)| {
-                let mut field_names = type_dec.fields.keys().cloned().collect::<Vec<String>>();
+                let mut field_names = type_dec
+                    .fields
+                    .as_ref()
+                    .map(|fields| fields.keys().cloned().collect::<Vec<String>>())
+                    .unwrap_or_default();
                 field_names.sort();
                 (from_name, type_dec, field_names)
             })
@@ -217,11 +225,12 @@ impl Module {
                 type_dec
                     .is_a
                     .iter()
-                    .chain(
-                        field_names.iter().filter_map(|name| {
-                            type_dec.fields.get(name).and_then(|dec| dec.0.get(0))
-                        }),
-                    )
+                    .chain(field_names.iter().filter_map(|name| {
+                        type_dec
+                            .fields
+                            .as_ref()
+                            .and_then(|fields| fields.get(name).and_then(|dec| dec.0.get(0)))
+                    }))
                     .filter(|dec| is_model_ref(dec))
                     .filter_map(|dec| {
                         parse_type_struct(&qualifier, dec)

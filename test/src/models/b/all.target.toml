@@ -3,3 +3,15 @@ is_a = "all.required.Assembled"
 
 [AssembledOptional]
 is_a = "all.optional.Assembled"
+
+[OptionalParams]
+fields.optional = "AssembledOptional"
+
+[OptionalMethod]
+tags = ["path:/optional-method", "method:get"]
+fields.input = "OptionalParams"
+fields.output = "AssembledOptional"
+
+[OptionalService]
+tags = ["service", "path:/optional-service/"]
+fields.optional = "OptionalMethod"

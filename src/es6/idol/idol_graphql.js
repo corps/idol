@@ -1,513 +1,888 @@
+#! /usr/bin/env node
 // @flow
-
-import { BuildEnv } from "./build_env";
+import { resolve } from "path";
 import * as scripter from "./scripter";
 import { start } from "./cli";
+import { Reference } from "./js/schema/Reference";
+import { Type } from "./js/schema/Type";
 import {
-  asCodegenOutput,
-  asScaffoldOutput,
-  asTypedGeneratorOutput,
   build,
-  GeneratorConfig as BaseGeneratorConfig,
-  materialTypeMapper,
-  render,
-  scalarMapper,
-  SinglePassGeneratorOutput,
-  TypedOutputBuilder,
-  typeMapper,
-  typeStructMapper,
-  withCommentHeader
+  ExternFileContext,
+  GeneratorAcc,
+  GeneratorConfig,
+  GeneratorFileContext,
+  getMaterialTypeDeconstructor,
+  getTagValues,
+  importExpr,
+  includesTag,
+  Path,
+  ScalarDeconstructor,
+  TypeDeconstructor,
+  TypeStructDeconstructor
 } from "./generators";
-import type {
-  GeneratorParams,
-  MaterialTypeHandler,
-  OutputTypeSpecifier,
-  ScalarHandler,
-  ScalarMapper,
-  Tags,
-  TypeHandler,
-  TypeMapper,
-  TypeStructHandler,
-  TypeStructMapper
-} from "./generators";
-import { compose, Conflictable, flattenOrderedObj, OrderedObj, StringSet } from "./functional";
-import { Type } from "./schema/Type";
-import { asQualifiedIdent, getTagValue } from "./utils";
-import { Reference } from "./schema/Reference";
-import { PrimitiveType } from "./schema/PrimitiveType";
-import { TypeStruct } from "./schema/TypeStruct";
+import type { Exported, Expression, GeneratorContext } from "./generators";
+import { Alt, cachedProperty, OrderedObj } from "./functional";
+import { PrimitiveType } from "./js/schema/PrimitiveType";
 
-const idolGraphQlJs = `
-import { GraphQLScalarType, Kind } from "graphql";
-
-export function wrapValues(enumObj) {
-    return Object.keys(enumObj).reduce((obj, entity) => {
-        obj[entity] = { value: entity };
-        return obj;
-    }, {});
+export interface ExportedGraphqlType extends Exported {
+  graphqlTypeName: string;
 }
 
-export const Anything = new GraphQLScalarType({
-  name: 'IdolGraphQLAnything',
-  description: 'Any json value, untyped',
-  parseValue: (value) => value,
-  parseLiteral,
-  serialize: (value) => value,
-})
-
-function parseLiteral (ast) {
-  switch (ast.kind) {
-    case Kind.BOOLEAN:
-    case Kind.STRING:  
-      return ast.value
-    case Kind.INT:
-    case Kind.FLOAT:
-      return Number(ast.value)
-    case Kind.LIST:
-      return ast.values.map(parseLiteral)
-    case Kind.OBJECT:
-      return ast.fields.reduce((accumulator, field) => {
-        accumulator[field.name.value] = parseLiteral(field.value)
-        return accumulator
-      }, {})
-    case Kind.NULL:
-        return null
-    default:
-      throw new Error("Unexpected kind in parseLiteral: " + ast.kind)
-  }
-}
-`;
-
-export function graphqlTypeOfPrimitive(primitiveType: string) {
-  switch (primitiveType) {
-    case PrimitiveType.ANY:
-      return "Anything";
-    case PrimitiveType.STRING:
-      return "GraphQLString";
-    case PrimitiveType.BOOL:
-      return "GraphQLBoolean";
-    case PrimitiveType.DOUBLE:
-      return "GraphQLFloat";
-    case PrimitiveType.INT:
-      return "GraphQLInt";
-  }
-
-  throw new Error("Unknown primitiveType " + primitiveType);
+export interface GraphqlTypeExpression extends Expression {
+  (state: GeneratorAcc, path: Path): string;
+  graphqlTypeName: string;
 }
 
-export function asGraphQLTypeIdent(reference: Reference, qualified: boolean = true): string {
-  return qualified ? `${asQualifiedIdent(reference)}Type` : `${reference.typeName}Type`;
+export interface HasGraphqlTypeName {
+  graphqlTypeName: string;
 }
 
-export function asGraphQLFieldsIdent(reference: Reference, qualified: boolean = true): string {
-  return qualified ? `${asQualifiedIdent(reference)}Fields` : `${reference.typeName}Fields`;
+export function withGraphqlType(exported: Exported, graphqlTypeName: string): ExportedGraphqlType {
+  return ({ ...exported, graphqlTypeName }: any);
 }
 
-export class CodegenScalarExpressionHandler implements ScalarHandler<scripter.Stringable> {
-  get Literal() {
-    return (primitiveType: string, val: any) => graphqlTypeOfPrimitive(primitiveType);
-  }
-
-  get Primitive() {
-    return (primitiveType: string) => graphqlTypeOfPrimitive(primitiveType);
-  }
-
-  get Alias() {
-    return (reference: Reference) => asGraphQLTypeIdent(reference);
-  }
+export function addGraphqlTypeToExpr<T: HasGraphqlTypeName>(
+  expr: T => Expression,
+  t: T
+): GraphqlTypeExpression {
+  const wrapped: any = expr(t);
+  wrapped.graphqlTypeName = t.graphqlTypeName;
+  return wrapped;
 }
 
-export class CodegenTypeStructExpressionHandler implements TypeStructHandler<scripter.Stringable> {
-  scalarHandler: ScalarHandler<scripter.Stringable>;
+export function wrapGraphqlExpression(
+  graphqlExpr: GraphqlTypeExpression,
+  expr: string => Expression,
+  wrapType: string => string
+): GraphqlTypeExpression {
+  const newType = wrapType(graphqlExpr.graphqlTypeName);
+  const wrapper: any = (state: GeneratorAcc, path: Path) => {
+    return expr(graphqlExpr(state, path))(state, path);
+  };
 
-  constructor(
-    scalarHandler: ScalarHandler<scripter.Stringable> = new CodegenScalarExpressionHandler()
-  ) {
-    this.scalarHandler = scalarHandler;
-  }
-
-  get Scalar() {
-    return scalarMapper<scripter.Stringable>(this.scalarHandler);
-  }
-
-  get Repeated() {
-    return (scalar: scripter.Stringable, tags?: Tags = {}) =>
-      scripter.newInvocation("GraphQLList_", scalar);
-  }
-
-  get Map() {
-    return (scalar: scripter.Stringable) => "Anything";
-  }
+  wrapper.graphqlTypeName = newType;
+  return wrapper;
 }
 
-export class CodegenTypeHandler implements TypeHandler<TypedOutputBuilder, scripter.Stringable> {
-  params: GeneratorParams;
+export function importGraphqlExpr(
+  exported: ExportedGraphqlType,
+  asIdent: string | null = null
+): GraphqlTypeExpression {
+  return addGraphqlTypeToExpr(_ => importExpr(exported, asIdent), exported);
+}
+
+export class IdolGraphql implements GeneratorContext {
   config: GeneratorConfig;
-  typeStructHandler: TypeStructHandler<scripter.Stringable>;
+  state: GeneratorAcc;
+  codegenImpl: (IdolGraphql, Path, Type, boolean) => IdolGraphqlCodegenFile;
+  scaffoldImpl: (IdolGraphql, Path, Type, boolean) => IdolGraphqlScaffoldFile;
 
   constructor(
-    params: GeneratorParams,
     config: GeneratorConfig,
-    typeStructHandler: TypeStructHandler<scripter.Stringable> = new CodegenTypeStructExpressionHandler()
+    codegenImpl: (IdolGraphql, Path, Type, boolean) => IdolGraphqlCodegenFile = (
+      idolGraphql,
+      path,
+      type,
+      inputVariant
+    ) => new IdolGraphqlCodegenFile(idolGraphql, path, type, inputVariant),
+    scaffoldImpl: (IdolGraphql, Path, Type, boolean) => IdolGraphqlScaffoldFile = (
+      idolGraphql,
+      path,
+      type,
+      inputVariant
+    ) => new IdolGraphqlScaffoldFile(idolGraphql, path, type, inputVariant)
   ) {
-    this.params = params;
+    this.state = new GeneratorAcc();
     this.config = config;
-    this.typeStructHandler = typeStructHandler;
+    this.codegenImpl = codegenImpl;
+    this.scaffoldImpl = scaffoldImpl;
   }
 
-  enumConst(options: string[]): scripter.Stringable {
-    const values = options.map(o => scripter.propDec(o.toUpperCase(), scripter.literal(o)));
-    return scripter.objLiteral(...values);
-  }
-
-  objectTypeLiteral(type: Type) {
-    return scripter.objLiteral(
-      scripter.propDec("name", scripter.literal(type.named.typeName)),
-      scripter.propDec("description", scripter.literal(type.getTagValue("description", ""))),
-      scripter.propDec("fields", asGraphQLFieldsIdent(type.named))
+  get idolGraphQlFile(): IdolGraphqlFile {
+    return cachedProperty(
+      this,
+      "idolGraphQlFile",
+      () =>
+        new IdolGraphqlFile(
+          this,
+          this.state.reservePath({ runtime: this.config.codegenRoot + "/__idol_graphql__.js" })
+        )
     );
   }
 
-  fieldsLiteral(type: Type, fields: OrderedObj<scripter.Stringable>) {
-    return scripter.objLiteral(
-      ...fields.map((field, fieldName) => scripter.propDec(fieldName, field)).items()
+  hasInputVariant(t: Type): boolean {
+    const tDecon = new TypeDeconstructor(t);
+    return (
+      !tDecon.getStruct().isEmpty() ||
+      tDecon
+        .getTypeStruct()
+        .map(tsDecon => tsDecon.typeStruct.isAlias)
+        .getOr(false)
     );
   }
 
-  get TypeStruct() {
-    const typeStructExpression = typeStructMapper(this.typeStructHandler);
+  codegenFile(ref: Reference, inputVariant: boolean): IdolGraphqlCodegenFile {
+    const path = this.state.reservePath(this.config.pathsOf({ codegen: ref }));
+    const type = this.config.params.allTypes.obj[ref.qualified_name];
 
-    return (type: Type, ...args: *) =>
-      new TypedOutputBuilder(
-        [scripter.exportedConst(asGraphQLTypeIdent(type.named), typeStructExpression(...args))],
-        {
-          imports: this.config.typeImports({ codegen: type.named.qualifiedName })(type)
-        }
-      );
+    inputVariant = inputVariant && this.hasInputVariant(type);
+    return cachedProperty(this, `codegenFile${inputVariant.toString()}${path.path}`, () =>
+      this.codegenImpl(this, path, type, inputVariant)
+    );
   }
 
-  get Enum() {
-    return (type: Type, options: string[]) =>
-      new TypedOutputBuilder(
-        [scripter.exportedConst(asQualifiedIdent(type.named), this.enumConst(options))].concat(
-          type.named.qualifiedName in this.params.scaffoldTypes.obj
-            ? []
-            : [
-                scripter.exportedConst(
-                  asGraphQLTypeIdent(type.named),
-                  scripter.newInvocation(
-                    "GraphQLEnumType_",
-                    scripter.invocation("wrapValues_", asQualifiedIdent(type.named))
-                  )
-                )
-              ]
-        ),
-        {
-          imports: this.config.typeImports({ codegen: type.named.qualifiedName })(type)
-        }
-      );
+  scaffoldFile(ref: Reference, inputVariant: boolean): IdolGraphqlScaffoldFile {
+    const path = this.state.reservePath(this.config.pathsOf({ scaffold: ref }));
+    const type = this.config.params.allTypes.obj[ref.qualified_name];
+
+    inputVariant = inputVariant && this.hasInputVariant(type);
+    return cachedProperty(this, `scaffoldFile${inputVariant.toString()}${path.path}`, () =>
+      this.scaffoldImpl(this, path, type, inputVariant)
+    );
   }
 
-  get Field() {
-    const typeExprMapper = typeStructMapper<scripter.Stringable>(this.typeStructHandler);
-    return (typeStruct: TypeStruct, tags?: Tags = {}) => {
-      const typeExpr = typeExprMapper(typeStruct, tags);
-      return scripter.objLiteral(
-        scripter.propDec(
-          "description",
-          scripter.literal(getTagValue(tags.fieldTags, "description", ""))
-        ),
-        scripter.propDec("type", typeExpr)
-      );
+  defaultGraphqlTypeName(type: Type, inputTypeVariant: boolean): string {
+    if (type.named.qualifiedName in this.config.params.scaffoldTypes.obj) {
+      return type.named.typeName + (inputTypeVariant ? "Input" : "");
+    }
+
+    return type.named.asQualifiedIdent + (inputTypeVariant ? "Input" : "");
+  }
+
+  render(): OrderedObj<string> {
+    const scaffoldTypes = this.config.params.scaffoldTypes.values();
+    scaffoldTypes.forEach((t, i) => {
+      const scaffoldFile = this.scaffoldFile(t.named, false);
+      if (!scaffoldFile.declaredTypeIdent.isEmpty()) {
+        console.log(
+          `Generated ${scaffoldFile.declaredGraphqlTypeName} (${i + 1} / ${scaffoldTypes.length})`
+        );
+      } else {
+        console.log(
+          `Skipped ${scaffoldFile.declaredGraphqlTypeName} (${i + 1} / ${scaffoldTypes.length})`
+        );
+      }
+    });
+
+    return this.state.render({
+      codegen:
+        "DO NOT EDIT\nThis file was generated by idol_graphql, any changes will be overwritten when idol_graphql is run again.",
+      scaffold:
+        "This file was scaffolded by idol_graphql.  Feel free to edit as you please.  It can be regenerated by deleting the file and rerunning idol_graphql."
+    });
+  }
+}
+
+export function exportedFromGraphQL(ident: string, graphqlTypeName: string): ExportedGraphqlType {
+  return {
+    ident,
+    path: new Path("graphql"),
+    graphqlTypeName
+  };
+}
+
+export class IdolGraphqlGeneratorFileContext extends GeneratorFileContext<IdolGraphql> {
+  exportGraphqlType<T: HasGraphqlTypeName>(
+    ident: string,
+    scriptable: T => string => string | Array<string>,
+    t: T
+  ): ExportedGraphqlType {
+    return withGraphqlType(this.export(ident, scriptable(t)), t.graphqlTypeName);
+  }
+}
+
+export class IdolGraphqlCodegenFile extends IdolGraphqlGeneratorFileContext {
+  typeDecon: TypeDeconstructor;
+  inputTypeVariant: boolean;
+
+  constructor(idolGraphql: IdolGraphql, path: Path, type: Type, inputTypeVariant: boolean) {
+    super(idolGraphql, path);
+    this.typeDecon = new TypeDeconstructor(type);
+    this.inputTypeVariant = inputTypeVariant;
+
+    this.reserveIdent(this.defaultTypeIdentName);
+    if (!this.typeDecon.getEnum().isEmpty()) {
+      this.reserveIdent(this.defaultEnumName);
+    }
+    if (!this.typeDecon.getStruct().isEmpty()) {
+      this.reserveIdent(this.defaultFieldsName);
+    }
+  }
+
+  get type(): Type {
+    return this.typeDecon.t;
+  }
+
+  get defaultTypeIdentName(): string {
+    return this.newDeclaration.graphqlTypeName + "Type";
+  }
+
+  get newDeclaration(): HasGraphqlTypeName {
+    return {
+      graphqlTypeName: this.parent.defaultGraphqlTypeName(this.type, this.inputTypeVariant)
     };
   }
 
-  get Struct() {
-    return (type: Type, fields: OrderedObj<scripter.Stringable>) =>
-      new TypedOutputBuilder(
-        [
-          scripter.exportedConst(asGraphQLFieldsIdent(type.named), this.fieldsLiteral(type, fields))
-        ].concat(
-          type.named.qualifiedName in this.params.scaffoldTypes.obj
-            ? []
-            : [
-                scripter.exportedConst(
-                  asGraphQLTypeIdent(type.named),
-                  scripter.newInvocation("GraphQLObjectType_", this.objectTypeLiteral(type))
+  get defaultFieldsName(): string {
+    return this.type.named.asQualifiedIdent + (this.inputTypeVariant ? "InputFields" : "Fields");
+  }
+
+  get defaultEnumName(): string {
+    return this.type.named.asQualifiedIdent;
+  }
+
+  get declaredTypeIdent(): Alt<ExportedGraphqlType> {
+    return cachedProperty(this, "declaredTypeIdent", () => {
+      return this.enum
+        .bind(e => e.declaredType)
+        .either(this.typeStruct.bind(ts => ts.declaredType))
+        .either(this.struct.bind(struct => struct.declaredType));
+    });
+  }
+
+  get struct(): Alt<IdolGraphqlCodegenStruct> {
+    return cachedProperty(this, "struct", () =>
+      this.typeDecon
+        .getStruct()
+        .map(
+          fields =>
+            new IdolGraphqlCodegenStruct(
+              this,
+              fields.map(
+                tsDecon =>
+                  new IdolGraphQLCodegenTypeStruct(this.parent, tsDecon, this.inputTypeVariant)
+              )
+            )
+        )
+    );
+  }
+
+  get enum(): Alt<IdolGraphqlCodegenEnum> {
+    return cachedProperty(this, "enum", () =>
+      this.typeDecon.getEnum().map(options => new IdolGraphqlCodegenEnum(this, options))
+    );
+  }
+
+  get typeStruct(): Alt<IdolGraphqlCodegenTypeStructDeclaration> {
+    return cachedProperty(this, "typeStruct", () =>
+      this.typeDecon
+        .getTypeStruct()
+        .map(tsDecon => new IdolGraphqlCodegenTypeStructDeclaration(this, tsDecon))
+    );
+  }
+}
+
+export class IdolGraphqlScaffoldFile extends IdolGraphqlGeneratorFileContext {
+  typeDecon: TypeDeconstructor;
+  type: Type;
+  inputVariant: boolean;
+
+  constructor(idolGraphql: IdolGraphql, path: Path, type: Type, inputVariant: boolean) {
+    super(idolGraphql, path);
+    this.typeDecon = getMaterialTypeDeconstructor(idolGraphql.config.params.allTypes, type);
+    this.type = type;
+    this.inputVariant = inputVariant;
+
+    this.reserveIdent(this.defaultTypeIdentName);
+
+    // Used exclusively by service objects, and not needed in the input variant form.
+    if (!inputVariant) {
+      this.reserveIdent(this.defaultQueriesName);
+    }
+  }
+
+  get defaultTypeIdentName() {
+    return this.declaredGraphqlTypeName + "Type";
+  }
+
+  get declaredGraphqlTypeName() {
+    return this.parent.defaultGraphqlTypeName(this.type, this.inputVariant);
+  }
+
+  // Used exclusively by services.
+  get defaultQueriesName(): string {
+    return this.type.named.typeName + "Queries";
+  }
+
+  get struct(): Alt<IdolGraphqlScaffoldStruct> {
+    return cachedProperty(this, "struct", () =>
+      this.typeDecon
+        .getStruct()
+        .map(
+          fields =>
+            new (includesTag(this.type.tags, "service")
+              ? IdolGraphqlService
+              : IdolGraphqlScaffoldStruct)(
+              this,
+              fields.map(
+                tsDecon => new IdolGraphQLCodegenTypeStruct(this.parent, tsDecon, this.inputVariant)
+              )
+            )
+        )
+    );
+  }
+
+  get declaredTypeIdent(): Alt<ExportedGraphqlType> {
+    return cachedProperty(this, "declaredTypeIdent", () => {
+      const codegenFile = this.parent.codegenFile(this.typeDecon.t.named, this.inputVariant);
+      return this.struct
+        .bind(struct => struct.declaredType)
+        .either(
+          codegenFile.typeStruct
+            .bind(ts => ts.declaredType)
+            .either(codegenFile.enum.bind(e => e.declaredType))
+            .map(declaredType =>
+              this.exportGraphqlType(
+                this.defaultTypeIdentName,
+                dt => scripter.variable(this.importIdent(dt)),
+                declaredType
+              )
+            )
+        );
+    });
+  }
+}
+
+export class IdolGraphqlCodegenStruct extends IdolGraphqlGeneratorFileContext {
+  fields: OrderedObj<IdolGraphQLCodegenTypeStruct>;
+  codegenFile: IdolGraphqlCodegenFile;
+
+  constructor(
+    codegenFile: IdolGraphqlCodegenFile,
+    fields: OrderedObj<IdolGraphQLCodegenTypeStruct>
+  ) {
+    super(codegenFile.parent, codegenFile.path);
+    this.fields = fields;
+    this.codegenFile = codegenFile;
+  }
+
+  get declaredFields(): Alt<Exported> {
+    return cachedProperty(this, "declaredFields", () => {
+      const fieldTypes: OrderedObj<string> = this.fields
+        .mapAndFilter(codegenTypeStruct => codegenTypeStruct.typeExpr)
+        .map(expr => this.applyExpr(expr));
+
+      return Alt.lift(
+        this.export(this.codegenFile.defaultFieldsName, (ident: string) => [
+          scripter.comment(
+            getTagValues(this.codegenFile.typeDecon.t.tags, "description").join("\n")
+          ),
+          scripter.variable(
+            scripter.objLiteral(
+              ...fieldTypes.concatMap(
+                (fieldName, fieldType) => [
+                  scripter.propDec(
+                    fieldName,
+                    scripter.objLiteral(
+                      scripter.propDec("type", fieldType),
+                      scripter.propDec(
+                        "description",
+                        scripter.literal(
+                          getTagValues(
+                            this.fields.obj[fieldName].tsDecon.context.fieldTags,
+                            "description"
+                          ).join("\n")
+                        )
+                      )
+                    )
+                  )
+                ],
+                []
+              )
+            )
+          )(ident)
+        ])
+      );
+    });
+  }
+
+  get declaredType(): Alt<ExportedGraphqlType> {
+    return cachedProperty(this, "declaredType", () => {
+      return this.declaredFields.map(declaredFields =>
+        this.exportGraphqlType(
+          this.codegenFile.defaultTypeIdentName,
+          ({ graphqlTypeName }) =>
+            scripter.variable(
+              "new " +
+                scripter.invocation(
+                  this.importIdent(
+                    exportedFromGraphQL(
+                      this.codegenFile.inputTypeVariant
+                        ? "GraphQLInputObjectType"
+                        : "GraphQLObjectType",
+                      ""
+                    )
+                  ),
+                  scripter.objLiteral(
+                    scripter.propDec("name", scripter.literal(graphqlTypeName)),
+                    scripter.propDec(
+                      "description",
+                      scripter.literal(
+                        getTagValues(this.codegenFile.typeDecon.t.tags, "description").join("\n")
+                      )
+                    ),
+                    scripter.propDec(
+                      "fields",
+                      scripter.objLiteral(scripter.spread(this.importIdent(declaredFields)))
+                    )
+                  )
                 )
-              ]
-        ),
-        {
-          imports: this.config.typeImports({ codegen: type.named.qualifiedName })(type)
-        }
+            ),
+          this.codegenFile.newDeclaration
+        )
+      );
+    });
+  }
+}
+
+export class IdolGraphqlCodegenEnum extends IdolGraphqlGeneratorFileContext {
+  options: string[];
+  codegenFile: IdolGraphqlCodegenFile;
+
+  constructor(codegenFile: IdolGraphqlCodegenFile, options: string[]) {
+    super(codegenFile.parent, codegenFile.path);
+    this.codegenFile = codegenFile;
+    this.options = options;
+  }
+
+  get declaredEnum(): Alt<Exported> {
+    return cachedProperty(this, "declaredEnum", () =>
+      Alt.lift(
+        this.export(this.codegenFile.defaultEnumName, ident => [
+          scripter.comment(
+            getTagValues(this.codegenFile.typeDecon.t.tags, "description").join("\n")
+          ),
+          scripter.variable(
+            scripter.objLiteral(
+              ...this.options.map(option =>
+                scripter.propDec(option.toUpperCase(), scripter.literal(option))
+              )
+            )
+          )(ident)
+        ])
+      )
+    );
+  }
+
+  get declaredType(): Alt<ExportedGraphqlType> {
+    return cachedProperty(this, "declaredType", () =>
+      this.declaredEnum.map(declaredEnum =>
+        this.exportGraphqlType(
+          this.codegenFile.defaultTypeIdentName,
+          ({ graphqlTypeName }) => ident => [
+            scripter.variable(
+              "new " +
+                scripter.invocation(
+                  this.importIdent(exportedFromGraphQL("GraphQLEnumType", "")),
+                  scripter.objLiteral(
+                    scripter.propDec("name", scripter.literal(graphqlTypeName)),
+                    scripter.propDec(
+                      "description",
+                      scripter.literal(
+                        getTagValues(this.codegenFile.typeDecon.t.tags, "description").join("\n")
+                      )
+                    ),
+                    scripter.propDec(
+                      "values",
+                      scripter.invocation(
+                        this.importIdent(this.codegenFile.parent.idolGraphQlFile.wrapValues),
+                        this.importIdent(declaredEnum)
+                      )
+                    )
+                  )
+                )
+            )(ident)
+          ],
+          this.codegenFile.newDeclaration
+        )
+      )
+    );
+  }
+}
+
+export class IdolGraphQLCodegenTypeStruct implements GeneratorContext {
+  tsDecon: TypeStructDeconstructor;
+  state: GeneratorAcc;
+  config: GeneratorConfig;
+  idolGraphql: IdolGraphql;
+  inputVariant: boolean;
+
+  constructor(idolGraphql: IdolGraphql, tsDecon: TypeStructDeconstructor, inputVariant: boolean) {
+    this.tsDecon = tsDecon;
+    this.state = idolGraphql.state;
+    this.config = idolGraphql.config;
+    this.idolGraphql = idolGraphql;
+    this.inputVariant = inputVariant;
+  }
+
+  get typeExpr(): Alt<GraphqlTypeExpression> {
+    return this.scalarTypeExpr.concat(this.collectionTypeExpr);
+  }
+
+  get scalarTypeExpr(): Alt<GraphqlTypeExpression> {
+    if (this.tsDecon.getScalar().isEmpty()) return Alt.empty();
+    return this.innerScalar.bind(scalar => scalar.typeExpr);
+  }
+
+  get mapTypeExpr(): Alt<GraphqlTypeExpression> {
+    return this.tsDecon
+      .getMap()
+      .map(() => importGraphqlExpr(this.idolGraphql.idolGraphQlFile.Anything));
+  }
+
+  get repeatedTypeExpr(): Alt<GraphqlTypeExpression> {
+    return this.tsDecon
+      .getRepeated()
+      .bind(() => this.innerScalar.bind(innerScalar => innerScalar.typeExpr))
+      .map(scalarExpr =>
+        wrapGraphqlExpression(
+          scalarExpr,
+          scalarIdent => (state: GeneratorAcc, path: Path): string =>
+            "new " +
+            scripter.invocation(
+              state.importIdent(path, exportedFromGraphQL("GraphQLList", "")),
+              scalarIdent
+            ),
+          type => type + "[]"
+        )
+      );
+  }
+
+  get collectionTypeExpr(): Alt<GraphqlTypeExpression> {
+    return this.mapTypeExpr.either(this.repeatedTypeExpr);
+  }
+
+  get innerScalar(): Alt<IdolGraphqlCodegenScalar> {
+    return cachedProperty(this, "innerScalar", () => {
+      return this.tsDecon
+        .getScalar()
+        .concat(this.tsDecon.getMap())
+        .concat(this.tsDecon.getRepeated())
+        .map(
+          scalarDecon =>
+            new IdolGraphqlCodegenScalar(this.idolGraphql, scalarDecon, this.inputVariant)
+        );
+    });
+  }
+}
+
+export class IdolGraphqlCodegenTypeStructDeclaration extends IdolGraphQLCodegenTypeStruct {
+  codegenFile: IdolGraphqlCodegenFile;
+
+  constructor(codegenFile: IdolGraphqlCodegenFile, tsDecon: TypeStructDeconstructor) {
+    super(codegenFile.parent, tsDecon, codegenFile.inputTypeVariant);
+    this.codegenFile = codegenFile;
+  }
+
+  // Eww, this ought to be a mixin or composition rather than subclass.
+  get path(): Path {
+    return this.codegenFile.path;
+  }
+
+  get exportGraphqlType() {
+    return IdolGraphqlGeneratorFileContext.prototype.exportGraphqlType;
+  }
+
+  get export() {
+    return IdolGraphqlGeneratorFileContext.prototype.export;
+  }
+
+  get applyExpr() {
+    return GeneratorFileContext.prototype.applyExpr;
+  }
+
+  get declaredType(): Alt<ExportedGraphqlType> {
+    return cachedProperty(this, "declaredType", () =>
+      this.typeExpr.map(expr => {
+        return this.exportGraphqlType(
+          this.codegenFile.defaultTypeIdentName,
+          expr =>
+            scripter.commented(
+              getTagValues(this.tsDecon.context.typeTags, "description").join("\n"),
+              scripter.variable(this.applyExpr(expr))
+            ),
+          expr
+        );
+      })
+    );
+  }
+
+  get scalarTypeExpr(): Alt<GraphqlTypeExpression> {
+    if (this.tsDecon.getScalar().isEmpty()) return Alt.empty();
+    return super.scalarTypeExpr.either(this.literalTypeExpr);
+  }
+
+  get literalTypeExpr(): Alt<GraphqlTypeExpression> {
+    return this.tsDecon
+      .getScalar()
+      .bind(scalar => scalar.getLiteral())
+      .map(([_, val]) =>
+        addGraphqlTypeToExpr(
+          ({ graphqlTypeName }) => (state: GeneratorAcc, path: Path) => {
+            return scripter.invocation(
+              state.importIdent(path, this.idolGraphql.idolGraphQlFile.LiteralTypeOf),
+              scripter.literal(graphqlTypeName),
+              scripter.literal(val),
+              scripter.literal(
+                getTagValues(this.tsDecon.context.typeTags, "description").join("\n")
+              )
+            );
+          },
+          this.codegenFile.newDeclaration
+        )
       );
   }
 }
 
-export class GeneratorConfig extends BaseGeneratorConfig {
-  idolGraphqlPath: string;
+export class IdolGraphqlCodegenScalar implements GeneratorContext {
+  scalarDecon: ScalarDeconstructor;
+  state: GeneratorAcc;
+  config: GeneratorConfig;
+  idolGraphql: IdolGraphql;
+  inputVariant: boolean;
 
-  constructor(params: GeneratorParams) {
-    super(params);
-    this.idolGraphqlPath = this.codegenRoot + "/__idolGraphql__.js";
+  constructor(idolGraphql: IdolGraphql, scalarDecon: ScalarDeconstructor, inputVariant: boolean) {
+    this.scalarDecon = scalarDecon;
+    this.state = idolGraphql.state;
+    this.config = idolGraphql.config;
+    this.idolGraphql = idolGraphql;
+    this.inputVariant = inputVariant;
   }
 
-  graphQLImports(module: OutputTypeSpecifier<>, ...imports: string[]): OrderedObj<StringSet> {
-    const path = this.resolvePath(module, { absolute: "graphql" });
-
-    return new OrderedObj<StringSet>({
-      [path]: new StringSet(imports.map(i => `${i} as ${i}_`))
-    });
+  get typeExpr(): Alt<GraphqlTypeExpression> {
+    return this.referenceImportExpr.either(this.primTypeExpr);
   }
 
-  idolGraphQLImports(module: OutputTypeSpecifier<>, ...imports: string[]): OrderedObj<StringSet> {
-    const path = this.resolvePath(module, { supplemental: this.idolGraphqlPath });
+  get referenceImportExpr(): Alt<GraphqlTypeExpression> {
+    const aliasScaffoldFile = this.scalarDecon
+      .getAlias()
+      .filter(ref => ref.qualified_name in this.config.params.scaffoldTypes.obj)
+      .map(ref => this.idolGraphql.scaffoldFile(ref, this.inputVariant));
 
-    return new OrderedObj<StringSet>({
-      [path]: new StringSet(imports.map(i => `${i} as ${i}_`))
-    });
-  }
-
-  fieldsImport(from: OutputTypeSpecifier<>, reference: Reference): OrderedObj<StringSet> {
-    return new OrderedObj<StringSet>({
-      [this.resolvePath(from, { codegen: reference.qualifiedName })]: new StringSet([
-        asGraphQLFieldsIdent(reference)
-      ])
-    });
-  }
-
-  scaffoldTypeImport(from: OutputTypeSpecifier<>, reference: Reference): OrderedObj<StringSet> {
-    return new OrderedObj<StringSet>({
-      [this.resolvePath(from, { scaffold: reference.qualifiedName })]: new StringSet([
-        `${asGraphQLTypeIdent(reference, false)} as ${asGraphQLTypeIdent(reference)}`
-      ])
-    });
-  }
-
-  codegenTypeImport(from: OutputTypeSpecifier<>, reference: Reference): OrderedObj<StringSet> {
-    return new OrderedObj<StringSet>({
-      [this.resolvePath(from, { codegen: reference.qualifiedName })]: new StringSet([
-        asGraphQLTypeIdent(reference)
-      ])
-    });
-  }
-
-  codegenEnumImport(from: OutputTypeSpecifier<>, reference: Reference): OrderedObj<StringSet> {
-    return new OrderedObj<StringSet>({
-      [this.resolvePath(from, { codegen: reference.qualifiedName })]: new StringSet([
-        asQualifiedIdent(reference)
-      ])
-    });
-  }
-
-  graphQLImportOfPrimitive(module: OutputTypeSpecifier<>, primitiveType: string) {
-    if (primitiveType === PrimitiveType.ANY) {
-      return this.idolGraphQLImports(module, "Anything");
+    if (aliasScaffoldFile.isEmpty()) {
+      const aliasCodegenFile = this.scalarDecon
+        .getAlias()
+        .map(ref => this.idolGraphql.codegenFile(ref, this.inputVariant));
+      return aliasCodegenFile
+        .bind(codegenFile => codegenFile.declaredTypeIdent)
+        .map(codegenType => importGraphqlExpr(codegenType, "Codegen" + codegenType.ident));
     }
 
-    return this.idolGraphQLImports(module, graphqlTypeOfPrimitive(primitiveType));
+    return aliasScaffoldFile
+      .bind(scaffoldFile => scaffoldFile.declaredTypeIdent)
+      .map(scaffoldType => importGraphqlExpr(scaffoldType, "Scaffold" + scaffoldType.ident));
   }
 
-  scalarImports(module: OutputTypeSpecifier<>): ScalarMapper<OrderedObj<StringSet>> {
-    return scalarMapper<OrderedObj<StringSet>>({
-      Literal: (primitiveType: string, value: any) =>
-        this.graphQLImportOfPrimitive(module, primitiveType),
-      Primitive: (primitiveType: string) => this.graphQLImportOfPrimitive(module, primitiveType),
-      Alias: reference => {
-        if (module.scaffold) {
-          return this.fieldsImport(module, reference);
-        }
-
-        if (reference.qualifiedName in this.params.scaffoldTypes.obj) {
-          return this.scaffoldTypeImport(module, reference);
-        }
-
-        return this.codegenTypeImport(module, reference);
+  get primTypeExpr(): Alt<GraphqlTypeExpression> {
+    return this.scalarDecon.getPrimitive().map(prim => {
+      if (prim === PrimitiveType.ANY) {
+        return importGraphqlExpr(this.idolGraphql.idolGraphQlFile.Anything);
+      } else if (prim === PrimitiveType.BOOL) {
+        return importGraphqlExpr(exportedFromGraphQL("GraphQLBoolean", "Boolean"));
+      } else if (prim === PrimitiveType.DOUBLE) {
+        return importGraphqlExpr(exportedFromGraphQL("GraphQLFloat", "Float"));
+      } else if (prim === PrimitiveType.INT) {
+        return importGraphqlExpr(exportedFromGraphQL("GraphQLInt", "Int"));
+      } else if (prim === PrimitiveType.STRING) {
+        return importGraphqlExpr(exportedFromGraphQL("GraphQLString", "String"));
       }
-    });
-  }
 
-  typeStructImports(module: OutputTypeSpecifier<>): TypeStructMapper<OrderedObj<StringSet>> {
-    return typeStructMapper({
-      Scalar: this.scalarImports(module),
-      Repeated: (scalarImports: OrderedObj<StringSet>) =>
-        scalarImports.concat(this.graphQLImports(module, "GraphQLList")),
-      // TODO: Use anytime here.
-      Map: scalarImports => scalarImports
-    });
-  }
-
-  typeImports(module: OutputTypeSpecifier<>): TypeMapper<OrderedObj<StringSet>> {
-    const typeStructImportMapper = this.typeStructImports(module);
-    return typeMapper<OrderedObj<StringSet>, OrderedObj<StringSet>>({
-      Field: typeStructImportMapper,
-      TypeStruct: (type, ...args) => typeStructImportMapper(...args),
-      Enum: (...args) =>
-        this.graphQLImports(module, "GraphQLEnumType").concat(
-          this.idolGraphQLImports(module, "wrapValues")
-        ),
-      Struct: (type: Type, fieldImports: OrderedObj<OrderedObj<StringSet>>) =>
-        this.graphQLImports(module, "GraphQLObjectType").concat(
-          flattenOrderedObj(fieldImports, new OrderedObj())
-        )
+      throw new Error(`Unexpected primitive type ${prim}`);
     });
   }
 }
 
-export class ScaffoldTypeHandler implements MaterialTypeHandler<TypedOutputBuilder> {
-  config: GeneratorConfig;
+export class IdolGraphqlScaffoldStruct extends IdolGraphqlGeneratorFileContext {
+  fields: OrderedObj<IdolGraphQLCodegenTypeStruct>;
+  codegenFile: IdolGraphqlCodegenFile;
+  scaffoldFile: IdolGraphqlScaffoldFile;
 
-  constructor(config: GeneratorConfig) {
-    this.config = config;
+  constructor(
+    scaffoldFile: IdolGraphqlScaffoldFile,
+    fields: OrderedObj<IdolGraphQLCodegenTypeStruct>
+  ) {
+    super(scaffoldFile.parent, scaffoldFile.path);
+    this.fields = fields;
+    this.scaffoldFile = scaffoldFile;
+    this.codegenFile = this.parent.codegenFile(
+      this.scaffoldFile.typeDecon.t.named,
+      this.scaffoldFile.inputVariant
+    );
   }
 
-  get TypeStruct() {
-    return (type: Type) =>
-      new TypedOutputBuilder(
-        [scripter.exportedConst(type.named.typeName, asGraphQLTypeIdent(type.named))],
-        {
-          imports: this.config.codegenTypeImport({ scaffold: type.named.qualifiedName }, type.named)
-        }
-      );
+  get declaredFields(): Alt<Expression> {
+    return this.codegenFile.struct.bind(struct => struct.declaredFields).map(importExpr);
   }
 
-  get Enum() {
-    return (type: Type) =>
-      new TypedOutputBuilder(
-        [
-          // Export the enum values.
-          scripter.exportedConst(
-            type.named.typeName,
-            scripter.objLiteral("..." + asQualifiedIdent(type.named))
-          ),
-          // And then the type
-          scripter.exportedConst(
-            asGraphQLTypeIdent(type.named),
-            scripter.newInvocation(
-              "GraphQLEnumType_",
-              scripter.invocation("wrapValues_", type.named.typeName)
-            )
-          )
-        ],
-        {
-          imports: this.config
-            .codegenEnumImport({ scaffold: type.named.qualifiedName }, type.named)
-            .concat(
-              this.config.idolGraphQLImports({ scaffold: type.named.qualifiedName }, "wrapValues")
-            )
-            .concat(
-              this.config.graphQLImports({ scaffold: type.named.qualifiedName }, "GraphQLEnumType")
-            )
-        }
-      );
-  }
-
-  get Struct() {
-    return (type: Type) =>
-      new TypedOutputBuilder(
-        [
-          scripter.exportedConst(
-            asGraphQLTypeIdent(type.named, false),
-            scripter.newInvocation(
-              "GraphQLObjectType_",
-              scripter.objLiteral(
-                scripter.propDec(
-                  "fields",
-                  scripter.objLiteral(`...${asGraphQLFieldsIdent(type.named)}`)
-                ),
-                scripter.propDec("name", scripter.literal(type.named.typeName)),
-                scripter.propDec(
-                  "description",
-                  scripter.literal(type.getTagValue("description", ""))
+  get declaredType(): Alt<ExportedGraphqlType> {
+    return cachedProperty(this, "declaredType", () => {
+      return this.declaredFields.map(declaredFields =>
+        this.exportGraphqlType(
+          this.scaffoldFile.defaultTypeIdentName,
+          ({ graphqlTypeName }) =>
+            scripter.variable(
+              "new " +
+                scripter.invocation(
+                  this.importIdent(
+                    exportedFromGraphQL(
+                      this.scaffoldFile.inputVariant
+                        ? "GraphQLInputObjectType"
+                        : "GraphQLObjectType",
+                      ""
+                    )
+                  ),
+                  scripter.objLiteral(
+                    scripter.propDec("name", scripter.literal(graphqlTypeName)),
+                    scripter.propDec(
+                      "description",
+                      scripter.literal(
+                        getTagValues(this.scaffoldFile.typeDecon.t.tags, "description").join("\n")
+                      )
+                    ),
+                    scripter.propDec(
+                      "fields",
+                      scripter.objLiteral(scripter.spread(this.applyExpr(declaredFields)))
+                    )
+                  )
                 )
-              )
-            )
-          )
-        ],
-        {
-          imports: this.config
-            .fieldsImport({ scaffold: type.named.qualifiedName }, type.named)
-            .concat(
-              this.config.graphQLImports(
-                { scaffold: type.named.qualifiedName },
-                "GraphQLObjectType"
-              )
-            )
-        }
+            ),
+          this.codegenFile.newDeclaration
+        )
       );
+    });
   }
 }
 
-const CODEGEN_FILE_COMMENT_HEADER = [
-  "DO NO EDIT",
-  "This file is managed by idol_graphql.js.  Any edits will be overwritten on next run of the generator.",
-  "Please edit the scaffolded files generated outside of the codegen directory, as you can extend your models more effectively there."
-].join("\n");
+export class IdolGraphqlService extends IdolGraphqlScaffoldStruct {
+  fields: OrderedObj<IdolGraphQLCodegenTypeStruct>;
+  codegenFile: IdolGraphqlCodegenFile;
 
-const SCAFFOLD_FILE_COMMENT_HEADER = [
-  "This file was scaffolded by idol_graphql.js  Please feel free to modify and extend, but do not delete or remove its exports."
-].join("\n");
-
-export const idolGraphQLJsOutput = (config: GeneratorConfig) =>
-  new SinglePassGeneratorOutput({
-    supplemental: new OrderedObj<Conflictable<string>>({
-      [config.idolGraphqlPath]: new Conflictable([idolGraphQlJs])
-    })
-  });
-
-function runGenerator(
-  params: GeneratorParams,
-  config: GeneratorConfig,
-  codegenTypeHandler: TypeHandler<TypedOutputBuilder, *> = new CodegenTypeHandler(params, config),
-  scaffoldTypeHandler: MaterialTypeHandler<TypedOutputBuilder> = new ScaffoldTypeHandler(config)
-): SinglePassGeneratorOutput {
-  const codegenOutputs = params.allTypes.map(
-    asCodegenOutput(
-      asTypedGeneratorOutput(
-        compose(
-          typeMapper(codegenTypeHandler),
-          withCommentHeader(CODEGEN_FILE_COMMENT_HEADER)
+  get declaredFields(): Alt<Expression> {
+    return cachedProperty(this, "declaredFields", () => {
+      const methods: OrderedObj<string> = this.fields
+        .mapAndFilter(codegenTypeStruct =>
+          codegenTypeStruct.tsDecon
+            .getScalar()
+            .bind(scalar => scalar.getAlias())
+            .map(ref =>
+              getMaterialTypeDeconstructor(
+                this.config.params.allTypes,
+                this.config.params.allTypes.obj[ref.qualified_name]
+              )
+            )
+            .bind(tDecon => new IdolGraphqlMethod(this.parent, tDecon).methodExpr)
         )
-      )
-    )
-  );
+        .map(expr => this.applyExpr(expr));
 
-  const scaffoldOutputs = params.scaffoldTypes.map(
-    asScaffoldOutput(
-      asTypedGeneratorOutput(
-        compose(
-          materialTypeMapper(scaffoldTypeHandler, params.allTypes.obj),
-          withCommentHeader(SCAFFOLD_FILE_COMMENT_HEADER)
+      return Alt.lift(
+        this.export(this.scaffoldFile.defaultQueriesName, (ident: string) => [
+          scripter.comment(getTagValues(this.scaffoldFile.type.tags, "description").join("\n")),
+          scripter.variable(
+            scripter.objLiteral(
+              ...methods.concatMap((fieldName, method) => [scripter.propDec(fieldName, method)], [])
+            )
+          )(ident)
+        ])
+      ).map(importExpr);
+    });
+  }
+}
+
+export class IdolGraphqlMethod implements GeneratorContext {
+  tDecon: TypeDeconstructor;
+  state: GeneratorAcc;
+  config: GeneratorConfig;
+  idolGraphql: IdolGraphql;
+
+  constructor(idolGraphql: IdolGraphql, tDecon: TypeDeconstructor) {
+    this.tDecon = tDecon;
+    this.state = idolGraphql.state;
+    this.config = idolGraphql.config;
+    this.idolGraphql = idolGraphql;
+  }
+
+  get methodExpr(): Alt<Expression> {
+    return this.tDecon.getStruct().bind(fields => {
+      const outputTypeExpr: Alt<GraphqlTypeExpression> = fields
+        .get("output")
+        .bind(
+          outputTs => new IdolGraphQLCodegenTypeStruct(this.idolGraphql, outputTs, false).typeExpr
+        );
+      const inputFields: Alt<Exported> = fields
+        .get("input")
+        .bind(inputTs => inputTs.getScalar().bind(scalar => scalar.getAlias()))
+        .bind(ref => {
+          const materialType = getMaterialTypeDeconstructor(
+            this.config.params.allTypes,
+            this.config.params.allTypes.obj[ref.qualified_name]
+          );
+          return this.idolGraphql
+            .codegenFile(materialType.t.named, true)
+            .struct.bind(struct => struct.declaredFields);
+        });
+
+      if (outputTypeExpr.isEmpty() || inputFields.isEmpty()) {
+        throw new Error("GraphQL methods required input and output fields.");
+      }
+
+      return outputTypeExpr.bind(output =>
+        inputFields.map(inputFields => (state: GeneratorAcc, path: Path) =>
+          scripter.objLiteral(
+            scripter.propDec("type", output(state, path)),
+            scripter.propDec(
+              "resolve",
+              scripter.arrowFunc(["root", "args", "context"], scripter.literal(null))
+            ),
+            scripter.propDec(
+              "args",
+              scripter.objLiteral(scripter.spread(state.importIdent(path, inputFields)))
+            ),
+            scripter.propDec(
+              "description",
+              scripter.literal(getTagValues(this.tDecon.t.tags, "description").join("\n"))
+            )
+          )
         )
-      )
-    )
-  );
+      );
+    });
+  }
+}
 
-  let output = flattenOrderedObj(codegenOutputs, new SinglePassGeneratorOutput());
-  output = output.concat(flattenOrderedObj(scaffoldOutputs, new SinglePassGeneratorOutput()));
-  output = output.concat(idolGraphQLJsOutput(config));
+export class IdolGraphqlFile extends ExternFileContext<IdolGraphql> {
+  constructor(parent: IdolGraphql, path: Path) {
+    super(resolve(__dirname, "__idol_graphql__.js"), parent, path);
+  }
 
-  return output;
+  get wrapValues(): Exported {
+    return this.exportExtern("wrapValues");
+  }
+
+  get Anything(): ExportedGraphqlType {
+    return withGraphqlType(this.exportExtern("Anything"), "IdolGraphQLAnything");
+  }
+
+  get LiteralTypeOf(): Exported {
+    return this.exportExtern("LiteralTypeOf");
+  }
 }
 
 function main() {
   const params = start({
     flags: {},
     args: {
-      target: "idol module names whose contents will have extensible GraphQLType's scaffolded.",
+      target: "idol module names whose contents will have extensible types scaffolded.",
       output: "a directory to generate the scaffolds and codegen into."
     }
   });
 
   const config = new GeneratorConfig(params);
-  config.withPathConfig({
-    scaffold: BaseGeneratorConfig.flatNamespace,
-    codegen: BaseGeneratorConfig.oneFilePerType
+  config.withPathMappings({
+    codegen: config.inCodegenDir(GeneratorConfig.oneFilePerType),
+    scaffold: GeneratorConfig.oneFilePerType
   });
 
-  const types = runGenerator(params, config);
-  const renderedOutput = render(config, types);
-  const moveTo = build(config, renderedOutput);
+  const idolGraphql = new IdolGraphql(config);
+  const moveTo = build(config, idolGraphql.render());
   moveTo(params.outputDir);
 }
 

@@ -1,7 +1,7 @@
 {
   "SpecializedContravariantInt": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "any"
     ],
@@ -11,7 +11,7 @@
   },
   "SpecializedCovariantInt": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "primitive_specialized.SpecializedInt"
     ],
@@ -21,7 +21,7 @@
   },
   "SpecializedInt": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "int"
     ],
@@ -33,7 +33,7 @@
   },
   "SpecializedString": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "string"
     ],
@@ -45,7 +45,7 @@
   },
   "TwoSpecializedContravariant": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "any"
     ],
@@ -55,7 +55,7 @@
   },
   "UnspecializedInt": {
     "enum": [],
-    "fields": {},
+    "fields": null,
     "is_a": [
       "int"
     ],
