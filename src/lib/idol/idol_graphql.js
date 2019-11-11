@@ -918,7 +918,7 @@ function (_ExternFileContext) {
   function IdolGraphqlFile(parent, path) {
     _classCallCheck(this, IdolGraphqlFile);
 
-    return _possibleConstructorReturn(this, _getPrototypeOf(IdolGraphqlFile).call(this, (0, _path.resolve)(__dirname, "../../lib/idol/__idol_graphql__.js"), parent, path));
+    return _possibleConstructorReturn(this, _getPrototypeOf(IdolGraphqlFile).call(this, (0, _path.resolve)(__dirname, "__idol_graphql__.js"), parent, path));
   }
 
   _createClass(IdolGraphqlFile, [{

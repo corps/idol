@@ -246,7 +246,7 @@ export class IdolJSHttpScaffoldFile extends GeneratorFileContext<IdolJsHttp> {
 
 export class HttpServiceBase extends ExternFileContext<IdolJsHttp> {
   constructor(parent: IdolJsHttp, path: Path) {
-    super(resolve(__dirname, "../../es6/idol/HttpServiceBase.js"), parent, path);
+    super(resolve(__dirname, "HttpServiceBase.js.flow"), parent, path);
   }
 
   get HttpServiceBase(): Exported {

@@ -32,6 +32,10 @@ from ..required.triplet_of_side_import2 import (
 
 
 class AllOptionalAssembled(Struct):
+    """
+    All fields optional form of Assembled
+    """
+
     test_atleast_one: Optional[CodegenTestsBasicTestAtleastOne]
 
     test_enum: Optional[CodegenTestsBasicTestEnum]

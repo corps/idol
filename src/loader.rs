@@ -124,20 +124,22 @@ impl Loader {
                     .collect();
             }
 
-            for (field_name, field) in t.fields.iter_mut() {
-                if let Some(description_comments) =
-                    comments.get(&format!("{}.fields.{}", type_name, field_name))
-                {
-                    field.0 = field
-                        .0
-                        .to_owned()
-                        .into_iter()
-                        .chain(
-                            description_comments
-                                .iter()
-                                .map(|c| format!("description:{}", c)),
-                        )
-                        .collect();
+            if t.fields.is_some() {
+                for (field_name, field) in t.fields.as_mut().unwrap().iter_mut() {
+                    if let Some(description_comments) =
+                        comments.get(&format!("{}.fields.{}", type_name, field_name))
+                    {
+                        field.0 = field
+                            .0
+                            .to_owned()
+                            .into_iter()
+                            .chain(
+                                description_comments
+                                    .iter()
+                                    .map(|c| format!("description:{}", c)),
+                            )
+                            .collect();
+                    }
                 }
             }
         }

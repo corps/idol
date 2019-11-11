@@ -36,6 +36,7 @@ import {
   AllRequiredTripletOfSideImport2InputType as CodegenAllRequiredTripletOfSideImport2InputType
 } from "../required/TripletOfSideImport2";
 
+// All fields optional form of Assembled;
 export const AllOptionalAssembledFields = {
   test_atleast_one: {
     type: CodegenTestsBasicTestAtleastOneType,
@@ -67,6 +68,7 @@ export const AllOptionalAssembledFields = {
     description: ""
   }
 };
+// All fields optional form of Assembled;
 export const AllOptionalAssembledInputFields = {
   test_atleast_one: {
     type: CodegenTestsBasicTestAtleastOneInputType,

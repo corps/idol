@@ -8,9 +8,6 @@ tags = ["v"]
 is_a = "tests.basic.TestKind[]"
 tags = ["atleast_one"]
 
-[Assembled]
-tags = ["export:graphql"]
-
 [Assembled.fields]
 test_literal_struct = ["tests.basic.TestLiteralStruct"]
 test_literal_top = "tests.basic.TestLiteralTop"

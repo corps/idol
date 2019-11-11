@@ -7,6 +7,7 @@ import { TestsBasicTestStructFragment } from "../../tests/basic/TestStruct";
 import { AllRequiredTripletOfSideImport2Fragment } from "../required/TripletOfSideImport2";
 import gql from "graphql-tag";
 
+// All fields optional form of Assembled;
 export const AllOptionalAssembledFragment = gql`
   fragment AllOptionalAssembledFields on AllOptionalAssembled {
     test_atleast_one

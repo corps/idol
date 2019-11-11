@@ -303,7 +303,7 @@ function (_ExternFileContext) {
   function HttpServiceBase(parent, path) {
     _classCallCheck(this, HttpServiceBase);
 
-    return _possibleConstructorReturn(this, _getPrototypeOf(HttpServiceBase).call(this, (0, _path.resolve)(__dirname, "../../es6/idol/HttpServiceBase.js"), parent, path));
+    return _possibleConstructorReturn(this, _getPrototypeOf(HttpServiceBase).call(this, (0, _path.resolve)(__dirname, "HttpServiceBase.js.flow"), parent, path));
   }
 
   _createClass(HttpServiceBase, [{

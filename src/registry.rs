@@ -241,7 +241,7 @@ mod tests {
         let mut registry = SchemaRegistry::new();
         let mut module_dec = ModuleDec::default();
         let type_dec = TypeDec {
-            fields: map! { "ok_field".to_owned() => FieldDec(vec!["string".to_owned()]) },
+            fields: Some(map! { "ok_field".to_owned() => FieldDec(vec!["string".to_owned()]) }),
             ..TypeDec::default()
         };
         module_dec.0.insert("My_model".to_owned(), type_dec);
@@ -250,7 +250,7 @@ mod tests {
         assert!(result.is_ok());
 
         let type_dec = TypeDec {
-            fields: map! { "not.ok.field".to_owned() => FieldDec(vec!["string".to_owned()]) },
+            fields: Some(map! { "not.ok.field".to_owned() => FieldDec(vec!["string".to_owned()]) }),
             ..TypeDec::default()
         };
         module_dec.0.insert("My_model2".to_owned(), type_dec);
@@ -307,7 +307,9 @@ mod tests {
 
         let mut module_dec = ModuleDec::default();
         let type_dec = TypeDec {
-            fields: map! { "a".to_string() => FieldDec(vec!["literal:string:1[]".to_owned()]) },
+            fields: Some(
+                map! { "a".to_string() => FieldDec(vec!["literal:string:1[]".to_owned()]) },
+            ),
             ..TypeDec::default()
         };
         module_dec.0.insert("A".to_owned(), type_dec);

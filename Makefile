@@ -1,7 +1,7 @@
 MODELS     := $(wildcard src/models/*.toml)
 SOURCE_FILES = $(shell find src -type f | egrep ".*\.rs" | grep -v "bin/")
 
-release: target/release/idol target/release/idol_rs js release-python
+release: target/release/idol target/release/idol_rs js
 
 release-python: versions
 	cp LICENSE src/lib/idol/LICENSE

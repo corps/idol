@@ -17,6 +17,10 @@ from marshmallow.fields import Nested
 
 
 class AllOptionalAssembledSchema(Schema):
+    """
+    All fields optional form of Assembled
+    """
+
     test_atleast_one = TestsBasicTestAtleastOneField(
         dump_to="test_atleast_one", load_from="test_atleast_one", allow_none=True
     )

@@ -486,7 +486,7 @@ export class IdolJsCodegenScalar implements GeneratorContext {
 
 export class IdolJsFile extends ExternFileContext<IdolJs> {
   constructor(parent: IdolJs, path: Path) {
-    super(resolve(__dirname, "../../lib/idol/__idol__.js"), parent, path);
+    super(resolve(__dirname, "__idol__.js"), parent, path);
   }
 
   get literal(): Exported {

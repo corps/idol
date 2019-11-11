@@ -65,7 +65,7 @@ impl<'a> TypeBuilder<'a> {
             has_head_type = true;
         }
 
-        if self.type_dec.fields.len() > 0 {
+        if self.type_dec.fields.is_some() {
             if has_head_type {
                 return Err(TypeDecError::MixedDec(format!(
                     "Type dec had both fields and options set, cannot mix enum and struct"
@@ -74,7 +74,7 @@ impl<'a> TypeBuilder<'a> {
 
             has_head_type = true;
 
-            for (field_name, field_dec) in self.type_dec.fields.iter() {
+            for (field_name, field_dec) in self.type_dec.fields.as_ref().unwrap().iter() {
                 if !FIELD_NAME_REGEX.is_match(field_name) {
                     return Err(TypeDecError::BadFieldNameError(field_name.to_owned()));
                 }
@@ -136,9 +136,7 @@ impl<'a> TypeBuilder<'a> {
                 if t.options.len() > 0 {
                     let (options, _) = composed.as_enum()?;
                     t.options = options;
-                }
-
-                if t.fields.len() > 0 {
+                } else {
                     let (fields, _) = composed.as_fields()?;
                     t.fields = fields;
                 }
@@ -174,7 +172,14 @@ impl<'a> TypeBuilder<'a> {
             let keys_to_remove = t
                 .fields
                 .keys()
-                .filter(|k| !self.type_dec.fields.contains_key(k.to_owned()))
+                .filter(|k| {
+                    !self
+                        .type_dec
+                        .fields
+                        .as_ref()
+                        .unwrap()
+                        .contains_key(k.to_owned())
+                })
                 .cloned()
                 .collect::<Vec<String>>();
 

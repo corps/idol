@@ -13,6 +13,7 @@ import { TestsBasicTestStruct as CodegenTestsBasicTestStruct } from "../../tests
 import { AllRequiredTripletOfSideImport2 as CodegenAllRequiredTripletOfSideImport2 } from "../required/TripletOfSideImport2";
 import { Struct } from "../../__idol__";
 
+// All fields optional form of Assembled;
 export class AllOptionalAssembled {
   constructor(val) {
     this._original = val;

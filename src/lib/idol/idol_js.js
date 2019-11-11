@@ -585,7 +585,7 @@ function (_ExternFileContext) {
   function IdolJsFile(parent, path) {
     _classCallCheck(this, IdolJsFile);
 
-    return _possibleConstructorReturn(this, _getPrototypeOf(IdolJsFile).call(this, (0, _path.resolve)(__dirname, "../../lib/idol/__idol__.js"), parent, path));
+    return _possibleConstructorReturn(this, _getPrototypeOf(IdolJsFile).call(this, (0, _path.resolve)(__dirname, "__idol__.js"), parent, path));
   }
 
   _createClass(IdolJsFile, [{
