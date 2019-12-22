@@ -120,19 +120,23 @@ def class_dec(
     super_classes: Iterable[str],
     body: Iterable,
     doc_str: Optional[Iterable[str]] = None,
+    decorators: Optional[Iterable[str]] = None,
 ) -> List:
     super_str: str = ", ".join(super_classes) if super_classes else "object"
-    return [
+    return ["@" + dec for dec in (decorators or [])] + [
         f"class {class_name}({super_str}):",
         (['"""'] + list(doc_str) + ['"""'] if doc_str else []) + (list(body) or ["pass"]),
     ]
 
 
 def nameable_class_dec(
-    super_classes: Iterable[str], body: Iterable, doc_str: Optional[Iterable[str]] = None
+    super_classes: Iterable[str],
+    body: Iterable,
+    doc_str: Optional[Iterable[str]] = None,
+    decorators: Optional[Iterable[str]] = None,
 ) -> Callable[[str], List]:
     def nameable(ident: str) -> List:
-        return class_dec(ident, super_classes, body, doc_str=doc_str)
+        return class_dec(ident, super_classes, body, doc_str=doc_str, decorators=decorators)
 
     return nameable
 

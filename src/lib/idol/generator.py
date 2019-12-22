@@ -94,10 +94,16 @@ class ImportPath:
 class Exported:
     path: Path
     ident: str
+    source_state: Optional["GeneratorAcc"]
 
-    def __init__(self, path: Path, ident: str):
+    def __init__(self, path: Path, ident: str, source_state: Optional["GeneratorAcc"] = None):
         self.ident = ident
         self.path = path
+
+        if not path.is_module and not source_state:
+            raise ValueError(f"source_state parameter required for non module {path}")
+
+        self.source_state = source_state
 
 
 class GeneratorParams:
@@ -293,6 +299,13 @@ def import_expr(exported: Exported, as_ident: str = None) -> "Expression":
     return inner
 
 
+def as_expression(expr: str) -> "Expression":
+    def inner(state: GeneratorAcc, path: Path) -> str:
+        return expr
+
+    return inner
+
+
 def get_material_type_deconstructor(all_types: OrderedObj[Type], t: Type) -> TypeDeconstructor:
     def search_type(type_decon: TypeDeconstructor) -> TypeDeconstructor:
         return Alt(
@@ -439,6 +452,7 @@ class GeneratorAcc:
     imports: ImportsAcc
     content: OrderedObj[List]
     group_of_path: OrderedObj[StringSet]
+    external_source_roots: Dict["GeneratorAcc", str]
     uniq: int
 
     def __init__(self):
@@ -446,12 +460,11 @@ class GeneratorAcc:
         self.imports = ImportsAcc()
         self.content = OrderedObj()
         self.group_of_path = OrderedObj()
+        self.external_source_roots = {}
         self.uniq = 0
 
-    def concat(self, other: "GeneratorAcc") -> "GeneratorAcc":
-        return naive_object_concat(self, other)
-
-    __add__ = concat
+    def add_external_source_root(self, source_state: "GeneratorAcc", rel_path: str):
+        self.external_source_roots[source_state] = rel_path
 
     def validate(self) -> "GeneratorAcc":
         path_errors = [
@@ -526,9 +539,16 @@ class GeneratorAcc:
         if into_path == exported.path:
             return exported.ident
 
-        from_path = into_path.import_path_to(exported.path)
+        export_path = exported.path
 
-        if not from_path.is_module and not self.idents.get_identifier_sources(
+        # Handle pathing mapping of exports from external source states.
+        if exported.source_state and exported.source_state is not self:
+            rel_root = self.external_source_roots[exported.source_state]
+            export_path = Path(os.path.join(rel_root, export_path.path))
+
+        from_path = into_path.import_path_to(export_path)
+
+        if not from_path.is_module and not exported.source_state.idents.get_identifier_sources(
             from_path.path, ident
         ):
             raise ValueError(
@@ -596,7 +616,7 @@ class AbstractGeneratorFileContext:
         ), "GeneratorFileContext.export called before identifier reserved."
 
         self.state.add_content(self.path, scriptable(ident))
-        return Exported(self.path, ident)
+        return Exported(self.path, ident, source_state=self.state)
 
     def import_ident(self, exported: Exported, as_ident: Optional[str] = None) -> str:
         return self.state.import_ident(self.path, exported, as_ident)
@@ -632,7 +652,9 @@ class ExternFileContext(GeneratorFileContext):
 
     def export_extern(self, ident: str) -> Exported:
         return Exported(
-            self.dumped_file, self.state.idents.add_identifier(self.dumped_file, ident, "extern")
+            self.dumped_file,
+            self.state.idents.add_identifier(self.dumped_file, ident, "extern"),
+            source_state=self.state,
         )
 
 
