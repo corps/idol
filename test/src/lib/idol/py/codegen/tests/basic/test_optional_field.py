@@ -8,5 +8,5 @@ class TestsBasicTestOptionalField(Struct):
     optional: Optional[str]
 
     __field_constructors__ = [
-        ("optional", "optional", Primitive.of(str), dict(optional=True))
+        ("optional", "optional", Primitive.of(str), dict(optional=True),)
     ]

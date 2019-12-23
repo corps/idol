@@ -8,5 +8,5 @@ class AllTargetOptionalService(Struct):
     optional: ScaffoldOptionalMethod
 
     __field_constructors__ = [
-        ("optional", "optional", ScaffoldOptionalMethod, dict(optional=False))
+        ("optional", "optional", ScaffoldOptionalMethod, dict(optional=False),)
     ]

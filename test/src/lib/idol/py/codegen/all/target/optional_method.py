@@ -13,6 +13,6 @@ class AllTargetOptionalMethod(Struct):
     output: ScaffoldAssembledOptional
 
     __field_constructors__ = [
-        ("input", "input", ScaffoldOptionalParams, dict(optional=False)),
-        ("output", "output", ScaffoldAssembledOptional, dict(optional=False)),
+        ("input", "input", ScaffoldOptionalParams, dict(optional=False),),
+        ("output", "output", ScaffoldAssembledOptional, dict(optional=False),),
     ]

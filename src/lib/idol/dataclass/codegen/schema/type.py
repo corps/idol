@@ -18,7 +18,7 @@ class SchemaTypeDataclass(object):
     fields: Mapping[str, SchemaFieldDataclass] = field(default_factory=dict)
     # Set when this is type is an alias or simply an type expression (such as a generic).
     # Exclusive with having values for options or fields.
-    is_a: Optional[SchemaTypeStructDataclass] = field(default_factory=SchemaTypeStructDataclass)
+    is_a: Optional[SchemaTypeStructDataclass] = field(default_factory=(lambda: None))
     # The name and module information of this type's definition.
     named: SchemaReferenceDataclass = field(default_factory=SchemaReferenceDataclass)
     # When this type is an enum includes the string values for each enum entry.  Note that each

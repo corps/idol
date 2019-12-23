@@ -9,4 +9,6 @@ from .type_struct import SchemaTypeStructDataclass
 class SchemaFieldDataclass(object):
     field_name: str = field(default_factory=(lambda: ""))
     tags: List[str] = field(default_factory=list)
-    type_struct: SchemaTypeStructDataclass = field(default_factory=SchemaTypeStructDataclass)
+    type_struct: SchemaTypeStructDataclass = field(
+        default_factory=SchemaTypeStructDataclass
+    )

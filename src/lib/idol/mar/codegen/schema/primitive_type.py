@@ -16,5 +16,8 @@ class SchemaPrimitiveTypeEnum(Enum):
 
 
 SchemaPrimitiveTypeField = wrap_field(
-    EnumField, "SchemaPrimitiveTypeField", (lambda: SchemaPrimitiveTypeEnum), by_value=True
+    EnumField,
+    "SchemaPrimitiveTypeField",
+    (lambda: SchemaPrimitiveTypeEnum),
+    by_value=True,
 )

@@ -21,9 +21,9 @@ class TestsBasicTestLiteralStruct(Struct):
     two: CodegenTestsBasicLiteralHello
 
     __field_constructors__ = [
-        ("five", "five", CodegenTestsBasicLiteralFive, dict(optional=True)),
-        ("four", "four", CodegenTestsBasicLiteralTrue, dict(optional=False)),
-        ("one", "one", CodegenTestsBasicLiteral1, dict(optional=False)),
-        ("three", "three", CodegenTestsBasicLiteralThreeO, dict(optional=False)),
-        ("two", "two", CodegenTestsBasicLiteralHello, dict(optional=False)),
+        ("five", "five", CodegenTestsBasicLiteralFive, dict(optional=True),),
+        ("four", "four", CodegenTestsBasicLiteralTrue, dict(optional=False),),
+        ("one", "one", CodegenTestsBasicLiteral1, dict(optional=False),),
+        ("three", "three", CodegenTestsBasicLiteralThreeO, dict(optional=False),),
+        ("two", "two", CodegenTestsBasicLiteralHello, dict(optional=False),),
     ]

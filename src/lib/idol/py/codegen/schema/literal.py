@@ -13,8 +13,8 @@ class SchemaLiteral(Struct):
     string: str
 
     __field_constructors__ = [
-        ("bool", "bool", Primitive.of(bool), dict(optional=False)),
-        ("double", "double", Primitive.of(float), dict(optional=False)),
-        ("int", "int", Primitive.of(int), dict(optional=False)),
-        ("string", "string", Primitive.of(str), dict(optional=False)),
+        ("bool", "bool", Primitive.of(bool), dict(optional=False),),
+        ("double", "double", Primitive.of(float), dict(optional=False),),
+        ("int", "int", Primitive.of(int), dict(optional=False),),
+        ("string", "string", Primitive.of(str), dict(optional=False),),
     ]

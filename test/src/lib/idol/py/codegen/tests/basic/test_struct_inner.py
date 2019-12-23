@@ -11,7 +11,7 @@ class TestsBasicTestStructInner(Struct):
     f: int
 
     __field_constructors__ = [
-        ("d", "d", Primitive.of(bool), dict(optional=False)),
-        ("e", "e", Primitive.of(float), dict(optional=False)),
-        ("f", "f", Primitive.of(int), dict(optional=False)),
+        ("d", "d", Primitive.of(bool), dict(optional=False),),
+        ("e", "e", Primitive.of(float), dict(optional=False),),
+        ("f", "f", Primitive.of(int), dict(optional=False),),
     ]

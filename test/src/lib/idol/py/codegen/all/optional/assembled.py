@@ -65,8 +65,8 @@ class AllOptionalAssembled(Struct):
             CodegenTestsBasicTestAtleastOne,
             dict(optional=True),
         ),
-        ("test_enum", "test_enum", CodegenTestsBasicTestEnum, dict(optional=True)),
-        ("test_kind", "test_kind", CodegenTestsBasicTestKind, dict(optional=True)),
+        ("test_enum", "test_enum", CodegenTestsBasicTestEnum, dict(optional=True),),
+        ("test_kind", "test_kind", CodegenTestsBasicTestKind, dict(optional=True),),
         (
             "test_list_of",
             "test_list_of",
@@ -91,7 +91,7 @@ class AllOptionalAssembled(Struct):
             CodegenTestsBasicTestLiteralTop,
             dict(optional=True),
         ),
-        ("test_map", "test_map", CodegenTestsBasicTestMap, dict(optional=True)),
+        ("test_map", "test_map", CodegenTestsBasicTestMap, dict(optional=True),),
         (
             "test_optional_field",
             "test_optional_field",

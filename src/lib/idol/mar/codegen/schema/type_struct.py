@@ -11,11 +11,15 @@ from marshmallow.fields import Nested
 
 
 class SchemaTypeStructSchema(Schema):
-    literal = SchemaLiteralField(dump_to="literal", load_from="literal", allow_none=True)
+    literal = SchemaLiteralField(
+        dump_to="literal", load_from="literal", allow_none=True
+    )
     primitive_type = SchemaPrimitiveTypeField(
         dump_to="primitive_type", load_from="primitive_type", allow_none=False
     )
-    reference = SchemaReferenceField(dump_to="reference", load_from="reference", allow_none=False)
+    reference = SchemaReferenceField(
+        dump_to="reference", load_from="reference", allow_none=False
+    )
     struct_kind = SchemaStructKindField(
         dump_to="struct_kind", load_from="struct_kind", allow_none=False
     )

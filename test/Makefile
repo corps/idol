@@ -28,6 +28,7 @@ models: $(MODELS)
 	cat build.json | ../target/debug/idol_rs --output src/models/ --mod "crate::models"
 	cat build.json | idol_py --output src/lib/idol/py --target all.target
 	cat build.json | idol_mar --output src/lib/idol/py_mar --target all.target
+	cat build.json | idol_dataclass --output src/lib/idol/py_data --target all.target
 	cat build.json | $$(npm bin)/idol_js --output src/lib/idol/js --target all.target
 	cat build.json | $$(npm bin)/idol_graphql --output src/lib/idol/graphql --target all.target
 	cat build.json | $$(npm bin)/idol_flow --output src/lib/idol/flow --target all.target

@@ -258,6 +258,9 @@ class IdolDataCodegenTypeStruct(GeneratorContext):
 
     @cached_property
     def default_factory_expr(self) -> Alt[Expression]:
+        if includes_tag(self.ts_decon.context.field_tags, "optional"):
+            return Alt.lift(as_expression(scripter.thunk("None")))
+
         return (
             Alt(as_expression("list") for _ in self.ts_decon.get_repeated())
             ^ Alt(as_expression("dict") for _ in self.ts_decon.get_map())

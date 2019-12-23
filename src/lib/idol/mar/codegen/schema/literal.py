@@ -14,5 +14,7 @@ class SchemaLiteralSchema(Schema):
 
 
 SchemaLiteralField = wrap_field(
-    Nested, "SchemaLiteralField", (lambda: import_module("...schema.literal", __package__).Literal)
+    Nested,
+    "SchemaLiteralField",
+    (lambda: import_module("...schema.literal", __package__).Literal),
 )

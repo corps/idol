@@ -21,7 +21,7 @@ class AllRequiredTripletOfSideImport2(Struct):
     c: MutableMapping[str, CodegenTestsBasicTestStruct]
 
     __field_constructors__ = [
-        ("a", "a", CodegenTestsAbsThreeSideImport2, dict(optional=False)),
+        ("a", "a", CodegenTestsAbsThreeSideImport2, dict(optional=False),),
         (
             "b",
             "b",
