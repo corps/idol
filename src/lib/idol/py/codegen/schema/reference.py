@@ -18,7 +18,7 @@ class SchemaReference(Struct):
     type_name: str
 
     __field_constructors__ = [
-        ("module_name", "module_name", Primitive.of(str), dict(optional=False)),
-        ("qualified_name", "qualified_name", Primitive.of(str), dict(optional=False)),
-        ("type_name", "type_name", Primitive.of(str), dict(optional=False)),
+        ("module_name", "module_name", Primitive.of(str), dict(optional=False),),
+        ("qualified_name", "qualified_name", Primitive.of(str), dict(optional=False),),
+        ("type_name", "type_name", Primitive.of(str), dict(optional=False),),
     ]

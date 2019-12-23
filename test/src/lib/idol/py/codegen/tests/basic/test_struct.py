@@ -14,7 +14,7 @@ class TestsBasicTestStruct(Struct):
     c: CodegenTestsBasicTestStructInner
 
     __field_constructors__ = [
-        ("a", "a", Primitive.of(str), dict(optional=False)),
-        ("b", "b", Primitive.of(int), dict(optional=False)),
-        ("c", "c", CodegenTestsBasicTestStructInner, dict(optional=False)),
+        ("a", "a", Primitive.of(str), dict(optional=False),),
+        ("b", "b", Primitive.of(int), dict(optional=False),),
+        ("c", "c", CodegenTestsBasicTestStructInner, dict(optional=False),),
     ]

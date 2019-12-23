@@ -14,7 +14,7 @@ setup(
     packages=["idol", "idol/py", "idol/py/codegen", "idol/py/codegen/schema", "idol/py/schema"],
     install_requires=["black", "cached_property"],
     python_require=">= 3.6",
-    scripts=["idol/idol_py", "idol/idol_mar"],
+    scripts=["idol/idol_py", "idol/idol_mar", "idol/idol_dataclass"],
     zip_safe=False,
     package_data={"": ["LICENSE", "idol_py", "idol_mar", "VERSION", "README"]},
 )

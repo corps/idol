@@ -42,8 +42,8 @@ class SchemaType(Struct):
             Map.of(ScaffoldField, dict(atleast_one=False)),
             dict(optional=False),
         ),
-        ("is_a", "is_a", ScaffoldTypeStruct, dict(optional=True)),
-        ("named", "named", ScaffoldReference, dict(optional=False)),
+        ("is_a", "is_a", ScaffoldTypeStruct, dict(optional=True),),
+        ("named", "named", ScaffoldReference, dict(optional=False),),
         (
             "options",
             "options",

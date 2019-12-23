@@ -17,7 +17,7 @@ class SchemaModule(Struct):
     types_dependency_ordering: MutableSequence[str]
 
     __field_constructors__ = [
-        ("module_name", "module_name", Primitive.of(str), dict(optional=False)),
+        ("module_name", "module_name", Primitive.of(str), dict(optional=False),),
         (
             "types_by_name",
             "types_by_name",

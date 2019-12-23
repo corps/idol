@@ -10,5 +10,5 @@ class AllTargetOptionalParams(Struct):
     optional: ScaffoldAssembledOptional
 
     __field_constructors__ = [
-        ("optional", "optional", ScaffoldAssembledOptional, dict(optional=False))
+        ("optional", "optional", ScaffoldAssembledOptional, dict(optional=False),)
     ]
