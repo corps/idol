@@ -549,7 +549,7 @@ class GeneratorAcc:
         from_path = into_path.import_path_to(export_path)
 
         if not from_path.is_module and not exported.source_state.idents.get_identifier_sources(
-            from_path.path, ident
+            exported.path, ident
         ):
             raise ValueError(
                 f"identifier {ident} required by {into_path} does not exist in {from_path}"
