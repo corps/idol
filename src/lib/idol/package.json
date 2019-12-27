@@ -1,6 +1,6 @@
 {
   "name": "@lyric-travel/idol_js",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "javascript codegen library and base code generators compatible with idol",
   "dependencies": {
     "esm": "^3.2.25",
