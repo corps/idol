@@ -18,5 +18,5 @@ class SchemaFieldSchema(Schema):
 SchemaFieldField = wrap_field(
     Nested,
     "SchemaFieldField",
-    (lambda: import_module("...schema.field", __package__).Field),
+    (lambda: import_module("...schema.field", __package__).FieldSchema),
 )

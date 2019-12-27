@@ -36,5 +36,5 @@ class SchemaTypeSchema(Schema):
 SchemaTypeField = wrap_field(
     Nested,
     "SchemaTypeField",
-    (lambda: import_module("...schema.type", __package__).Type),
+    (lambda: import_module("...schema.type", __package__).TypeSchema),
 )

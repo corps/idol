@@ -469,7 +469,7 @@ class IdolMarScaffoldFile(GeneratorFileContext):
 
     @property
     def default_schema_name(self) -> str:
-        return self.t.named.type_name
+        return self.t.named.type_name + "Schema"
 
 
 class IdolMarFile(ExternFileContext):

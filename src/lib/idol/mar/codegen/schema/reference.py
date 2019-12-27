@@ -26,5 +26,5 @@ class SchemaReferenceSchema(Schema):
 SchemaReferenceField = wrap_field(
     Nested,
     "SchemaReferenceField",
-    (lambda: import_module("...schema.reference", __package__).Reference),
+    (lambda: import_module("...schema.reference", __package__).ReferenceSchema),
 )

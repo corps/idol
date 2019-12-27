@@ -28,5 +28,5 @@ class SchemaTypeStructSchema(Schema):
 SchemaTypeStructField = wrap_field(
     Nested,
     "SchemaTypeStructField",
-    (lambda: import_module("...schema.type_struct", __package__).TypeStruct),
+    (lambda: import_module("...schema.type_struct", __package__).TypeStructSchema),
 )

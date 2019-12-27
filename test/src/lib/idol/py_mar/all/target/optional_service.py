@@ -1,9 +1,9 @@
 # This file was scaffold by idol_mar, but it will not be overwritten, so feel free to edit.
 # This file will be regenerated if you delete it.
 from ...codegen.all.target.optional_service import (
-    AllTargetOptionalServiceSchema as OptionalServiceCodegen,
+    AllTargetOptionalServiceSchema as OptionalServiceSchemaCodegen,
 )
 
 
-class OptionalService(OptionalServiceCodegen):
+class OptionalServiceSchema(OptionalServiceSchemaCodegen):
     pass

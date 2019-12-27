@@ -19,6 +19,6 @@ AllTargetOptionalParamsField = wrap_field(
     (
         lambda: import_module(
             "....all.target.optional_params", __package__
-        ).OptionalParams
+        ).OptionalParamsSchema
     ),
 )

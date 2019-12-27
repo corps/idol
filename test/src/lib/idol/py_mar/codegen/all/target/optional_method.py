@@ -23,6 +23,6 @@ AllTargetOptionalMethodField = wrap_field(
     (
         lambda: import_module(
             "....all.target.optional_method", __package__
-        ).OptionalMethod
+        ).OptionalMethodSchema
     ),
 )
