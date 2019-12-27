@@ -22,6 +22,15 @@ class BuildEnv:
             file.write(contents)
 
     def finalize(self, output_dir: str, replace: bool = False):
+        # Create module files.
+        for (dirpath, dirnames, _) in os.walk(self.build_dir):
+            for name in dirnames:
+                expected_init = os.path.join(dirpath, name, "__init__.py")
+                expected_init = self.abs_path(expected_init)
+                if not os.path.exists(expected_init):
+                    with open(expected_init, "w") as file:
+                        file.write("\n")
+
         existing_codegen = os.path.join(output_dir, self.codegen_root)
         if os.path.exists(existing_codegen):
             shutil.rmtree(existing_codegen)
