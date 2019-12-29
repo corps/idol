@@ -21,6 +21,6 @@ function _templateObject() {
 
 function _taggedTemplateLiteral(strings, raw) { if (!raw) { raw = strings.slice(0); } return Object.freeze(Object.defineProperties(strings, { raw: { value: Object.freeze(raw) } })); }
 
-// Metadata contained about a module.;
+// Metadata contained about a module.
 var SchemaModuleFragment = (0, _graphqlTag["default"])(_templateObject());
 exports.SchemaModuleFragment = SchemaModuleFragment;

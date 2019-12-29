@@ -27,20 +27,24 @@ import { Alt, cachedProperty, OrderedObj } from "./functional";
 export class IdolJs implements GeneratorContext {
   config: GeneratorConfig;
   state: GeneratorAcc;
-  codegenImpl: (IdolJs, Path, Type) => IdolJsCodegenFile;
-  scaffoldImpl: (IdolJs, Path, Type) => IdolJsScaffoldFile;
 
   constructor(
     config: GeneratorConfig,
-    codegenImpl: (IdolJs, Path, Type) => IdolJsCodegenFile = (idolJs, path, type) =>
-      new IdolJsCodegenFile(idolJs, path, type),
-    scaffoldImpl: (IdolJs, Path, Type) => IdolJsScaffoldFile = (idolJs, path, type) =>
-      new IdolJsScaffoldFile(idolJs, path, type)
   ) {
     this.state = new GeneratorAcc();
     this.config = config;
-    this.codegenImpl = codegenImpl;
-    this.scaffoldImpl = scaffoldImpl;
+  }
+
+  get IdolJsCodegenFile() {
+    return IdolJsCodegenFile;
+  }
+  
+  get IdolJsScaffoldFile() {
+    return IdolJsScaffoldFile;
+  }
+
+  get IdolJsFile() {
+    return IdolJsFile;
   }
 
   get idolJsFile(): IdolJsFile {
@@ -48,7 +52,7 @@ export class IdolJs implements GeneratorContext {
       this,
       "idolJsFile",
       () =>
-        new IdolJsFile(
+        new this.IdolJsFile(
           this,
           this.state.reservePath({ runtime: this.config.codegenRoot + "/__idol__.js" })
         )
@@ -59,7 +63,7 @@ export class IdolJs implements GeneratorContext {
     const path = this.state.reservePath(this.config.pathsOf({ codegen: ref }));
     const type = this.config.params.allTypes.obj[ref.qualified_name];
     return cachedProperty(this, `codegenFile${path.path}`, () =>
-      this.codegenImpl(this, path, type)
+      new this.IdolJsCodegenFile(this, path, type)
     );
   }
 
@@ -67,7 +71,7 @@ export class IdolJs implements GeneratorContext {
     const path = this.state.reservePath(this.config.pathsOf({ scaffold: ref }));
     const type = this.config.params.allTypes.obj[ref.qualified_name];
     return cachedProperty(this, `scaffoldFile${path.path}`, () =>
-      this.scaffoldImpl(this, path, type)
+      new this.IdolJsScaffoldFile(this, path, type)
     );
   }
 
@@ -123,26 +127,42 @@ export class IdolJsCodegenFile extends GeneratorFileContext<IdolJs> {
         .getStruct()
         .map(
           fields =>
-            new IdolJsCodegenStruct(
+            new this.IdolJsCodegenStruct(
               this,
-              fields.map(tsDecon => new IdolJsCodegenTypeStruct(this.parent, tsDecon))
+              fields.map(tsDecon => new this.IdolJsCodegenTypeStruct(this.parent, tsDecon))
             )
         )
     );
   }
 
+  get IdolJsCodegenStruct() {
+    return IdolJsCodegenStruct;
+  }
+
+  get IdolJsCodegenTypeStruct() {
+    return IdolJsCodegenTypeStruct;
+  }
+
   get enum(): Alt<IdolJsCodegenEnum> {
     return cachedProperty(this, "enum", () =>
-      this.typeDecon.getEnum().map(options => new IdolJsCodegenEnum(this, options))
+      this.typeDecon.getEnum().map(options => new this.IdolJsCodegenEnum(this, options))
     );
+  }
+
+  get IdolJsCodegenEnum() {
+    return IdolJsCodegenEnum;
   }
 
   get typeStruct(): Alt<IdolJsCodegenTypeStructDeclaration> {
     return cachedProperty(this, "typeStruct", () =>
       this.typeDecon
         .getTypeStruct()
-        .map(tsDecon => new IdolJsCodegenTypeStructDeclaration(this, tsDecon))
+        .map(tsDecon => new this.IdolJsCodegenTypeStructDeclaration(this, tsDecon))
     );
+  }
+
+  get IdolJsCodegenTypeStructDeclaration() {
+    return IdolJsCodegenTypeStructDeclaration;
   }
 }
 
@@ -392,8 +412,12 @@ export class IdolJsCodegenTypeStruct implements GeneratorContext {
         .getScalar()
         .concat(this.tsDecon.getMap())
         .concat(this.tsDecon.getRepeated())
-        .map(scalarDecon => new IdolJsCodegenScalar(this.idolJS, scalarDecon));
+        .map(scalarDecon => new this.IdolJsCodegenScalar(this.idolJS, scalarDecon));
     });
+  }
+
+  get IdolJsCodegenScalar() {
+    return IdolJsCodegenScalar;
   }
 }
 

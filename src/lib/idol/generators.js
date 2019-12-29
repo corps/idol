@@ -700,10 +700,16 @@ function () {
     this.imports = new ImportsAcc();
     this.content = new _functional.OrderedObj();
     this.groupOfPath = new _functional.OrderedObj();
+    this.externalSourceRoots = [];
     this.uniq = 0;
   }
 
   _createClass(GeneratorAcc, [{
+    key: "addExternalSourceRoot",
+    value: function addExternalSourceRoot(acc, relPath) {
+      this.externalSourceRoots.push([acc, relPath]);
+    }
+  }, {
     key: "concat",
     value: function concat(other) {
       return (0, _functional.naiveObjectConcat)(this, other);
@@ -787,6 +793,8 @@ function () {
   }, {
     key: "importIdent",
     value: function importIdent(intoPath, exported) {
+      var _this6 = this;
+
       var asIdent = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
       var ident = exported.ident;
 
@@ -798,9 +806,28 @@ function () {
         return ident;
       }
 
-      var fromPath = intoPath.importPathTo(exported.path);
+      var exportPath = exported.path;
 
-      if (!fromPath.isModule && this.idents.getIdentifierSources(fromPath.path, ident).isEmpty()) {
+      if (exported.sourceState && exported.sourceState !== this) {
+        var match = this.externalSourceRoots.find(function (_ref12) {
+          var _ref13 = _slicedToArray(_ref12, 2),
+              source = _ref13[0],
+              _ = _ref13[1];
+
+          return source === _this6;
+        });
+
+        if (!match) {
+          throw new Error("External source was used, but no relative path was configured.");
+        }
+
+        var relRoot = match[1];
+        exportPath = new Path(_path2["default"].join(relRoot, exportPath.path));
+      }
+
+      var fromPath = intoPath.importPathTo(exportPath);
+
+      if (exported.sourceState && exported.sourceState.idents.getIdentifierSources(fromPath.path, ident).isEmpty()) {
         throw new Error("identifier ".concat(ident, " required by ").concat(intoPath.path, " does not exist in ").concat(fromPath.path.path));
       }
 
@@ -870,6 +897,7 @@ function () {
       this.state.addContent(this.path, scriptable(ident));
       return {
         path: this.path,
+        sourceState: this.state,
         ident: ident,
         isType: isType
       };
@@ -915,13 +943,13 @@ function (_GeneratorFileContext) {
 
   // Subclasses required to provide this
   function ExternFileContext(externFile, parent, path) {
-    var _this6;
+    var _this7;
 
     _classCallCheck(this, ExternFileContext);
 
-    _this6 = _possibleConstructorReturn(this, _getPrototypeOf(ExternFileContext).call(this, parent, path));
-    _this6.externFile = externFile;
-    return _this6;
+    _this7 = _possibleConstructorReturn(this, _getPrototypeOf(ExternFileContext).call(this, parent, path));
+    _this7.externFile = externFile;
+    return _this7;
   }
 
   _createClass(ExternFileContext, [{
@@ -930,6 +958,7 @@ function (_GeneratorFileContext) {
       var isType = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       return {
         path: this.dumpedFile,
+        sourceState: this.state,
         ident: this.state.idents.addIdentifier(this.dumpedFile, ident, "addExtern"),
         isType: isType
       };
@@ -937,14 +966,14 @@ function (_GeneratorFileContext) {
   }, {
     key: "dumpedFile",
     get: function get() {
-      var _this7 = this;
+      var _this8 = this;
 
       return (0, _functional.cachedProperty)(this, "dumpedFile", function () {
-        var content = _fs["default"].readFileSync(_this7.externFile, "UTF-8").toString();
+        var content = _fs["default"].readFileSync(_this8.externFile, "UTF-8").toString();
 
-        _this7.state.addContent(_this7.path, content);
+        _this8.state.addContent(_this8.path, content);
 
-        return _this7.path;
+        return _this8.path;
       });
     }
   }]);

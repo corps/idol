@@ -31,20 +31,50 @@ exports.importDeconWithDefault = importDeconWithDefault;
 exports.importDecon = importDecon;
 exports.typeImportDecon = typeImportDecon;
 exports.exportImportDecon = exportImportDecon;
-exports.newMod = void 0;
+exports.newMod = exports.formattingConfig = void 0;
 
 var _prettier = _interopRequireDefault(require("prettier"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
-function render(lines) {
-  var prettierOptions = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
+
+function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
+
+var formattingConfig = {
+  prettierOptions: {
     parser: "babel-flow"
-  };
-  var content = lines.map(function (v) {
+  }
+};
+exports.formattingConfig = formattingConfig;
+
+function render(lines) {
+  var lineStrs = lines.map(function (v) {
     return v + "";
-  }).join(";\n");
-  return _prettier["default"].format(content, prettierOptions);
+  });
+  var i = 0;
+
+  for (; i < lineStrs.length; ++i) {
+    var line = lineStrs[i];
+
+    if (line.startsWith("import ")) {
+      continue;
+    }
+
+    if (line.startsWith("//")) {
+      continue;
+    }
+
+    break;
+  }
+
+  var imports = lineStrs.slice(0, i).join("\n");
+  var content = [imports].concat(_toConsumableArray(lineStrs.slice(i))).join("\n\n");
+  return _prettier["default"].format(content, formattingConfig.prettierOptions);
 }
 
 function variable(expr) {

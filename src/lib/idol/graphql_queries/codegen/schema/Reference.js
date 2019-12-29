@@ -21,6 +21,6 @@ function _templateObject() {
 
 function _taggedTemplateLiteral(strings, raw) { if (!raw) { raw = strings.slice(0); } return Object.freeze(Object.defineProperties(strings, { raw: { value: Object.freeze(raw) } })); }
 
-// A reference describes the location of a type in the module system.;
+// A reference describes the location of a type in the module system.
 var SchemaReferenceFragment = (0, _graphqlTag["default"])(_templateObject());
 exports.SchemaReferenceFragment = SchemaReferenceFragment;

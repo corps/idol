@@ -60,19 +60,10 @@ var IdolJs =
 /*#__PURE__*/
 function () {
   function IdolJs(config) {
-    var codegenImpl = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : function (idolJs, path, type) {
-      return new IdolJsCodegenFile(idolJs, path, type);
-    };
-    var scaffoldImpl = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : function (idolJs, path, type) {
-      return new IdolJsScaffoldFile(idolJs, path, type);
-    };
-
     _classCallCheck(this, IdolJs);
 
     this.state = new _generators.GeneratorAcc();
     this.config = config;
-    this.codegenImpl = codegenImpl;
-    this.scaffoldImpl = scaffoldImpl;
   }
 
   _createClass(IdolJs, [{
@@ -85,7 +76,7 @@ function () {
       }));
       var type = this.config.params.allTypes.obj[ref.qualified_name];
       return (0, _functional.cachedProperty)(this, "codegenFile".concat(path.path), function () {
-        return _this.codegenImpl(_this, path, type);
+        return new _this.IdolJsCodegenFile(_this, path, type);
       });
     }
   }, {
@@ -98,7 +89,7 @@ function () {
       }));
       var type = this.config.params.allTypes.obj[ref.qualified_name];
       return (0, _functional.cachedProperty)(this, "scaffoldFile".concat(path.path), function () {
-        return _this2.scaffoldImpl(_this2, path, type);
+        return new _this2.IdolJsScaffoldFile(_this2, path, type);
       });
     }
   }, {
@@ -122,12 +113,27 @@ function () {
       });
     }
   }, {
+    key: "IdolJsCodegenFile",
+    get: function get() {
+      return IdolJsCodegenFile;
+    }
+  }, {
+    key: "IdolJsScaffoldFile",
+    get: function get() {
+      return IdolJsScaffoldFile;
+    }
+  }, {
+    key: "IdolJsFile",
+    get: function get() {
+      return IdolJsFile;
+    }
+  }, {
     key: "idolJsFile",
     get: function get() {
       var _this4 = this;
 
       return (0, _functional.cachedProperty)(this, "idolJsFile", function () {
-        return new IdolJsFile(_this4, _this4.state.reservePath({
+        return new _this4.IdolJsFile(_this4, _this4.state.reservePath({
           runtime: _this4.config.codegenRoot + "/__idol__.js"
         }));
       });
@@ -189,11 +195,21 @@ function (_GeneratorFileContext) {
 
       return (0, _functional.cachedProperty)(this, "struct", function () {
         return _this7.typeDecon.getStruct().map(function (fields) {
-          return new IdolJsCodegenStruct(_this7, fields.map(function (tsDecon) {
-            return new IdolJsCodegenTypeStruct(_this7.parent, tsDecon);
+          return new _this7.IdolJsCodegenStruct(_this7, fields.map(function (tsDecon) {
+            return new _this7.IdolJsCodegenTypeStruct(_this7.parent, tsDecon);
           }));
         });
       });
+    }
+  }, {
+    key: "IdolJsCodegenStruct",
+    get: function get() {
+      return IdolJsCodegenStruct;
+    }
+  }, {
+    key: "IdolJsCodegenTypeStruct",
+    get: function get() {
+      return IdolJsCodegenTypeStruct;
     }
   }, {
     key: "enum",
@@ -202,9 +218,14 @@ function (_GeneratorFileContext) {
 
       return (0, _functional.cachedProperty)(this, "enum", function () {
         return _this8.typeDecon.getEnum().map(function (options) {
-          return new IdolJsCodegenEnum(_this8, options);
+          return new _this8.IdolJsCodegenEnum(_this8, options);
         });
       });
+    }
+  }, {
+    key: "IdolJsCodegenEnum",
+    get: function get() {
+      return IdolJsCodegenEnum;
     }
   }, {
     key: "typeStruct",
@@ -213,9 +234,14 @@ function (_GeneratorFileContext) {
 
       return (0, _functional.cachedProperty)(this, "typeStruct", function () {
         return _this9.typeDecon.getTypeStruct().map(function (tsDecon) {
-          return new IdolJsCodegenTypeStructDeclaration(_this9, tsDecon);
+          return new _this9.IdolJsCodegenTypeStructDeclaration(_this9, tsDecon);
         });
       });
+    }
+  }, {
+    key: "IdolJsCodegenTypeStructDeclaration",
+    get: function get() {
+      return IdolJsCodegenTypeStructDeclaration;
     }
   }]);
 
@@ -438,9 +464,14 @@ function () {
 
       return (0, _functional.cachedProperty)(this, "innerScalar", function () {
         return _this17.tsDecon.getScalar().concat(_this17.tsDecon.getMap()).concat(_this17.tsDecon.getRepeated()).map(function (scalarDecon) {
-          return new IdolJsCodegenScalar(_this17.idolJS, scalarDecon);
+          return new _this17.IdolJsCodegenScalar(_this17.idolJS, scalarDecon);
         });
       });
+    }
+  }, {
+    key: "IdolJsCodegenScalar",
+    get: function get() {
+      return IdolJsCodegenScalar;
     }
   }]);
 

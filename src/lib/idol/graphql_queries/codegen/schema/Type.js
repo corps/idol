@@ -25,6 +25,6 @@ function _templateObject() {
 
 function _taggedTemplateLiteral(strings, raw) { if (!raw) { raw = strings.slice(0); } return Object.freeze(Object.defineProperties(strings, { raw: { value: Object.freeze(raw) } })); }
 
-// A wrapper type containing fields that can describe a Type, as well as its tag metadata.;
+// A wrapper type containing fields that can describe a Type, as well as its tag metadata.
 var SchemaTypeFragment = (0, _graphqlTag["default"])(_templateObject(), _TypeStruct.TypeStructFragment, _Reference.ReferenceFragment);
 exports.SchemaTypeFragment = SchemaTypeFragment;

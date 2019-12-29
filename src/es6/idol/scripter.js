@@ -1,9 +1,31 @@
 // @flow
 import prettier from "prettier";
 
-export function render(lines: Array<string>, prettierOptions: any = { parser: "babel-flow" }) {
-  const content = lines.map(v => v + "").join(";\n");
-  return prettier.format(content, prettierOptions);
+export const formattingConfig = {
+  prettierOptions: ({ parser: "babel-flow" }: any),
+};
+
+export function render(lines: Array<string>) {
+  const lineStrs = lines.map(v => v + "");
+
+  let i = 0;
+
+  for (; i < lineStrs.length; ++i) {
+    const line = lineStrs[i];
+    if (line.startsWith("import ")) {
+      continue;
+    }
+
+    if (line.startsWith("//")) {
+      continue;
+    }
+
+    break;
+  }
+
+  const imports = lineStrs.slice(0, i).join("\n");
+  const content  = [imports, ...lineStrs.slice(i)].join("\n\n");
+  return prettier.format(content, formattingConfig.prettierOptions);
 }
 
 export function variable(

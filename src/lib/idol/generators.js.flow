@@ -87,6 +87,7 @@ export interface Exported {
   path: Path;
   ident: string;
   isType?: boolean;
+  sourceState?: GeneratorAcc | null;
 }
 
 export type GeneratorParams = {
@@ -514,6 +515,7 @@ export class GeneratorAcc {
   imports: ImportsAcc;
   content: OrderedObj<Array<string>>;
   groupOfPath: OrderedObj<StringSet>;
+  externalSourceRoots: Array<[GeneratorAcc, string]>;
   uniq: number;
 
   constructor() {
@@ -521,7 +523,12 @@ export class GeneratorAcc {
     this.imports = new ImportsAcc();
     this.content = new OrderedObj<Array<string>>();
     this.groupOfPath = new OrderedObj<StringSet>();
+    this.externalSourceRoots = [];
     this.uniq = 0;
+  }
+
+  addExternalSourceRoot(acc: GeneratorAcc, relPath: string) {
+    this.externalSourceRoots.push([acc, relPath]);
   }
 
   concat(other: GeneratorAcc): GeneratorAcc {
@@ -623,10 +630,20 @@ export class GeneratorAcc {
     if (intoPath.path === exported.path.path) {
       return ident;
     }
+    
+    let exportPath = exported.path;
+    if (exported.sourceState && exported.sourceState !== this) {
+      const match = this.externalSourceRoots.find(([source, _]) => source === this);
+      if (!match) {
+        throw new Error("External source was used, but no relative path was configured.");
+      }
+      const relRoot = match[1];
+      exportPath = new Path(path.join(relRoot, exportPath.path));
+    }
 
-    const fromPath = intoPath.importPathTo(exported.path);
+    const fromPath = intoPath.importPathTo(exportPath);
 
-    if (!fromPath.isModule && this.idents.getIdentifierSources(fromPath.path, ident).isEmpty()) {
+    if (exported.sourceState && exported.sourceState.idents.getIdentifierSources(fromPath.path, ident).isEmpty()) {
       throw new Error(
         `identifier ${ident} required by ${intoPath.path} does not exist in ${fromPath.path.path}`
       );
@@ -707,6 +724,7 @@ export class GeneratorFileContext<P: GeneratorContext> {
 
     return {
       path: this.path,
+      sourceState:this.state,
       ident,
       isType
     };
@@ -746,6 +764,7 @@ export class ExternFileContext<P: GeneratorContext> extends GeneratorFileContext
   exportExtern(ident: string, isType: boolean = false): Exported {
     return {
       path: this.dumpedFile,
+      sourceState:this.state,
       ident: this.state.idents.addIdentifier(this.dumpedFile, ident, "addExtern"),
       isType
     };

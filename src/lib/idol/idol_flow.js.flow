@@ -32,20 +32,20 @@ const A: { [k: string]: AM } = {
 export class IdolFlow implements GeneratorContext {
   config: GeneratorConfig;
   state: GeneratorAcc;
-  codegenImpl: (IdolFlow, Path, Type) => IdolFlowCodegenFile;
-  scaffoldImpl: (IdolFlow, Path, Type) => IdolFlowScaffoldFile;
 
   constructor(
     config: GeneratorConfig,
-    codegenImpl: (IdolFlow, Path, Type) => IdolFlowCodegenFile = (idolFlow, path, type) =>
-      new IdolFlowCodegenFile(idolFlow, path, type),
-    scaffoldImpl: (IdolFlow, Path, Type) => IdolFlowScaffoldFile = (idolFlow, path, type) =>
-      new IdolFlowScaffoldFile(idolFlow, path, type)
   ) {
     this.state = new GeneratorAcc();
     this.config = config;
-    this.codegenImpl = codegenImpl;
-    this.scaffoldImpl = scaffoldImpl;
+  }
+
+  get IdolFlowCodegenFile() {
+    return IdolFlowCodegenFile;
+  }
+
+  get IdolFlowScaffoldFile() {
+    return IdolFlowScaffoldFile;
   }
 
   codegenFile(ref: Reference): IdolFlowCodegenFile {
@@ -53,7 +53,7 @@ export class IdolFlow implements GeneratorContext {
     const type = this.config.params.allTypes.obj[ref.qualified_name];
 
     return cachedProperty(this, `codegenFile${path.path}`, () =>
-      this.codegenImpl(this, path, type)
+      new this.IdolFlowCodegenFile(this, path, type)
     );
   }
 
@@ -62,7 +62,7 @@ export class IdolFlow implements GeneratorContext {
     const type = this.config.params.allTypes.obj[ref.qualified_name];
 
     return cachedProperty(this, `scaffoldFile${path.path}`, () =>
-      this.scaffoldImpl(this, path, type)
+      new this.IdolFlowScaffoldFile(this, path, type)
     );
   }
 
@@ -149,16 +149,24 @@ export class IdolFlowCodegenFile extends GeneratorFileContext<IdolFlow> {
 
   get enum(): Alt<IdolFlowCodegenEnum> {
     return cachedProperty(this, "enum", () =>
-      this.typeDecon.getEnum().map(options => new IdolFlowCodegenEnum(this, options))
+      this.typeDecon.getEnum().map(options => new this.IdolFlowCodegenEnum(this, options))
     );
+  }
+
+  get IdolFlowCodegenEnum() {
+    return IdolFlowCodegenEnum;
   }
 
   get typeStruct(): Alt<IdolFlowCodegenTypeStructDecalaration> {
     return cachedProperty(this, "typeStruct", () =>
       this.typeDecon
         .getTypeStruct()
-        .map(tsDecon => new IdolFlowCodegenTypeStructDecalaration(this, tsDecon))
+        .map(tsDecon => new this.IdolFlowCodegenTypeStructDecalaration(this, tsDecon))
     );
+  }
+
+  get IdolFlowCodegenTypeStructDecalaration() {
+    return IdolFlowCodegenTypeStructDecalaration;
   }
 
   get struct(): Alt<IdolFlowCodegenStruct> {
@@ -167,12 +175,20 @@ export class IdolFlowCodegenFile extends GeneratorFileContext<IdolFlow> {
         .getStruct()
         .map(
           fields =>
-            new IdolFlowCodegenStruct(
+            new this.IdolFlowCodegenStruct(
               this,
-              fields.map(tsDecon => new IdolFlowCodegenTypestruct(this.parent, tsDecon))
+              fields.map(tsDecon => new this.IdolFlowCodegenTypestruct(this.parent, tsDecon))
             )
         )
     );
+  }
+
+  get IdolFlowCodegenTypestruct() {
+    return IdolFlowCodegenTypestruct;
+  }
+  
+  get IdolFlowCodegenStruct() {
+    return IdolFlowCodegenStruct;
   }
 }
 
@@ -317,8 +333,12 @@ export class IdolFlowCodegenTypestruct implements GeneratorContext {
         .getScalar()
         .concat(this.tsDecon.getMap())
         .concat(this.tsDecon.getRepeated())
-        .map(scalarDecon => new IdolFlowCodegenScalar(this.idolFlow, scalarDecon));
+        .map(scalarDecon => new this.IdolFlowCodegenScalar(this.idolFlow, scalarDecon));
     });
+  }
+
+  get IdolFlowCodegenScalar() {
+    return IdolFlowCodegenScalar;
   }
 
   get typeExpr(): Alt<Expression> {

@@ -107,19 +107,10 @@ var IdolGraphql =
 /*#__PURE__*/
 function () {
   function IdolGraphql(config) {
-    var codegenImpl = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : function (idolGraphql, path, type, inputVariant) {
-      return new IdolGraphqlCodegenFile(idolGraphql, path, type, inputVariant);
-    };
-    var scaffoldImpl = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : function (idolGraphql, path, type, inputVariant) {
-      return new IdolGraphqlScaffoldFile(idolGraphql, path, type, inputVariant);
-    };
-
     _classCallCheck(this, IdolGraphql);
 
     this.state = new _generators.GeneratorAcc();
     this.config = config;
-    this.codegenImpl = codegenImpl;
-    this.scaffoldImpl = scaffoldImpl;
   }
 
   _createClass(IdolGraphql, [{
@@ -141,7 +132,7 @@ function () {
       var type = this.config.params.allTypes.obj[ref.qualified_name];
       inputVariant = inputVariant && this.hasInputVariant(type);
       return (0, _functional.cachedProperty)(this, "codegenFile".concat(inputVariant.toString()).concat(path.path), function () {
-        return _this.codegenImpl(_this, path, type, inputVariant);
+        return new _this.IdolGraphqlCodegenFile(_this, path, type, inputVariant);
       });
     }
   }, {
@@ -155,7 +146,7 @@ function () {
       var type = this.config.params.allTypes.obj[ref.qualified_name];
       inputVariant = inputVariant && this.hasInputVariant(type);
       return (0, _functional.cachedProperty)(this, "scaffoldFile".concat(inputVariant.toString()).concat(path.path), function () {
-        return _this2.scaffoldImpl(_this2, path, type, inputVariant);
+        return new _this2.IdolGraphqlScaffoldFile(_this2, path, type, inputVariant);
       });
     }
   }, {
@@ -188,15 +179,30 @@ function () {
       });
     }
   }, {
+    key: "IdolGraphqlCodegenFile",
+    get: function get() {
+      return IdolGraphqlCodegenFile;
+    }
+  }, {
+    key: "IdolGraphqlScaffoldFile",
+    get: function get() {
+      return IdolGraphqlScaffoldFile;
+    }
+  }, {
     key: "idolGraphQlFile",
     get: function get() {
       var _this4 = this;
 
       return (0, _functional.cachedProperty)(this, "idolGraphQlFile", function () {
-        return new IdolGraphqlFile(_this4, _this4.state.reservePath({
+        return new _this4.IdolGraphqlFile(_this4, _this4.state.reservePath({
           runtime: _this4.config.codegenRoot + "/__idol_graphql__.js"
         }));
       });
+    }
+  }, {
+    key: "IdolGraphqlFile",
+    get: function get() {
+      return IdolGraphqlFile;
     }
   }]);
 
@@ -312,11 +318,21 @@ function (_IdolGraphqlGenerator) {
 
       return (0, _functional.cachedProperty)(this, "struct", function () {
         return _this7.typeDecon.getStruct().map(function (fields) {
-          return new IdolGraphqlCodegenStruct(_this7, fields.map(function (tsDecon) {
-            return new IdolGraphQLCodegenTypeStruct(_this7.parent, tsDecon, _this7.inputTypeVariant);
+          return new _this7.IdolGraphqlCodegenStruct(_this7, fields.map(function (tsDecon) {
+            return new _this7.IdolGraphQLCodegenTypeStruct(_this7.parent, tsDecon, _this7.inputTypeVariant);
           }));
         });
       });
+    }
+  }, {
+    key: "IdolGraphqlCodegenStruct",
+    get: function get() {
+      return IdolGraphqlCodegenStruct;
+    }
+  }, {
+    key: "IdolGraphQLCodegenTypeStruct",
+    get: function get() {
+      return IdolGraphQLCodegenTypeStruct;
     }
   }, {
     key: "enum",
@@ -325,9 +341,14 @@ function (_IdolGraphqlGenerator) {
 
       return (0, _functional.cachedProperty)(this, "enum", function () {
         return _this8.typeDecon.getEnum().map(function (options) {
-          return new IdolGraphqlCodegenEnum(_this8, options);
+          return new _this8.IdolGraphqlCodegenEnum(_this8, options);
         });
       });
+    }
+  }, {
+    key: "IdolGraphqlCodegenEnum",
+    get: function get() {
+      return IdolGraphqlCodegenEnum;
     }
   }, {
     key: "typeStruct",
@@ -336,9 +357,14 @@ function (_IdolGraphqlGenerator) {
 
       return (0, _functional.cachedProperty)(this, "typeStruct", function () {
         return _this9.typeDecon.getTypeStruct().map(function (tsDecon) {
-          return new IdolGraphqlCodegenTypeStructDeclaration(_this9, tsDecon);
+          return new _this9.IdolGraphqlCodegenTypeStructDeclaration(_this9, tsDecon);
         });
       });
+    }
+  }, {
+    key: "IdolGraphqlCodegenTypeStructDeclaration",
+    get: function get() {
+      return IdolGraphqlCodegenTypeStructDeclaration;
     }
   }]);
 
@@ -395,11 +421,26 @@ function (_IdolGraphqlGenerator2) {
 
       return (0, _functional.cachedProperty)(this, "struct", function () {
         return _this11.typeDecon.getStruct().map(function (fields) {
-          return new ((0, _generators.includesTag)(_this11.type.tags, "service") ? IdolGraphqlService : IdolGraphqlScaffoldStruct)(_this11, fields.map(function (tsDecon) {
-            return new IdolGraphQLCodegenTypeStruct(_this11.parent, tsDecon, _this11.inputVariant);
+          return new ((0, _generators.includesTag)(_this11.type.tags, "service") ? _this11.IdolGraphqlService : _this11.IdolGraphqlScaffoldStruct)(_this11, fields.map(function (tsDecon) {
+            return new _this11.IdolGraphQLCodegenTypeStruct(_this11.parent, tsDecon, _this11.inputVariant);
           }));
         });
       });
+    }
+  }, {
+    key: "IdolGraphqlService",
+    get: function get() {
+      return IdolGraphqlService;
+    }
+  }, {
+    key: "IdolGraphqlScaffoldStruct",
+    get: function get() {
+      return IdolGraphqlScaffoldStruct;
+    }
+  }, {
+    key: "IdolGraphQLCodegenTypeStruct",
+    get: function get() {
+      return IdolGraphQLCodegenTypeStruct;
     }
   }, {
     key: "declaredTypeIdent",
@@ -603,9 +644,14 @@ function () {
 
       return (0, _functional.cachedProperty)(this, "innerScalar", function () {
         return _this21.tsDecon.getScalar().concat(_this21.tsDecon.getMap()).concat(_this21.tsDecon.getRepeated()).map(function (scalarDecon) {
-          return new IdolGraphqlCodegenScalar(_this21.idolGraphql, scalarDecon, _this21.inputVariant);
+          return new _this21.IdolGraphqlCodegenScalar(_this21.idolGraphql, scalarDecon, _this21.inputVariant);
         });
       });
+    }
+  }, {
+    key: "IdolGraphqlCodegenScalar",
+    get: function get() {
+      return IdolGraphqlCodegenScalar;
     }
   }]);
 
@@ -838,7 +884,7 @@ function (_IdolGraphqlScaffoldS) {
           }).map(function (ref) {
             return (0, _generators.getMaterialTypeDeconstructor)(_this29.config.params.allTypes, _this29.config.params.allTypes.obj[ref.qualified_name]);
           }).bind(function (tDecon) {
-            return new IdolGraphqlMethod(_this29.parent, tDecon).methodExpr;
+            return new _this29.IdolGraphqlMethod(_this29.parent, tDecon).methodExpr;
           });
         }).map(function (expr) {
           return _this29.applyExpr(expr);
@@ -850,6 +896,11 @@ function (_IdolGraphqlScaffoldS) {
           }, []))))(ident)];
         })).map(_generators.importExpr);
       });
+    }
+  }, {
+    key: "IdolGraphqlMethod",
+    get: function get() {
+      return IdolGraphqlMethod;
     }
   }]);
 
@@ -877,7 +928,7 @@ function () {
 
       return this.tDecon.getStruct().bind(function (fields) {
         var outputTypeExpr = fields.get("output").bind(function (outputTs) {
-          return new IdolGraphQLCodegenTypeStruct(_this30.idolGraphql, outputTs, false).typeExpr;
+          return new _this30.IdolGraphQLCodegenTypeStruct(_this30.idolGraphql, outputTs, false).typeExpr;
         });
         var inputFields = fields.get("input").bind(function (inputTs) {
           return inputTs.getScalar().bind(function (scalar) {
@@ -902,6 +953,11 @@ function () {
           });
         });
       });
+    }
+  }, {
+    key: "IdolGraphQLCodegenTypeStruct",
+    get: function get() {
+      return IdolGraphQLCodegenTypeStruct;
     }
   }]);
 

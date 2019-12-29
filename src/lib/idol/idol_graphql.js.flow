@@ -74,28 +74,20 @@ export function importGraphqlExpr(
 export class IdolGraphql implements GeneratorContext {
   config: GeneratorConfig;
   state: GeneratorAcc;
-  codegenImpl: (IdolGraphql, Path, Type, boolean) => IdolGraphqlCodegenFile;
-  scaffoldImpl: (IdolGraphql, Path, Type, boolean) => IdolGraphqlScaffoldFile;
 
   constructor(
     config: GeneratorConfig,
-    codegenImpl: (IdolGraphql, Path, Type, boolean) => IdolGraphqlCodegenFile = (
-      idolGraphql,
-      path,
-      type,
-      inputVariant
-    ) => new IdolGraphqlCodegenFile(idolGraphql, path, type, inputVariant),
-    scaffoldImpl: (IdolGraphql, Path, Type, boolean) => IdolGraphqlScaffoldFile = (
-      idolGraphql,
-      path,
-      type,
-      inputVariant
-    ) => new IdolGraphqlScaffoldFile(idolGraphql, path, type, inputVariant)
   ) {
     this.state = new GeneratorAcc();
     this.config = config;
-    this.codegenImpl = codegenImpl;
-    this.scaffoldImpl = scaffoldImpl;
+  }
+
+  get IdolGraphqlCodegenFile() {
+    return IdolGraphqlCodegenFile;
+  }
+
+  get IdolGraphqlScaffoldFile() {
+    return IdolGraphqlScaffoldFile;
   }
 
   get idolGraphQlFile(): IdolGraphqlFile {
@@ -103,11 +95,15 @@ export class IdolGraphql implements GeneratorContext {
       this,
       "idolGraphQlFile",
       () =>
-        new IdolGraphqlFile(
+        new this.IdolGraphqlFile(
           this,
           this.state.reservePath({ runtime: this.config.codegenRoot + "/__idol_graphql__.js" })
         )
     );
+  }
+
+  get IdolGraphqlFile() {
+    return IdolGraphqlFile;
   }
 
   hasInputVariant(t: Type): boolean {
@@ -127,7 +123,7 @@ export class IdolGraphql implements GeneratorContext {
 
     inputVariant = inputVariant && this.hasInputVariant(type);
     return cachedProperty(this, `codegenFile${inputVariant.toString()}${path.path}`, () =>
-      this.codegenImpl(this, path, type, inputVariant)
+      new this.IdolGraphqlCodegenFile(this, path, type, inputVariant)
     );
   }
 
@@ -137,7 +133,7 @@ export class IdolGraphql implements GeneratorContext {
 
     inputVariant = inputVariant && this.hasInputVariant(type);
     return cachedProperty(this, `scaffoldFile${inputVariant.toString()}${path.path}`, () =>
-      this.scaffoldImpl(this, path, type, inputVariant)
+      new this.IdolGraphqlScaffoldFile(this, path, type, inputVariant)
     );
   }
 
@@ -177,7 +173,7 @@ export function exportedFromGraphQL(ident: string, graphqlTypeName: string): Exp
   return {
     ident,
     path: new Path("graphql"),
-    graphqlTypeName
+    graphqlTypeName,
   };
 }
 
@@ -246,29 +242,45 @@ export class IdolGraphqlCodegenFile extends IdolGraphqlGeneratorFileContext {
         .getStruct()
         .map(
           fields =>
-            new IdolGraphqlCodegenStruct(
+            new this.IdolGraphqlCodegenStruct(
               this,
               fields.map(
                 tsDecon =>
-                  new IdolGraphQLCodegenTypeStruct(this.parent, tsDecon, this.inputTypeVariant)
+                  new this.IdolGraphQLCodegenTypeStruct(this.parent, tsDecon, this.inputTypeVariant)
               )
             )
         )
     );
   }
 
+  get IdolGraphqlCodegenStruct() {
+    return IdolGraphqlCodegenStruct;
+  }
+
+  get IdolGraphQLCodegenTypeStruct() {
+    return IdolGraphQLCodegenTypeStruct;
+  }
+
   get enum(): Alt<IdolGraphqlCodegenEnum> {
     return cachedProperty(this, "enum", () =>
-      this.typeDecon.getEnum().map(options => new IdolGraphqlCodegenEnum(this, options))
+      this.typeDecon.getEnum().map(options => new this.IdolGraphqlCodegenEnum(this, options))
     );
+  }
+  
+  get IdolGraphqlCodegenEnum() {
+    return IdolGraphqlCodegenEnum;
   }
 
   get typeStruct(): Alt<IdolGraphqlCodegenTypeStructDeclaration> {
     return cachedProperty(this, "typeStruct", () =>
       this.typeDecon
         .getTypeStruct()
-        .map(tsDecon => new IdolGraphqlCodegenTypeStructDeclaration(this, tsDecon))
+        .map(tsDecon => new this.IdolGraphqlCodegenTypeStructDeclaration(this, tsDecon))
     );
+  }
+
+  get IdolGraphqlCodegenTypeStructDeclaration() {
+    return IdolGraphqlCodegenTypeStructDeclaration;
   }
 }
 
@@ -311,15 +323,27 @@ export class IdolGraphqlScaffoldFile extends IdolGraphqlGeneratorFileContext {
         .map(
           fields =>
             new (includesTag(this.type.tags, "service")
-              ? IdolGraphqlService
-              : IdolGraphqlScaffoldStruct)(
+              ? this.IdolGraphqlService
+              : this.IdolGraphqlScaffoldStruct)(
               this,
               fields.map(
-                tsDecon => new IdolGraphQLCodegenTypeStruct(this.parent, tsDecon, this.inputVariant)
+                tsDecon => new this.IdolGraphQLCodegenTypeStruct(this.parent, tsDecon, this.inputVariant)
               )
             )
         )
     );
+  }
+
+  get IdolGraphqlService() {
+    return IdolGraphqlService;
+  }
+
+  get IdolGraphqlScaffoldStruct() {
+    return IdolGraphqlScaffoldStruct;
+  }
+
+  get IdolGraphQLCodegenTypeStruct() {
+    return IdolGraphQLCodegenTypeStruct;
   }
 
   get declaredTypeIdent(): Alt<ExportedGraphqlType> {
@@ -560,9 +584,13 @@ export class IdolGraphQLCodegenTypeStruct implements GeneratorContext {
         .concat(this.tsDecon.getRepeated())
         .map(
           scalarDecon =>
-            new IdolGraphqlCodegenScalar(this.idolGraphql, scalarDecon, this.inputVariant)
+            new this.IdolGraphqlCodegenScalar(this.idolGraphql, scalarDecon, this.inputVariant)
         );
     });
+  }
+
+  get IdolGraphqlCodegenScalar() {
+    return IdolGraphqlCodegenScalar;
   }
 }
 
@@ -770,7 +798,7 @@ export class IdolGraphqlService extends IdolGraphqlScaffoldStruct {
                 this.config.params.allTypes.obj[ref.qualified_name]
               )
             )
-            .bind(tDecon => new IdolGraphqlMethod(this.parent, tDecon).methodExpr)
+            .bind(tDecon => new this.IdolGraphqlMethod(this.parent, tDecon).methodExpr)
         )
         .map(expr => this.applyExpr(expr));
 
@@ -785,6 +813,10 @@ export class IdolGraphqlService extends IdolGraphqlScaffoldStruct {
         ])
       ).map(importExpr);
     });
+  }
+  
+  get IdolGraphqlMethod() {
+    return IdolGraphqlMethod;
   }
 }
 
@@ -806,7 +838,7 @@ export class IdolGraphqlMethod implements GeneratorContext {
       const outputTypeExpr: Alt<GraphqlTypeExpression> = fields
         .get("output")
         .bind(
-          outputTs => new IdolGraphQLCodegenTypeStruct(this.idolGraphql, outputTs, false).typeExpr
+          outputTs => new this.IdolGraphQLCodegenTypeStruct(this.idolGraphql, outputTs, false).typeExpr
         );
       const inputFields: Alt<Exported> = fields
         .get("input")
@@ -845,6 +877,10 @@ export class IdolGraphqlMethod implements GeneratorContext {
         )
       );
     });
+  }
+
+  get IdolGraphQLCodegenTypeStruct() {
+    return IdolGraphQLCodegenTypeStruct;
   }
 }
 
