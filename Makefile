@@ -8,18 +8,21 @@ release-python: versions
 	cp README.md src/lib/idol/README
 	cd src/lib && rm -rf dist && python setup.py sdist && twine upload dist/*
 
+release-node: versions test
+	cd src/lib/idol && npm publish
+
 dev: target/debug/idol target/debug/idol_rs js models
 
-target/debug/idol: src/*.rs $(SOURCE_FILES) src/bin/idol.rs
+target/debug/idol: src/*.rs $(SOURCE_FILES) src/bin/idol.rs Cargo.toml Cargo.lock
 	cargo build --bin idol
 
-target/debug/idol_rs: src/*.rs $(SOURCE_FILES) src/bin/idol_rs.rs
+target/debug/idol_rs: src/*.rs $(SOURCE_FILES) src/bin/idol_rs.rs Cargo.toml Cargo.lock
 	cargo build --bin idol_rs
 
-target/release/idol: src/*.rs $(SOURCE_FILES) src/bin/idol.rs
+target/release/idol: src/*.rs $(SOURCE_FILES) src/bin/idol.rs Cargo.toml Cargo.lock
 	cargo build --bin idol --release
 
-target/release/idol_rs: src/*.rs $(SOURCE_FILES) src/bin/idol_rs.rs
+target/release/idol_rs: src/*.rs $(SOURCE_FILES) src/bin/idol_rs.rs Cargo.toml Cargo.lock
 	cargo build --bin idol_rs --release
 
 js: src/es6/idol/*.js src/lib/idol/node_modules

@@ -643,7 +643,7 @@ export class GeneratorAcc {
 
     const fromPath = intoPath.importPathTo(exportPath);
 
-    if (exported.sourceState && exported.sourceState.idents.getIdentifierSources(fromPath.path, ident).isEmpty()) {
+    if (exported.sourceState && exported.sourceState.idents.getIdentifierSources(exported.path, ident).isEmpty()) {
       throw new Error(
         `identifier ${ident} required by ${intoPath.path} does not exist in ${fromPath.path.path}`
       );

@@ -825,7 +825,7 @@ function () {
 
       var fromPath = intoPath.importPathTo(exportPath);
 
-      if (exported.sourceState && exported.sourceState.idents.getIdentifierSources(fromPath.path, ident).isEmpty()) {
+      if (exported.sourceState && exported.sourceState.idents.getIdentifierSources(exported.path, ident).isEmpty()) {
         throw new Error("identifier ".concat(ident, " required by ").concat(intoPath.path, " does not exist in ").concat(fromPath.path.path));
       }
 
