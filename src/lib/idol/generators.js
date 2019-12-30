@@ -793,8 +793,6 @@ function () {
   }, {
     key: "importIdent",
     value: function importIdent(intoPath, exported) {
-      var _this6 = this;
-
       var asIdent = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
       var ident = exported.ident;
 
@@ -814,7 +812,7 @@ function () {
               source = _ref13[0],
               _ = _ref13[1];
 
-          return source === _this6;
+          return source === exported.sourceState;
         });
 
         if (!match) {
@@ -943,13 +941,13 @@ function (_GeneratorFileContext) {
 
   // Subclasses required to provide this
   function ExternFileContext(externFile, parent, path) {
-    var _this7;
+    var _this6;
 
     _classCallCheck(this, ExternFileContext);
 
-    _this7 = _possibleConstructorReturn(this, _getPrototypeOf(ExternFileContext).call(this, parent, path));
-    _this7.externFile = externFile;
-    return _this7;
+    _this6 = _possibleConstructorReturn(this, _getPrototypeOf(ExternFileContext).call(this, parent, path));
+    _this6.externFile = externFile;
+    return _this6;
   }
 
   _createClass(ExternFileContext, [{
@@ -966,14 +964,14 @@ function (_GeneratorFileContext) {
   }, {
     key: "dumpedFile",
     get: function get() {
-      var _this8 = this;
+      var _this7 = this;
 
       return (0, _functional.cachedProperty)(this, "dumpedFile", function () {
-        var content = _fs["default"].readFileSync(_this8.externFile, "UTF-8").toString();
+        var content = _fs["default"].readFileSync(_this7.externFile, "UTF-8").toString();
 
-        _this8.state.addContent(_this8.path, content);
+        _this7.state.addContent(_this7.path, content);
 
-        return _this8.path;
+        return _this7.path;
       });
     }
   }]);

@@ -633,7 +633,7 @@ export class GeneratorAcc {
     
     let exportPath = exported.path;
     if (exported.sourceState && exported.sourceState !== this) {
-      const match = this.externalSourceRoots.find(([source, _]) => source === this);
+      const match = this.externalSourceRoots.find(([source, _]) => source === exported.sourceState);
       if (!match) {
         throw new Error("External source was used, but no relative path was configured.");
       }
