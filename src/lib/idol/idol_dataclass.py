@@ -77,7 +77,7 @@ class IdolDataCodegenStruct(GeneratorFileContext):
                                         )
                                     ),
                                     typing=self.apply_expr(typing_expr),
-                                ) + "  # type: ignore"
+                                )
                             ]
                         )
                     ],
