@@ -11,8 +11,8 @@ from .literal_hello import LiteralHello
 
 @dataclass
 class TestsBasicTestLiteralStructDataclass(object):
-    five: Optional[LiteralFive] = field(default_factory=(lambda: None))  # type: ignore
-    four: LiteralTrue = field(default_factory=(lambda: True))  # type: ignore
-    one: Literal1 = field(default_factory=(lambda: 1))  # type: ignore
-    three: LiteralThreeO = field(default_factory=(lambda: 3.0))  # type: ignore
-    two: LiteralHello = field(default_factory=(lambda: "hello"))  # type: ignore
+    five: Optional[LiteralFive] = field(default_factory=(lambda: None))
+    four: LiteralTrue = field(default_factory=(lambda: True))
+    one: Literal1 = field(default_factory=(lambda: 1))
+    three: LiteralThreeO = field(default_factory=(lambda: 3.0))
+    two: LiteralHello = field(default_factory=(lambda: "hello"))

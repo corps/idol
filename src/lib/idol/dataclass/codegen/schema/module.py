@@ -11,6 +11,6 @@ class SchemaModuleDataclass(object):
     Metadata contained about a module.
     """
 
-    module_name: str = field(default_factory=(lambda: ""))  # type: ignore
-    types_by_name: Mapping[str, Type] = field(default_factory=dict)  # type: ignore
-    types_dependency_ordering: List[str] = field(default_factory=list)  # type: ignore
+    module_name: str = field(default_factory=(lambda: ""))
+    types_by_name: Mapping[str, Type] = field(default_factory=dict)
+    types_dependency_ordering: List[str] = field(default_factory=list)

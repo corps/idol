@@ -23,14 +23,24 @@ class AllOptionalAssembledDataclass(object):
     All fields optional form of Assembled
     """
 
-    test_atleast_one: Optional[TestAtleastOne] = field(default_factory=(lambda: None))  # type: ignore
-    test_enum: Optional[TestsBasicTestEnumEnum] = field(default_factory=(lambda: None))  # type: ignore
-    test_kind: Optional[TestKind] = field(default_factory=(lambda: None))  # type: ignore
-    test_list_of: Optional[ListOfTestKind] = field(default_factory=(lambda: None))  # type: ignore
-    test_list_of_list_struct: Optional[TestsBasicTestListOfListStructDataclass] = field(default_factory=(lambda: None))  # type: ignore
-    test_literal_struct: Optional[TestsBasicTestLiteralStructDataclass] = field(default_factory=(lambda: None))  # type: ignore
-    test_literal_top: Optional[TestLiteralTop] = field(default_factory=(lambda: None))  # type: ignore
-    test_map: Optional[TestMap] = field(default_factory=(lambda: None))  # type: ignore
-    test_optional_field: Optional[TestsBasicTestOptionalFieldDataclass] = field(default_factory=(lambda: None))  # type: ignore
-    test_struct: Optional[TestsBasicTestStructDataclass] = field(default_factory=(lambda: None))  # type: ignore
-    test_triplet: Optional[AllRequiredTripletOfSideImport2Dataclass] = field(default_factory=(lambda: None))  # type: ignore
+    test_atleast_one: Optional[TestAtleastOne] = field(default_factory=(lambda: None))
+    test_enum: Optional[TestsBasicTestEnumEnum] = field(default_factory=(lambda: None))
+    test_kind: Optional[TestKind] = field(default_factory=(lambda: None))
+    test_list_of: Optional[ListOfTestKind] = field(default_factory=(lambda: None))
+    test_list_of_list_struct: Optional[TestsBasicTestListOfListStructDataclass] = field(
+        default_factory=(lambda: None)
+    )
+    test_literal_struct: Optional[TestsBasicTestLiteralStructDataclass] = field(
+        default_factory=(lambda: None)
+    )
+    test_literal_top: Optional[TestLiteralTop] = field(default_factory=(lambda: None))
+    test_map: Optional[TestMap] = field(default_factory=(lambda: None))
+    test_optional_field: Optional[TestsBasicTestOptionalFieldDataclass] = field(
+        default_factory=(lambda: None)
+    )
+    test_struct: Optional[TestsBasicTestStructDataclass] = field(
+        default_factory=(lambda: None)
+    )
+    test_triplet: Optional[AllRequiredTripletOfSideImport2Dataclass] = field(
+        default_factory=(lambda: None)
+    )

@@ -7,4 +7,4 @@ from ....all.target.assembled_optional import AssembledOptional
 
 @dataclass
 class AllTargetOptionalParamsDataclass(object):
-    optional: AssembledOptional = field(default_factory=AllOptionalAssembledDataclass)  # type: ignore
+    optional: AssembledOptional = field(default_factory=AllOptionalAssembledDataclass)
