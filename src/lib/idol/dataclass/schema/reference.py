@@ -4,8 +4,4 @@ from ..codegen.schema.reference import SchemaReferenceDataclass as ReferenceCode
 
 
 class Reference(ReferenceCodegen):
-    """
-    A reference describes the location of a type in the module system.
-    """
-
     pass

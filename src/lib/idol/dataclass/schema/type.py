@@ -4,8 +4,4 @@ from ..codegen.schema.type import SchemaTypeDataclass as TypeCodegen
 
 
 class Type(TypeCodegen):
-    """
-    A wrapper type containing fields that can describe a Type, as well as its tag metadata.
-    """
-
     pass

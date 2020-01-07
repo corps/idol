@@ -375,10 +375,22 @@ class IdolDataScaffoldFile(GeneratorFileContext):
             self.export(
                 self.default_dataclass_name,
                 scripter.nameable_class_dec(
-                    [ident], [], doc_str=get_tag_values(self.t.tags, "description")
+                    [ident], [],
                 ),
             )
             for ident in codegen_ident
+            if type_decon.get_struct()
+        ) + Alt(
+            self.export(
+                self.default_dataclass_name,
+                scripter.assignable(
+                    ident,
+                    scripter.index_access(self.import_ident(Exported(Path("typing"), "Type")),
+                                          ident)
+                ),
+            )
+            for ident in codegen_ident
+            if type_decon.get_enum()
         )
 
     @property
@@ -428,12 +440,13 @@ class IdolDataCodegenFile(GeneratorFileContext):
         codegen file, or the scaffold wrapper generated for types that are included in
         the scaffold.  Used by embedded references to this type.
         """
-        return Alt(
-            con
-            for con in self.idol_data.scaffold_file(self.t.named).declared_dataclass
-            if self.struct or self.enum
-            if self.t.named.qualified_name in self.idol_data.config.params.scaffold_types.obj
-        ) + self.declared_constructor
+        if self.t.named.qualified_name in self.idol_data.config.params.scaffold_types.obj:
+            return Alt(
+                con
+                for con in self.idol_data.scaffold_file(self.t.named).declared_dataclass
+            )
+
+        return self.declared_constructor
 
     @cached_property
     def typestruct(self) -> "Alt[IdolDataCodegenTypeStructDeclaration]":

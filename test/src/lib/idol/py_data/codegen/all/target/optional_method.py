@@ -3,7 +3,7 @@
 from ....all.target.optional_params import OptionalParams
 from dataclasses import field, dataclass
 from ..optional.assembled import AllOptionalAssembledDataclass
-from .assembled_optional import AssembledOptional
+from ....all.target.assembled_optional import AssembledOptional
 
 
 @dataclass

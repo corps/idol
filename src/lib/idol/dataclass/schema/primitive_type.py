@@ -3,7 +3,6 @@
 from ..codegen.schema.primitive_type import (
     SchemaPrimitiveTypeEnum as PrimitiveTypeCodegen,
 )
+from typing import Type
 
-
-class PrimitiveType(PrimitiveTypeCodegen):
-    pass
+PrimitiveType: Type[PrimitiveTypeCodegen] = PrimitiveTypeCodegen

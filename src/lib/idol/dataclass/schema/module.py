@@ -4,8 +4,4 @@ from ..codegen.schema.module import SchemaModuleDataclass as ModuleCodegen
 
 
 class Module(ModuleCodegen):
-    """
-    Metadata contained about a module.
-    """
-
     pass
