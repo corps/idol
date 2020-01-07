@@ -1,3 +1,4 @@
+import black
 from cached_property import cached_property
 
 import idol.scripter as scripter
@@ -108,12 +109,12 @@ class Exported:
 
 class GeneratorParams:
     def __init__(
-        self,
-        all_modules: OrderedObj[Module],
-        all_types: OrderedObj[Type],
-        scaffold_types: OrderedObj[Type],
-        output_dir: str,
-        options: Dict[str, Union[List[str], bool]],
+            self,
+            all_modules: OrderedObj[Module],
+            all_types: OrderedObj[Type],
+            scaffold_types: OrderedObj[Type],
+            output_dir: str,
+            options: Dict[str, Union[List[str], bool]],
     ):
         self.all_modules = all_modules
         self.all_types = all_types
@@ -132,7 +133,7 @@ def get_tag_value(tags: Optional[Iterable[str]], d: str, tag: str) -> str:
 
     for t in tags:
         if t.startswith(tag + ":"):
-            return t[len(tag) + 1 :]
+            return t[len(tag) + 1:]
 
     return d
 
@@ -145,7 +146,7 @@ def get_tag_values(tags: Optional[Iterable[str]], tag: str) -> List[str]:
 
     for t in tags:
         if t.startswith(tag + ":"):
-            result.append(t[len(tag) + 1 :])
+            result.append(t[len(tag) + 1:])
 
     return result
 
@@ -162,11 +163,11 @@ class TypeStructContext:
         return self.is_type_bound
 
     def __init__(
-        self,
-        type_display_name: str,
-        field_name: Optional[str] = None,
-        field_tags: Optional[List[str]] = None,
-        type_tags: Optional[List[str]] = None,
+            self,
+            type_display_name: str,
+            field_name: Optional[str] = None,
+            field_tags: Optional[List[str]] = None,
+            type_tags: Optional[List[str]] = None,
     ):
         self.type_display_name = type_display_name
         self.field_name = field_name
@@ -420,7 +421,7 @@ class ImportsAcc:
         )
 
     def get_imported_as_idents(
-        self, into_path: Path, from_path: ImportPath, from_ident: str
+            self, into_path: Path, from_path: ImportPath, from_ident: str
     ) -> Alt[StringSet]:
         return Alt(
             into_idents
@@ -571,7 +572,7 @@ class GeneratorAcc:
         as_ident = get_safe_ident(as_ident)
 
         while source not in self.idents.get_identifier_sources(into_path, as_ident).get_or(
-            StringSet([source])
+                StringSet([source])
         ):
             as_ident += "_"
 
@@ -579,7 +580,7 @@ class GeneratorAcc:
         return as_ident
 
     def add_content_with_ident(
-        self, path: Path, ident: str, scriptable: Callable[[str], Union[str, List]]
+            self, path: Path, ident: str, scriptable: Callable[[str], Union[str, List]]
     ) -> str:
         self.idents.add_identifier(path, ident, self.get_unique_source(path))
         self.add_content(path, scriptable(ident))
@@ -709,3 +710,21 @@ def build(config: GeneratorConfig, output: OrderedObj[str]) -> Callable[[str], N
             build_env.write_build_file(path, contents)
 
     return lambda output_dir: build_env.finalize(output_dir)
+
+
+def check(config: GeneratorConfig, output_dir: str, output: OrderedObj[str]):
+    for path, contents in output:
+        if not path.startswith(config.codegen_root + "/"):
+            continue
+
+        full_path = os.path.join(output_dir, path)
+        if contents:
+            if not os.path.isfile(full_path):
+                raise ValueError(f"Could not find code generated file at path {path}")
+            existing_contents = open(full_path, "r", encoding="utf8").read()
+
+            contents_formatted = black.format_str(contents, mode=black.FileMode())
+            existing_contents_formatted = black.format_str(existing_contents, mode=black.FileMode())
+
+            if contents_formatted != existing_contents_formatted:
+                raise ValueError(f"Codegen output is stale for path {path}")

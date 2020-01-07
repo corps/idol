@@ -28,7 +28,7 @@ from idol.generator import (
     includes_tag,
     ExternFileContext,
     AbstractGeneratorFileContext,
-)
+    check)
 from idol.py.schema.primitive_type import PrimitiveType
 from idol.py.schema.reference import Reference
 from idol.py.schema.type import Type
@@ -626,6 +626,7 @@ def main():
             args={
                 "target": "idol module names whose contents will have extensible types scaffolded.",
                 "output": "a directory to generate the scaffolds and codegen into.",
+                "check": "check codegen output with dry run",
             }
         )
     )
@@ -639,8 +640,14 @@ def main():
     )
 
     idol_py = IdolPy(config)
-    move_to = build(config, idol_py.render())
-    move_to(params.output_dir)
+
+    rendered = idol_py.render()
+
+    if params.options['check'] is not None:
+        check(config, params.output_dir, rendered)
+    else:
+        move_to = build(config, rendered)
+        move_to(params.output_dir)
 
 
 if __name__ == "__main__":

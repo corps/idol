@@ -7,7 +7,7 @@ import { Reference } from "./js/schema/Reference";
 import { Type } from "./js/schema/Type";
 import {
   build,
-  camelify,
+  camelify, check,
   ExternFileContext,
   GeneratorAcc,
   GeneratorConfig,
@@ -540,10 +540,12 @@ export class IdolJsFile extends ExternFileContext<IdolJs> {
 
 function main() {
   const params = start({
-    flags: {},
     args: {
       target: "idol module names whose contents will have extensible types scaffolded.",
-      output: "a directory to generate the scaffolds and codegen into."
+      output: "a directory to generate the scaffolds and codegen into.",
+    },
+    flags: {
+      check: "check for codegen staleness with a dry run"
     }
   });
 
@@ -554,8 +556,14 @@ function main() {
   });
 
   const idolJs = new IdolJs(config);
-  const moveTo = build(config, idolJs.render());
-  moveTo(params.outputDir);
+  const rendered = idolJs.render();
+
+  if (config.params.options.check) {
+    check(config, params.outputDir, rendered);
+  } else {
+    const moveTo = build(config, rendered);
+    moveTo(params.outputDir);
+  }
 }
 
 if (require.main === module) {

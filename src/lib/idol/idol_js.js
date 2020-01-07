@@ -658,10 +658,12 @@ exports.IdolJsFile = IdolJsFile;
 
 function main() {
   var params = (0, _cli.start)({
-    flags: {},
     args: {
       target: "idol module names whose contents will have extensible types scaffolded.",
       output: "a directory to generate the scaffolds and codegen into."
+    },
+    flags: {
+      check: "check for codegen staleness with a dry run"
     }
   });
   var config = new _generators.GeneratorConfig(params);
@@ -670,8 +672,14 @@ function main() {
     scaffold: _generators.GeneratorConfig.oneFilePerType
   });
   var idolJs = new IdolJs(config);
-  var moveTo = (0, _generators.build)(config, idolJs.render());
-  moveTo(params.outputDir);
+  var rendered = idolJs.render();
+
+  if (config.params.options.check) {
+    (0, _generators.check)(config, params.outputDir, rendered);
+  } else {
+    var moveTo = (0, _generators.build)(config, rendered);
+    moveTo(params.outputDir);
+  }
 }
 
 if (require.main === module) {

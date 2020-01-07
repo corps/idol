@@ -50,6 +50,14 @@ models: $(MODELS)
 	cat build.json | ./src/lib/idol/idol_flow.js --output src/es6/idol/flow --target schema
 	cat build.json | ./src/lib/idol/idol_graphql_queries.js --output src/es6/idol/graphql_queries --target schema
 
+check: $(MODELS)
+	./target/debug/idol $? > build.json
+	npm run compile
+	npm install
+	pip install -e ./src/lib
+	cat build.json | ./src/lib/idol/idol_js.js --output src/es6/idol/js --target schema --check
+	cat build.json | ./src/lib/idol/idol_py --output src/lib/idol/py --target schema --check
+
 test: dev
 	cargo test
 	PATH="$$PWD/node_modules/.bin:$$PATH" make -C test

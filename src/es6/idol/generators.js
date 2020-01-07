@@ -1,5 +1,6 @@
 // @flow
 import { Module } from "./js/schema/Module";
+import os from "os";
 import { Type } from "./js/schema/Type";
 import { Reference } from "./js/schema/Reference";
 import { TypeStruct } from "./js/schema/TypeStruct";
@@ -9,6 +10,7 @@ import * as scripter from "./scripter";
 import { BuildEnv } from "./build_env";
 import fs from "fs";
 import path from "path";
+import prettier from "prettier";
 
 export class Path {
   path: string;
@@ -785,6 +787,37 @@ export function build(
   });
 
   return (outputDir: string) => buildEnv.finalize(outputDir);
+}
+
+export function check(
+    config: GeneratorConfig,
+    outputDir: string,
+    output: OrderedObj<string>,
+) {
+  output.keys().forEach(p => {
+    const contents = output.obj[p];
+
+    if(p.indexOf(config.codegenRoot + "/") !== 0) {
+      return;
+    }
+
+    const fullPath = path.join(outputDir, p);
+
+    if (contents) {
+        if (!fs.existsSync(fullPath)) {
+          throw new Error(`Could not find code generated file at path ${p}`);
+        }
+        
+        const existingContents = fs.readFileSync(fullPath, "utf-8");
+
+        const contentsFormatted = prettier.format(contents, scripter.formattingConfig.prettierOptions);
+        const existingContentsFormatted = prettier.format(existingContents, scripter.formattingConfig.prettierOptions);
+
+        if (contentsFormatted !== existingContentsFormatted) {
+          throw new Error(`Codegen output is stale for path ${p}`);
+        }
+    }
+  });
 }
 
 export function importExpr(exported: Exported, asIdent: string | null = null): Expression {

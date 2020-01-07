@@ -10,12 +10,15 @@ exports.getMaterialTypeDeconstructor = getMaterialTypeDeconstructor;
 exports.wrapExpression = wrapExpression;
 exports.getSafeIdent = getSafeIdent;
 exports.build = build;
+exports.check = check;
 exports.importExpr = importExpr;
 exports.camelify = camelify;
 exports.snakify = snakify;
 exports.RESERVED_WORDS = exports.ExternFileContext = exports.GeneratorFileContext = exports.GeneratorAcc = exports.ImportsAcc = exports.IdentifiersAcc = exports.GeneratorConfig = exports.TypeDeconstructor = exports.TypeStructDeconstructor = exports.ScalarDeconstructor = exports.ScalarContext = exports.TypeStructContext = exports.ImportPath = exports.Path = void 0;
 
 var _Module = require("./js/schema/Module");
+
+var _os = _interopRequireDefault(require("os"));
 
 var _Type = require("./js/schema/Type");
 
@@ -35,9 +38,11 @@ var _fs = _interopRequireDefault(require("fs"));
 
 var _path2 = _interopRequireDefault(require("path"));
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+var _prettier = _interopRequireDefault(require("prettier"));
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = Object.defineProperty && Object.getOwnPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : {}; if (desc.get || desc.set) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj["default"] = obj; return newObj; } }
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
@@ -993,6 +998,34 @@ function build(config, output) {
   return function (outputDir) {
     return buildEnv.finalize(outputDir);
   };
+}
+
+function check(config, outputDir, output) {
+  output.keys().forEach(function (p) {
+    var contents = output.obj[p];
+
+    if (p.indexOf(config.codegenRoot + "/") !== 0) {
+      return;
+    }
+
+    var fullPath = _path2["default"].join(outputDir, p);
+
+    if (contents) {
+      if (!_fs["default"].existsSync(fullPath)) {
+        throw new Error("Could not find code generated file at path ".concat(p));
+      }
+
+      var existingContents = _fs["default"].readFileSync(fullPath, "utf-8");
+
+      var contentsFormatted = _prettier["default"].format(contents, scripter.formattingConfig.prettierOptions);
+
+      var existingContentsFormatted = _prettier["default"].format(existingContents, scripter.formattingConfig.prettierOptions);
+
+      if (contentsFormatted !== existingContentsFormatted) {
+        throw new Error("Codegen output is stale for path ".concat(p));
+      }
+    }
+  });
 }
 
 function importExpr(exported) {
