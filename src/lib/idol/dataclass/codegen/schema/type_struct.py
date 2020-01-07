@@ -10,9 +10,7 @@ from ...schema.struct_kind import StructKind
 
 @dataclass
 class SchemaTypeStructDataclass(object):
-    literal: Optional[Literal] = field(default_factory=(lambda: None))
-    primitive_type: PrimitiveType = field(
-        default_factory=(lambda: next(iter(PrimitiveType)))
-    )
-    reference: Reference = field(default_factory=Reference)
-    struct_kind: StructKind = field(default_factory=(lambda: next(iter(StructKind))))
+    literal: Optional[Literal] = field(default_factory=(lambda: None))  # type: ignore
+    primitive_type: PrimitiveType = field(default_factory=(lambda: next(iter(PrimitiveType))))  # type: ignore
+    reference: Reference = field(default_factory=Reference)  # type: ignore
+    struct_kind: StructKind = field(default_factory=(lambda: next(iter(StructKind))))  # type: ignore

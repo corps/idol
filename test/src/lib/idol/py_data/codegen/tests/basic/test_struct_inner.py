@@ -5,6 +5,6 @@ from dataclasses import field, dataclass
 
 @dataclass
 class TestsBasicTestStructInnerDataclass(object):
-    d: bool = field(default_factory=(lambda: False))
-    e: float = field(default_factory=(lambda: 0.0))
-    f: int = field(default_factory=(lambda: 0))
+    d: bool = field(default_factory=(lambda: False))  # type: ignore
+    e: float = field(default_factory=(lambda: 0.0))  # type: ignore
+    f: int = field(default_factory=(lambda: 0))  # type: ignore

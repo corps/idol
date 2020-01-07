@@ -6,4 +6,4 @@ from typing import Optional
 
 @dataclass
 class TestsBasicTestOptionalFieldDataclass(object):
-    optional: Optional[str] = field(default_factory=(lambda: None))
+    optional: Optional[str] = field(default_factory=(lambda: None))  # type: ignore

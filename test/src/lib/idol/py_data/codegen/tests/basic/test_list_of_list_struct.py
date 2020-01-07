@@ -7,4 +7,4 @@ from .test_atleast_one import TestAtleastOne
 
 @dataclass
 class TestsBasicTestListOfListStructDataclass(object):
-    list_of_list: List[TestAtleastOne] = field(default_factory=list)
+    list_of_list: List[TestAtleastOne] = field(default_factory=list)  # type: ignore

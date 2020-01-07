@@ -5,4 +5,4 @@ from dataclasses import field, dataclass
 
 @dataclass
 class TestsAbsThreeSideImport2Dataclass(object):
-    side_import2: int = field(default_factory=(lambda: 0))
+    side_import2: int = field(default_factory=(lambda: 0))  # type: ignore

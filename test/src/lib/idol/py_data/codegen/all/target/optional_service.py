@@ -6,4 +6,4 @@ from dataclasses import field, dataclass
 
 @dataclass
 class AllTargetOptionalServiceDataclass(object):
-    optional: OptionalMethod = field(default_factory=OptionalMethod)
+    optional: OptionalMethod = field(default_factory=OptionalMethod)  # type: ignore

@@ -5,7 +5,7 @@ from dataclasses import field, dataclass
 
 @dataclass
 class SchemaLiteralDataclass(object):
-    bool: bool = field(default_factory=(lambda: False))
-    double: float = field(default_factory=(lambda: 0.0))
-    int: int = field(default_factory=(lambda: 0))
-    string: str = field(default_factory=(lambda: ""))
+    bool: bool = field(default_factory=(lambda: False))  # type: ignore
+    double: float = field(default_factory=(lambda: 0.0))  # type: ignore
+    int: int = field(default_factory=(lambda: 0))  # type: ignore
+    string: str = field(default_factory=(lambda: ""))  # type: ignore

@@ -10,8 +10,8 @@ class SchemaReferenceDataclass(object):
     """
 
     # Just the module name
-    module_name: str = field(default_factory=(lambda: ""))
+    module_name: str = field(default_factory=(lambda: ""))  # type: ignore
     # The module_name.type_name string
-    qualified_name: str = field(default_factory=(lambda: ""))
+    qualified_name: str = field(default_factory=(lambda: ""))  # type: ignore
     # Just the type name
-    type_name: str = field(default_factory=(lambda: ""))
+    type_name: str = field(default_factory=(lambda: ""))  # type: ignore

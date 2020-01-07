@@ -9,8 +9,6 @@ from ...tests.basic.test_struct import TestsBasicTestStructDataclass
 
 @dataclass
 class AllRequiredTripletOfSideImport2Dataclass(object):
-    a: TestsAbsThreeSideImport2Dataclass = field(
-        default_factory=TestsAbsThreeSideImport2Dataclass
-    )
-    b: List[TestLiteralTop] = field(default_factory=list)
-    c: Mapping[str, TestsBasicTestStructDataclass] = field(default_factory=dict)
+    a: TestsAbsThreeSideImport2Dataclass = field(default_factory=TestsAbsThreeSideImport2Dataclass)  # type: ignore
+    b: List[TestLiteralTop] = field(default_factory=list)  # type: ignore
+    c: Mapping[str, TestsBasicTestStructDataclass] = field(default_factory=dict)  # type: ignore

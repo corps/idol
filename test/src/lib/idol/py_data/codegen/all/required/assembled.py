@@ -18,26 +18,14 @@ from .triplet_of_side_import2 import AllRequiredTripletOfSideImport2Dataclass
 
 @dataclass
 class AllRequiredAssembledDataclass(object):
-    test_atleast_one: TestAtleastOne = field(default_factory=list)
-    test_enum: TestsBasicTestEnumEnum = field(
-        default_factory=(lambda: next(iter(TestsBasicTestEnumEnum)))
-    )
-    test_kind: TestKind = field(default_factory=(lambda: ""))
-    test_list_of: ListOfTestKind = field(default_factory=list)
-    test_list_of_list_struct: TestsBasicTestListOfListStructDataclass = field(
-        default_factory=TestsBasicTestListOfListStructDataclass
-    )
-    test_literal_struct: TestsBasicTestLiteralStructDataclass = field(
-        default_factory=TestsBasicTestLiteralStructDataclass
-    )
-    test_literal_top: TestLiteralTop = field(default_factory=(lambda: "mooo"))
-    test_map: TestMap = field(default_factory=dict)
-    test_optional_field: TestsBasicTestOptionalFieldDataclass = field(
-        default_factory=TestsBasicTestOptionalFieldDataclass
-    )
-    test_struct: TestsBasicTestStructDataclass = field(
-        default_factory=TestsBasicTestStructDataclass
-    )
-    test_triplet: AllRequiredTripletOfSideImport2Dataclass = field(
-        default_factory=AllRequiredTripletOfSideImport2Dataclass
-    )
+    test_atleast_one: TestAtleastOne = field(default_factory=list)  # type: ignore
+    test_enum: TestsBasicTestEnumEnum = field(default_factory=(lambda: next(iter(TestsBasicTestEnumEnum))))  # type: ignore
+    test_kind: TestKind = field(default_factory=(lambda: ""))  # type: ignore
+    test_list_of: ListOfTestKind = field(default_factory=list)  # type: ignore
+    test_list_of_list_struct: TestsBasicTestListOfListStructDataclass = field(default_factory=TestsBasicTestListOfListStructDataclass)  # type: ignore
+    test_literal_struct: TestsBasicTestLiteralStructDataclass = field(default_factory=TestsBasicTestLiteralStructDataclass)  # type: ignore
+    test_literal_top: TestLiteralTop = field(default_factory=(lambda: "mooo"))  # type: ignore
+    test_map: TestMap = field(default_factory=dict)  # type: ignore
+    test_optional_field: TestsBasicTestOptionalFieldDataclass = field(default_factory=TestsBasicTestOptionalFieldDataclass)  # type: ignore
+    test_struct: TestsBasicTestStructDataclass = field(default_factory=TestsBasicTestStructDataclass)  # type: ignore
+    test_triplet: AllRequiredTripletOfSideImport2Dataclass = field(default_factory=AllRequiredTripletOfSideImport2Dataclass)  # type: ignore

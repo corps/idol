@@ -6,8 +6,6 @@ from .test_struct_inner import TestsBasicTestStructInnerDataclass
 
 @dataclass
 class TestsBasicTestStructDataclass(object):
-    a: str = field(default_factory=(lambda: ""))
-    b: int = field(default_factory=(lambda: 0))
-    c: TestsBasicTestStructInnerDataclass = field(
-        default_factory=TestsBasicTestStructInnerDataclass
-    )
+    a: str = field(default_factory=(lambda: ""))  # type: ignore
+    b: int = field(default_factory=(lambda: 0))  # type: ignore
+    c: TestsBasicTestStructInnerDataclass = field(default_factory=TestsBasicTestStructInnerDataclass)  # type: ignore

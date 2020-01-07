@@ -7,6 +7,6 @@ from ...schema.type_struct import TypeStruct
 
 @dataclass
 class SchemaFieldDataclass(object):
-    field_name: str = field(default_factory=(lambda: ""))
-    tags: List[str] = field(default_factory=list)
-    type_struct: TypeStruct = field(default_factory=TypeStruct)
+    field_name: str = field(default_factory=(lambda: ""))  # type: ignore
+    tags: List[str] = field(default_factory=list)  # type: ignore
+    type_struct: TypeStruct = field(default_factory=TypeStruct)  # type: ignore
