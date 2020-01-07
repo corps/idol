@@ -529,15 +529,11 @@ class GeneratorAcc:
         )
 
     def import_ident(
-        self, into_path: Path, exported: Exported, as_ident: Optional[str] = None
+            self, into_path: Path, exported: Exported, as_ident: Optional[str] = None
     ) -> str:
         ident = exported.ident
         if as_ident is None:
             as_ident = ident
-
-        # No imports actually required.
-        if into_path == exported.path:
-            return exported.ident
 
         export_path = exported.path
 
@@ -546,10 +542,14 @@ class GeneratorAcc:
             rel_root = self.external_source_roots[exported.source_state]
             export_path = Path(os.path.join(rel_root, export_path.path))
 
+        # No imports actually required.
+        if into_path == export_path:
+            return exported.ident
+
         from_path = into_path.import_path_to(export_path)
 
         if not from_path.is_module and not exported.source_state.idents.get_identifier_sources(
-            exported.path, ident
+                exported.path, ident
         ):
             raise ValueError(
                 f"identifier {ident} required by {into_path} does not exist in {from_path}"

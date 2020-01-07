@@ -627,10 +627,6 @@ export class GeneratorAcc {
       asIdent = ident;
     }
 
-    if (intoPath.path === exported.path.path) {
-      return ident;
-    }
-    
     let exportPath = exported.path;
     if (exported.sourceState && exported.sourceState !== this) {
       const match = this.externalSourceRoots.find(([source, _]) => source === exported.sourceState);
@@ -639,6 +635,10 @@ export class GeneratorAcc {
       }
       const relRoot = match[1];
       exportPath = new Path(path.join(relRoot, exportPath.path));
+    }
+
+    if (intoPath.path === exportPath.path) {
+      return ident;
     }
 
     const fromPath = intoPath.importPathTo(exportPath);

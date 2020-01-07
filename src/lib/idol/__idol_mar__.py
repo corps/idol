@@ -1,4 +1,4 @@
-from typing import Type, Callable, cast
+from typing import Type, cast
 
 import types
 
@@ -6,8 +6,16 @@ from marshmallow.fields import Function, Field
 
 
 class Any(Function):
+    _CHECK_ATTRIBUTE = True
+
     def __init__(self, *args, **kwds):
-        super(Any, self).__init__(lambda i: i, lambda i: i, *args, **kwds)
+        super(Any, self).__init__(*args, **kwds)
+
+    def _serialize(self, value, attr, obj):
+        return value
+
+    def _deserialize(self, value, attr, data):
+        return value
 
 
 def wrap_field(field: Type[Field], name: str, *args, **kwds) -> Type[Field]:

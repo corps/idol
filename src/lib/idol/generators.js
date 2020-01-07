@@ -800,10 +800,6 @@ function () {
         asIdent = ident;
       }
 
-      if (intoPath.path === exported.path.path) {
-        return ident;
-      }
-
       var exportPath = exported.path;
 
       if (exported.sourceState && exported.sourceState !== this) {
@@ -821,6 +817,10 @@ function () {
 
         var relRoot = match[1];
         exportPath = new Path(_path2["default"].join(relRoot, exportPath.path));
+      }
+
+      if (intoPath.path === exportPath.path) {
+        return ident;
       }
 
       var fromPath = intoPath.importPathTo(exportPath);
