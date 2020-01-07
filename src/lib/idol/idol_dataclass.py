@@ -221,7 +221,7 @@ class IdolDataCodegenScalar(GeneratorContext):
             PrimitiveType.INT: as_expression("int"),
             PrimitiveType.STRING: as_expression("str"),
             PrimitiveType.DOUBLE: as_expression("float"),
-            PrimitiveType.ANY: as_expression("any"),
+            PrimitiveType.ANY: import_expr(Exported(Path("typing"), "Any")),
         }
 
     @cached_property
