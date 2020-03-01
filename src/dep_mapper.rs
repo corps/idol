@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DepMapper {
     entries: Vec<String>,
     children: Vec<Vec<usize>>,
@@ -16,7 +16,15 @@ impl DepMapper {
         }
     }
 
-    fn key_entry(&mut self, entry: String) -> usize {
+    pub fn plus(&self, other: &DepMapper) -> DepMapper {
+        let mut result = DepMapper::new();
+
+        result.entries.dedup();
+
+        return result;
+    }
+
+    pub fn key_entry(&mut self, entry: &str) -> usize {
         let position = self.entries.iter().position(|i| i == &entry);
         if let Some(idx) = position {
             return idx;
@@ -24,7 +32,7 @@ impl DepMapper {
 
         self.children.push(vec![]);
         self.parents.push(vec![]);
-        self.entries.push(entry);
+        self.entries.push(entry.to_owned());
         return self.children.len() - 1;
     }
 
@@ -71,10 +79,16 @@ impl DepMapper {
         return ordering;
     }
 
+    pub fn contains_from(&self, from_dependency: &str) -> bool {
+        let idx = self.entries.iter().position(|i| i == &from_dependency);
+        idx.map(|idx| self.parents.get(idx).unwrap().len() > 0)
+            .unwrap_or(false)
+    }
+
     pub fn add_dependency(
         &mut self,
-        from_dependency: String,
-        to_dependency: String,
+        from_dependency: &str,
+        to_dependency: &str,
     ) -> Result<(), String> {
         if from_dependency == to_dependency {
             return Err(format!("{} <- {}", from_dependency, to_dependency));

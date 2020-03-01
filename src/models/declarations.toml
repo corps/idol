@@ -8,10 +8,10 @@ tags = ["atleast_one"]
 [TypeDec]
 # Defines the inhabitants of an enum type, where the first entry is used
 # as the 'default' when an out of bounds value is deserialized.
-fields.enum = "string[]"
+fields.enum = ["string[]"]
 
 # Defines an alias or type structure for this type.
-fields.is_a = "string[]"
+fields.is_a = ["string[]"]
 
 # Defines the typestructures that compose the fields of this type.
 fields.fields = ["FieldDec{}", "optional"]
@@ -36,6 +36,15 @@ fields.trim = "bool"
 # of the composing parts, by combining fields of all structures, marking
 # any fields not shared amongst all as optional, and using the most
 # wide type.
-# Invariant will ensure the constituent types are all functionally identical.
 [Variance]
-enum = ["Covariant", "Invariant", "Contravariant"]
+enum = ["Covariant", "Contravariant"]
+
+[ModuleInclude]
+fields.from = "string"
+fields.matching = "string"
+
+[ModuleIncludes]
+is_a = "ModuleInclude[]"
+
+[IncludesDec]
+fields.includes = "ModuleIncludes"

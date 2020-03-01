@@ -1,0 +1,15 @@
+[Comments]
+is_a = "string[]"
+
+[TypeComments.fields]
+type_comments = "Comments"
+field_comments = "Comments{}"
+
+[ModuleComments]
+is_a = "TypeComments{}"
+
+[LoadedModule.fields]
+module_name = "string"
+declaration = "declarations.ModuleDec"
+comments = "ModuleComments"
+includes = "declarations.ModuleIncludes"
