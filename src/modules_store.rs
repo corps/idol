@@ -1,7 +1,7 @@
 use crate::deconstructors::TypeDeconstructor;
 use crate::loader::ModuleFileLoader;
 use crate::models::schema::{Module, Reference, Type};
-use crate::module_resolver::ModuleResolver;
+use crate::module_resolver::resolve_module;
 use std::collections::HashMap;
 
 pub struct ModulesStore {
@@ -50,7 +50,6 @@ impl ModulesStore {
     }
 
     pub fn load(&mut self, module_name: &str) -> Result<(), String> {
-        // Already resolved
         if let Some(loaded) = self.resolved.get(module_name) {
             return Ok(());
         }
@@ -60,7 +59,7 @@ impl ModulesStore {
             .load_module(module_name)
             .map_err(|e| format!("Error loading module: {}", e))?;
 
-        let module = ModuleResolver::new(self, &loaded).resolve()?;
+        let module = resolve_module(self, &loaded)?;
         self.resolved.insert(module_name.to_owned(), module);
         debug_assert!(self.resolved.contains_key(module_name));
         Ok(())

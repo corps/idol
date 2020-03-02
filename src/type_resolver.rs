@@ -1,8 +1,6 @@
 use crate::deconstructors::TypeDeconstructor;
-use crate::models::declarations::Variance;
-use crate::models::schema::{Field, Module, Reference, Type, TypeStruct};
+use crate::models::schema::{Field, Reference, Type, TypeStruct};
 use crate::modules_store::{ModulesStore, TypeLookup};
-use crate::type_comparison::{compare_types, TypeComparison};
 use crate::type_composer::compose_types;
 use crate::type_dec_parser::ParsedTypeDec;
 use regex::Regex;
@@ -15,41 +13,41 @@ pub struct TypeResolver<'a> {
     resolved: HashMap<String, Type>,
 }
 
-impl<'a> TypeResolver<'a> {
-    pub fn resolve_types(
-        store: &'a ModulesStore,
-        module_name: &'a String,
-        parsed_type_decs: &'a HashMap<String, ParsedTypeDec<'a>>,
-        types_ordering: &'a Vec<String>,
-    ) -> Result<HashMap<String, Type>, String> {
-        let mut resolver: TypeResolver<'a> = TypeResolver {
-            store,
-            module_name,
-            resolved: HashMap::new(),
-        };
+pub fn resolve_types<'a>(
+    store: &'a ModulesStore,
+    module_name: &'a String,
+    parsed_type_decs: &'a HashMap<String, ParsedTypeDec<'a>>,
+    types_ordering: &'a Vec<String>,
+) -> Result<HashMap<String, Type>, String> {
+    let mut resolver: TypeResolver<'a> = TypeResolver {
+        store,
+        module_name,
+        resolved: HashMap::new(),
+    };
 
-        for type_name in types_ordering.iter() {
-            if !is_valid_type_name(type_name) {
-                return Err(format!(
-                    "Invalid type name {} in module {}",
-                    type_name, module_name
-                ));
-            }
-
-            resolver.resolved.insert(
-                type_name.to_owned(),
-                resolver
-                    .resolve_type(
-                        type_name.to_owned(),
-                        parsed_type_decs.get(type_name).unwrap(),
-                    )
-                    .map_err(|msg| format!("While resolving type {}: {}", type_name, msg))?,
-            );
+    for type_name in types_ordering.iter() {
+        if !is_valid_type_name(type_name) {
+            return Err(format!(
+                "Invalid type name {} in module {}",
+                type_name, module_name
+            ));
         }
 
-        Ok(resolver.resolved)
+        resolver.resolved.insert(
+            type_name.to_owned(),
+            resolver
+                .resolve_type(
+                    type_name.to_owned(),
+                    parsed_type_decs.get(type_name).unwrap(),
+                )
+                .map_err(|msg| format!("While resolving type {}: {}", type_name, msg))?,
+        );
     }
 
+    Ok(resolver.resolved)
+}
+
+impl<'a> TypeResolver<'a> {
     fn resolve_type(
         &self,
         type_name: String,
@@ -144,7 +142,7 @@ impl<'a> TypeResolver<'a> {
 
         let mut result = self.copy_material_type(&is_a[0])?;
 
-        for (i, next_type_struct) in is_a.iter().enumerate().skip(1) {
+        for next_type_struct in is_a.iter().skip(1) {
             let next_type = self.copy_material_type(next_type_struct)?;
             result = compose_types(
                 &result,

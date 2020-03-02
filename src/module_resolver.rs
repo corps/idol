@@ -3,6 +3,7 @@ use crate::models::loaded::LoadedModule;
 use crate::models::schema::{Module, Reference, Type};
 use crate::modules_store::{ModulesStore, TypeLookup};
 use crate::type_dec_parser::{parse_type_dec, ParsedTypeDec};
+use crate::type_resolver::resolve_types;
 use regex::{escape, Regex};
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -24,16 +25,17 @@ impl From<(String, String)> for Reference {
     }
 }
 
-impl<'a> ModuleResolver<'a> {
-    pub fn new(store: &'a mut ModulesStore, loaded: &'a LoadedModule) -> ModuleResolver<'a> {
-        ModuleResolver {
-            store,
-            loaded,
-            module_dep_mapper: DepMapper::new(),
-        }
-    }
+pub fn resolve_module(store: &mut ModulesStore, loaded: &LoadedModule) -> Result<Module, String> {
+    (ModuleResolver {
+        store,
+        loaded,
+        module_dep_mapper: DepMapper::new(),
+    })
+    .resolve()
+}
 
-    pub fn resolve(&mut self) -> Result<Module, String> {
+impl<'a> ModuleResolver<'a> {
+    fn resolve(&mut self) -> Result<Module, String> {
         let mut result = Module::default();
         result.module_name = self.loaded.module_name.to_owned();
         let mut local_type_dep_mapper = DepMapper::new();
@@ -49,6 +51,13 @@ impl<'a> ModuleResolver<'a> {
         }
 
         result.types_dependency_ordering = local_type_dep_mapper.order_dependencies();
+        result.types_by_name = resolve_types(
+            self.store,
+            &result.module_name,
+            &parsed_type_decs,
+            &result.types_dependency_ordering,
+        )
+        .map_err(|msg| format!("While resolving module {}: {}", result.module_name, msg))?;
 
         Ok(result)
     }
