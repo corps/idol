@@ -12,7 +12,6 @@ use std::collections::HashMap;
 pub struct TypeResolver<'a> {
     store: &'a ModulesStore,
     module_name: &'a String,
-    parsed_type_decs: &'a HashMap<String, ParsedTypeDec<'a>>,
     resolved: HashMap<String, Type>,
 }
 
@@ -26,7 +25,6 @@ impl<'a> TypeResolver<'a> {
         let mut resolver: TypeResolver<'a> = TypeResolver {
             store,
             module_name,
-            parsed_type_decs,
             resolved: HashMap::new(),
         };
 
@@ -40,10 +38,12 @@ impl<'a> TypeResolver<'a> {
 
             resolver.resolved.insert(
                 type_name.to_owned(),
-                resolver.resolve_type(
-                    type_name.to_owned(),
-                    parsed_type_decs.get(type_name).unwrap(),
-                )?,
+                resolver
+                    .resolve_type(
+                        type_name.to_owned(),
+                        parsed_type_decs.get(type_name).unwrap(),
+                    )
+                    .map_err(|msg| format!("While resolving type {}: {}", type_name, msg))?,
             );
         }
 
@@ -59,10 +59,7 @@ impl<'a> TypeResolver<'a> {
         let tail_type = self.resolve_tail_type(parsed_type_dec)?;
 
         if head_struct.is_none() && tail_type.is_none() {
-            return Err(format!(
-                "Type {} was missing fields, enum, or is_a definitions.",
-                type_name
-            ));
+            return Err(format!("Missing fields, enum, or is_a definitions.",));
         }
 
         let mut result = if let Some(head) = head_struct {
@@ -90,6 +87,15 @@ impl<'a> TypeResolver<'a> {
 
     fn resolve_head_struct(&self, parsed_type_dec: &ParsedTypeDec) -> Result<Option<Type>, String> {
         if parsed_type_dec.type_dec.fields.is_some() {
+            for bad_field in parsed_type_dec
+                .fields
+                .keys()
+                .find(|field_name| !is_valid_field_name(field_name))
+                .iter()
+            {
+                return Err(format!("Invalid field name {}", bad_field));
+            }
+
             return Ok(Some(Type {
                 fields: parsed_type_dec
                     .fields
