@@ -68,35 +68,36 @@ pub fn categorized_field_tags(tags: &Vec<String>) -> CategorizedFieldTags {
     Some(Ok((A, false)) => took A, but they were not equal.
 */
 fn take_by_comparison<A>(
-    left: A,
-    right: A,
+    left: &A,
+    right: &A,
     cmp: &TypeComparison,
     variance: &Variance,
-) -> Option<Result<(A, bool), ()>> {
+) -> Option<Result<(A, bool), ()>>
+where
+    A: Clone,
+{
     match (cmp, variance) {
         (TypeComparison::Incompatible, _) => Some(Err(())),
 
-        (TypeComparison::Equal, _) => Some(Ok((left, true))),
-        (TypeComparison::LeftIsWider, Variance::Covariant) => Some(Ok((right, false))),
-        (TypeComparison::RightIsWider, Variance::Contravariant) => Some(Ok((right, false))),
-        (TypeComparison::LeftIsWider, Variance::Contravariant) => Some(Ok((left, false))),
-        (TypeComparison::RightIsWider, Variance::Covariant) => Some(Ok((left, false))),
+        (TypeComparison::Equal, _) => Some(Ok((left.clone(), true))),
+        (TypeComparison::LeftIsWider, Variance::Covariant) => Some(Ok((right.clone(), false))),
+        (TypeComparison::RightIsWider, Variance::Contravariant) => Some(Ok((right.clone(), false))),
+        (TypeComparison::LeftIsWider, Variance::Contravariant) => Some(Ok((left.clone(), false))),
+        (TypeComparison::RightIsWider, Variance::Covariant) => Some(Ok((left.clone(), false))),
         _ => None,
     }
 }
 
-pub fn compose_types<'a, 'b: 'a, T>(
-    left: Type,
-    right: Type,
+pub fn compose_types<'a, 'b: 'a, 'c, T>(
+    left: &'c Type,
+    right: &'c Type,
     type_lookup: &'b T,
     variance: Variance,
 ) -> Result<Type, String>
 where
     T: TypeLookup<'a>,
 {
-    let cmp = compare_types(&left, &right, type_lookup)?;
-    // let left_qn = &left.named.qualified_name;
-    // let right_qn = &right.named.qualified_name;
+    let cmp = compare_types(left, right, type_lookup)?;
 
     if let Some(taken_type) = take_by_comparison(left, right, &cmp, &variance) {
         return Ok(taken_type
@@ -116,11 +117,11 @@ where
             let mut last_right_field: Option<String> = None;
 
             for (k, field_comp) in differing_fields.iter() {
-                if let Some(taken_side) = take_by_comparison(true, false, field_comp, &variance) {
+                if let Some(taken_side) = take_by_comparison(&true, &false, field_comp, &variance) {
                     let (take_left, was_equal) = taken_side.map_err(|_| {
                         format!(
                             "the {} fields of {} and {} are incompatible for composition",
-                            k, left.named.qualified_name, right.named.qualified_name
+                            k, &left.named.qualified_name, &right.named.qualified_name
                         )
                     })?;
 
@@ -133,7 +134,7 @@ where
                         } else {
                             return Err(format!(
                                 "{} is incompatible for composition with {}",
-                                left.named.qualified_name, right.named.qualified_name
+                                &left.named.qualified_name, &right.named.qualified_name
                             ));
                         }
                     } else {
@@ -145,7 +146,7 @@ where
                         } else {
                             return Err(format!(
                                 "{} is incompatible for composition with {}",
-                                left.named.qualified_name, right.named.qualified_name
+                                &left.named.qualified_name, &right.named.qualified_name
                             ));
                         }
                     }
@@ -178,29 +179,11 @@ where
                                 },
                             );
                         }
-                        Variance::Covariant => {
-                            let left_categorized = categorized_field_tags(uniq_left);
-                            let right_categorized = categorized_field_tags(uniq_right);
-
-                            if !left_categorized.specializers.is_empty()
-                                && !right_categorized.specializers.is_empty()
-                            {
-                                return Err(format!(
-                                    "{} is incompatible for covariant composition with {}, {} fields have incompatible specializers",
-                                    left.named.qualified_name, right.named.qualified_name,
-                                    k.to_owned()
-                                ));
-                            }
-
-                            if !left_categorized.specializers.is_empty() {
-                                if !left_categorized.generalizers.is_empty() {
-                                    return Err(format!(
-                                        "{} is incompatible for covariant composition with {}, {} fields have incompatible specializers",
-                                        left.named.qualified_name, right.named.qualified_name,
-                                        k.to_owned()
-                                    ));
-                                }
-                            }
+                        _ => {
+                            return Err(format!(
+                                "the {} fields of {} and {} are incompatible for covariant composition",
+                                k, &left.named.qualified_name, &right.named.qualified_name
+                            ));
                         }
                     }
                 } else {
@@ -231,26 +214,4 @@ where
         }
         _ => unreachable!(),
     }
-}
-
-fn join_to_covariant_field(
-    from_categorized: &CategorizedFieldTags
-    from_field: &Field,
-    to_categorized: &CategorizedFieldTags,
-    shared: &Vec<&String>,
-) -> Option<Result<Field, ()>> {
-    if !from_categorized.specializers.is_empty() {
-        if !from_categorized.generalizers.is_empty() {
-            return Some(Err(()));
-        }
-
-        return Some(Ok(Field {
-            field_name: from_field.field_name.to_owned(),
-            type_struct: from_field.type_struct.clone(),
-            tags: shared.iter().cloned().cloned().chain(from_categorized.specializers.iter().cloned()).collect(),
-            ..Field::default()
-        }));
-    }
-
-    None
 }

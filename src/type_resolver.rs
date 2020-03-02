@@ -1,8 +1,9 @@
 use crate::deconstructors::TypeDeconstructor;
 use crate::models::declarations::Variance;
-use crate::models::schema::{Module, Reference, Type, TypeStruct};
+use crate::models::schema::{Field, Module, Reference, Type, TypeStruct};
 use crate::modules_store::{ModulesStore, TypeLookup};
 use crate::type_comparison::{compare_types, TypeComparison};
+use crate::type_composer::compose_types;
 use crate::type_dec_parser::ParsedTypeDec;
 use regex::Regex;
 use std::borrow::Borrow;
@@ -54,33 +55,103 @@ impl<'a> TypeResolver<'a> {
         type_name: String,
         parsed_type_dec: &ParsedTypeDec,
     ) -> Result<Type, String> {
-        let mut result = Type::default();
+        let head_struct = self.resolve_head_struct(parsed_type_dec)?;
+        let tail_type = self.resolve_tail_type(parsed_type_dec)?;
+
+        if head_struct.is_none() && tail_type.is_none() {
+            return Err(format!(
+                "Type {} was missing fields, enum, or is_a definitions.",
+                type_name
+            ));
+        }
+
+        let mut result = if let Some(head) = head_struct {
+            if let Some(tail) = tail_type {
+                compose_types(
+                    &head,
+                    &tail,
+                    self,
+                    parsed_type_dec.type_dec.variance.clone(),
+                )?
+            } else {
+                head
+            }
+        } else if let Some(tail) = tail_type {
+            tail
+        } else {
+            unreachable!()
+        };
 
         result.named = Reference::from((self.module_name.to_owned(), type_name));
+        result.tags = parsed_type_dec.type_dec.tags.clone();
 
         Ok(result)
     }
 
-    fn resolve_tail_type(
-        &mut self,
-        type_name: &str,
-        parsed_type_dec: &ParsedTypeDec,
-    ) -> Result<Option<Type>, String> {
+    fn resolve_head_struct(&self, parsed_type_dec: &ParsedTypeDec) -> Result<Option<Type>, String> {
+        if parsed_type_dec.type_dec.fields.is_some() {
+            return Ok(Some(Type {
+                fields: parsed_type_dec
+                    .fields
+                    .iter()
+                    .map(|(k, type_struct)| {
+                        (
+                            k.to_owned(),
+                            Field {
+                                field_name: k.clone(),
+                                tags: parsed_type_dec
+                                    .field_tags
+                                    .get(k)
+                                    .cloned()
+                                    .unwrap_or_else(|| vec![]),
+                                type_struct: type_struct.clone(),
+                            },
+                        )
+                    })
+                    .collect(),
+                ..Type::default()
+            }));
+        }
+
+        if !parsed_type_dec.type_dec.r#enum.is_empty() {
+            return Ok(Some(Type {
+                options: parsed_type_dec.type_dec.r#enum.clone(),
+                ..Type::default()
+            }));
+        }
+
+        Ok(None)
+    }
+
+    fn resolve_tail_type(&self, parsed_type_dec: &ParsedTypeDec) -> Result<Option<Type>, String> {
         let is_a: &Vec<TypeStruct> = parsed_type_dec.is_a.borrow();
         if is_a.len() == 0 {
             return Ok(None);
         }
 
+        if is_a.len() == 1 {
+            return Ok(Some(Type {
+                is_a: Some(is_a[0].clone()),
+                ..Type::default()
+            }));
+        }
+
         let mut result = self.copy_material_type(&is_a[0])?;
 
         for (i, next_type_struct) in is_a.iter().enumerate().skip(1) {
-            let mut next_type = self.copy_material_type(next_type_struct)?;
+            let next_type = self.copy_material_type(next_type_struct)?;
+            result = compose_types(
+                &result,
+                &next_type,
+                self,
+                parsed_type_dec.type_dec.variance.clone(),
+            )?;
         }
 
-        Ok(Some(Type::default()))
+        Ok(Some(result))
     }
 
-    fn copy_material_type(&mut self, type_struct: &TypeStruct) -> Result<Type, String> {
+    fn copy_material_type(&self, type_struct: &TypeStruct) -> Result<Type, String> {
         let wrapped_type = Type {
             is_a: Some(type_struct.clone()),
             ..Type::default()
