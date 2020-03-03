@@ -79,6 +79,7 @@ impl<'a> TypeResolver<'a> {
 
         result.named = Reference::from((self.module_name.to_owned(), type_name));
         result.tags = parsed_type_dec.type_dec.tags.clone();
+        // result.tags.append(parsed_type_dec.type_dec)
 
         Ok(result)
     }

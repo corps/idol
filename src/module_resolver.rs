@@ -1,9 +1,12 @@
+use crate::deconstructors::TypeDeconstructor;
 use crate::dep_mapper::DepMapper;
+use crate::models::declarations::TypeDec;
 use crate::models::loaded::LoadedModule;
 use crate::models::schema::{Module, Reference, Type};
 use crate::modules_store::{ModulesStore, TypeLookup};
 use crate::type_dec_parser::{parse_type_dec, ParsedTypeDec};
 use crate::type_resolver::resolve_types;
+use crate::utils::ordered_by_keys;
 use regex::{escape, Regex};
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -51,6 +54,7 @@ impl<'a> ModuleResolver<'a> {
         }
 
         result.types_dependency_ordering = local_type_dep_mapper.order_dependencies();
+
         result.types_by_name = resolve_types(
             self.store,
             &result.module_name,
@@ -58,6 +62,38 @@ impl<'a> ModuleResolver<'a> {
             &result.types_dependency_ordering,
         )
         .map_err(|msg| format!("While resolving module {}: {}", result.module_name, msg))?;
+
+        for (type_name, comments) in self.loaded.comments.0.iter() {
+            if let Some(t) = result.types_by_name.get_mut(type_name) {
+                t.tags.extend(
+                    comments
+                        .type_comments
+                        .0
+                        .iter()
+                        .map(|s| format!("description:{}", s)),
+                );
+
+                if TypeDeconstructor(&t).struct_fields().is_some() {
+                    for (k, field) in t.fields.iter_mut() {
+                        let fields_key = format!("fields.{}", k);
+                        let k = if comments.field_comments.contains_key(k) {
+                            k
+                        } else {
+                            &fields_key
+                        };
+
+                        if let Some(field_comments) = comments.field_comments.get(k) {
+                            field.tags.extend(
+                                field_comments
+                                    .0
+                                    .iter()
+                                    .map(|s| format!("description:{}", s)),
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         Ok(result)
     }
@@ -90,8 +126,10 @@ impl<'a> ModuleResolver<'a> {
         local_type_dep_mapper: &mut DepMapper,
     ) -> Result<HashMap<String, ParsedTypeDec<'a>>, String> {
         let mut parsed_type_decs = HashMap::new();
-        for (type_name, t) in self.loaded.declaration.0.iter() {
+        for (type_name, t) in ordered_by_keys(&self.loaded.declaration.0) {
             let parsed_dec = parse_type_dec(t, &self.loaded.module_name)?;
+            local_type_dep_mapper.key_entry(type_name);
+
             for type_dec in parsed_dec.is_a.iter() {
                 if type_dec.reference.qualified_name.len() > 0
                     && type_dec.reference.module_name == self.loaded.module_name

@@ -7,62 +7,44 @@ use structopt::StructOpt;
 pub struct Configuration {
     /// Directories to search for module files within.  This is in addition to the directories of any src files.
     #[structopt(long = "include", short = "I")]
-    include_dirs: Vec<String>,
+    pub include_dirs: Vec<String>,
     /// Which extensions to search modules by.  This is in addition to those on any src files.
     #[structopt(long = "extension", short = "x")]
-    extensions: Vec<String>,
-    /// output the resulting types as normalized declarations
-    #[structopt(long = "as-declaration", short = "D")]
-    as_declarations: bool,
-    src_files: Vec<String>,
+    pub extensions: Vec<String>,
+    pub src_files: Vec<String>,
 }
 
-/*
-_ -> a -> b -> c -> d
-       -> c
+impl Configuration {
+    pub fn process_src_files(&mut self) -> Vec<String> {
+        let mut result = vec![];
+        for src in self.src_files.iter() {
+            let src_path = PathBuf::from(src);
+            let dir = src_path
+                .parent()
+                .map(|p| String::from(p.to_str().unwrap()))
+                .unwrap_or_else(|| String::from(""));
 
-zero arity type: _ => t
-needs
+            if !self.include_dirs.contains(&dir) {
+                self.include_dirs.push(dir);
+            }
 
-BaseType
-BaseType
+            let ext = src_path
+                .extension()
+                .map(|oss| String::from(oss.to_string_lossy()))
+                .unwrap_or_else(|| String::from(""));
 
+            if !self.extensions.contains(&ext) {
+                self.extensions.push(ext);
+            }
 
-TypeStruct
+            let module_name = src_path
+                .file_stem()
+                .map(|oss| String::from(oss.to_string_lossy()))
+                .unwrap_or_else(|| String::from(""));
 
-Structure
-Enumeration
-TypeStruct
-
-
-a  b c
-b  d
-c  d
-d
-
-*/
-
-pub fn apply_defaults(conf: &mut Configuration) -> () {
-    for src in conf.src_files.iter() {
-        let src_path = PathBuf::from(src);
-        let dir = src_path
-            .parent()
-            .map(|p| String::from(p.to_str().unwrap()))
-            .unwrap_or_else(|| String::from(""));
-
-        if !conf.include_dirs.contains(&dir) {
-            conf.include_dirs.push(dir);
+            result.push(module_name);
         }
 
-        let ext = src_path
-            .extension()
-            .map(|oss| String::from(oss.to_string_lossy()))
-            .unwrap_or_else(|| String::from(""));
-
-        if !conf.extensions.contains(&ext) {
-            conf.extensions.push(ext);
-        }
+        result
     }
-
-    ()
 }

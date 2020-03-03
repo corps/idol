@@ -15,3 +15,4 @@ pub mod type_comparison;
 pub mod type_composer;
 pub mod type_dec_parser;
 pub mod type_resolver;
+mod utils;

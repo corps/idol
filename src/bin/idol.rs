@@ -1,13 +1,14 @@
 extern crate idol;
 extern crate structopt;
 
-use idol::config::{apply_defaults, Configuration};
+use idol::config::Configuration;
 use std::collections::btree_map::Keys;
 use std::collections::{BTreeMap, HashMap};
+use structopt::StructOpt;
 
 fn main() -> Result<(), i32> {
     let mut opt = Configuration::from_args();
-    apply_defaults(opts);
+    opt.apply_configuration();
 
     // A merged covariant field includes all tags
     // a merged contravariant only includes the field, minus tags.
@@ -21,17 +22,3 @@ fn main() -> Result<(), i32> {
 
     Ok(())
 }
-
-// Awaiting
-//
-// FinishedState
-//   Needs Module: X
-//    /
-//  Finished
-
-// FinishedState
-// AwaitingModuleData  -> LoadFailure
-//
-
-// ModuleRegistry
-//

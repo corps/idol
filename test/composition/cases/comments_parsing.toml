@@ -1,0 +1,29 @@
+# This type would receive comments
+[TypeA]
+
+
+# This field would receive comments
+# Multiline ones too
+#Stripping and spacing  
+fields.a = "string"
+
+# This would be not become a field comment
+tags = ["abc"]
+
+# But this one would
+fields.b = "int"
+
+# Obviously this one
+
+[TypeB]
+# Comment would be ignored
+tags = []
+
+
+# This would be added? to the type comments
+[TypeB.fields]
+# And this would
+# as well
+c = "int"
+
+# This would be discarded

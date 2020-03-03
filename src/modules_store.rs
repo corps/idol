@@ -49,6 +49,14 @@ impl ModulesStore {
         }
     }
 
+    pub fn load_modules(&mut self, module_names: &Vec<String>) -> Result<(), String> {
+        for module_name in module_names.iter() {
+            self.load(module_name)?;
+        }
+
+        Ok(())
+    }
+
     pub fn load(&mut self, module_name: &str) -> Result<(), String> {
         if let Some(loaded) = self.resolved.get(module_name) {
             return Ok(());
@@ -61,7 +69,6 @@ impl ModulesStore {
 
         let module = resolve_module(self, &loaded)?;
         self.resolved.insert(module_name.to_owned(), module);
-        debug_assert!(self.resolved.contains_key(module_name));
         Ok(())
     }
 }

@@ -1,8 +1,10 @@
-use crate::models::declarations::{IncludesDec, ModuleIncludes};
-use crate::models::idol::{ValidatesJson, ValidationError};
+use crate::models::declarations::{IncludesDec, ModuleDec, ModuleIncludes, TypeDec};
+use crate::models::idol::{ExpandsJson, ValidatesJson, ValidationError};
 use crate::models::loaded::{Comments, LoadedModule, ModuleComments, TypeComments};
+use crate::models::schema::Module;
 use is_executable::IsExecutable;
 use regex::Regex;
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -64,9 +66,26 @@ impl ModuleFileLoader {
         result.includes = module_includes;
         result.comments = module_comments;
         result.module_name = module_name.to_owned();
-        result.declaration = serde_json::from_value(source).map_err(|e| {
-            LoadError::DeserializationError(module_name.to_owned(), format!("{}", e))
-        })?;
+
+        let mut modules: HashMap<String, serde_json::Value> = serde_json::from_value(source)
+            .map_err(|e| {
+                LoadError::DeserializationError(module_name.to_owned(), format!("{}", e))
+            })?;
+
+        for (k, value) in modules.iter_mut() {
+            let declaration_value = if let Some(replacement) = TypeDec::expand_json(value) {
+                replacement
+            } else {
+                value.to_owned()
+            };
+
+            result.declaration.0.insert(
+                k.clone(),
+                serde_json::from_value(declaration_value).map_err(|e| {
+                    LoadError::DeserializationError(module_name.to_owned(), format!("{}", e))
+                })?,
+            );
+        }
 
         Ok(result)
     }

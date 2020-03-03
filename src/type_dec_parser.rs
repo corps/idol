@@ -103,19 +103,19 @@ pub(crate) fn parse_field_dec(module_name: &str, field_dec: &str) -> Result<Type
 
 fn parse_reference(module_name: &str, field_dec: &str) -> Option<Reference> {
     lazy_static! {
-        static ref REFERENCE_REGEX: Regex = Regex::new(r"^([a-z_.]*)([A-Z][a-zA-Z_]+)*$").unwrap();
+        static ref REFERENCE_REGEX: Regex = Regex::new(r"^([^a-z_.]*)([A-Z][a-zA-Z_]+)*$").unwrap();
     }
 
     REFERENCE_REGEX.captures(field_dec).map(|c| {
         let mut result = Reference::default();
-        let mn = c.get(1).unwrap().as_str();
+        let mn = c.get(0).unwrap().as_str();
 
         if mn.len() > 0 {
             result.module_name = mn.to_owned();
         } else {
             result.module_name = module_name.to_owned();
         }
-        result.type_name = c.get(2).unwrap().as_str().to_owned();
+        result.type_name = c.get(1).unwrap().as_str().to_owned();
         result
     })
 }
