@@ -43,7 +43,7 @@ impl<'a> ModuleResolver<'a> {
         result.module_name = self.loaded.module_name.to_owned();
         let mut local_type_dep_mapper = DepMapper::new();
 
-        self.resolve_includes(&mut local_type_dep_mapper)?;
+        let included_types = self.resolve_includes(&mut local_type_dep_mapper)?;
         let parsed_type_decs = self.parse_type_decs(&mut local_type_dep_mapper)?;
 
         for (type_name, ptd) in parsed_type_decs.iter() {
@@ -113,8 +113,15 @@ impl<'a> ModuleResolver<'a> {
 
             for (type_name, t) in resolve_include_matching(&include.matching, include_module).iter()
             {
+                let type_name = type_name.clone();
                 local_type_dep_mapper.key_entry(type_name);
-                result.insert(type_name.to_owned().to_owned(), t.to_owned().to_owned());
+                if result.contains_key(type_name) {
+                    return Err(format!(
+                        "Included type {} from {} collides with other definition",
+                        type_name, include.from
+                    ));
+                }
+                result.insert(type_name.to_owned(), t.to_owned().to_owned());
             }
         }
 
@@ -184,8 +191,10 @@ impl<'a> ModuleResolver<'a> {
                 self.resolve_reference_dependencies(&next_ref, parent_ref, parsed_type_decs)?;
 
             for inner_ref in inner_refs {
-                self.module_dep_mapper
-                    .add_dependency(&next_ref.module_name, &inner_ref.module_name)?;
+                if inner_ref.module_name != next_ref.module_name {
+                    self.module_dep_mapper
+                        .add_dependency(&next_ref.module_name, &inner_ref.module_name)?;
+                }
                 ref_queue.push((inner_ref, Some(next_ref.to_owned())));
             }
         }

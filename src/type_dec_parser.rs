@@ -91,7 +91,7 @@ pub(crate) fn parse_field_dec(module_name: &str, field_dec: &str) -> Result<Type
     let (mut type_struct, unused) = parse_type_annotation(field_dec)?;
 
     if let Some(field_val) = unused {
-        if let Some(reference) = parse_reference(module_name, field_dec) {
+        if let Some(reference) = parse_reference(module_name, field_val) {
             type_struct.reference = reference;
         } else {
             type_struct.primitive_type = parse_primitive_type(field_val)?;
@@ -103,19 +103,20 @@ pub(crate) fn parse_field_dec(module_name: &str, field_dec: &str) -> Result<Type
 
 fn parse_reference(module_name: &str, field_dec: &str) -> Option<Reference> {
     lazy_static! {
-        static ref REFERENCE_REGEX: Regex = Regex::new(r"^([^a-z_.]*)([A-Z][a-zA-Z_]+)*$").unwrap();
+        static ref REFERENCE_REGEX: Regex = Regex::new(r"^([a-z_.]*)([A-Z][a-zA-Z_]+)+$").unwrap();
     }
 
     REFERENCE_REGEX.captures(field_dec).map(|c| {
         let mut result = Reference::default();
-        let mn = c.get(0).unwrap().as_str();
+        let mn = c.get(1).unwrap().as_str();
 
         if mn.len() > 0 {
             result.module_name = mn.to_owned();
         } else {
             result.module_name = module_name.to_owned();
         }
-        result.type_name = c.get(1).unwrap().as_str().to_owned();
+        result.type_name = c.get(2).unwrap().as_str().to_owned();
+        result.qualified_name = format!("{}.{}", result.module_name, result.type_name);
         result
     })
 }
@@ -191,13 +192,5 @@ fn parse_literal_annotation<'x>(lit_type: &'x str, val: &'x str) -> Result<TypeS
 
 fn parse_primitive_type(prim_kind: &str) -> Result<PrimitiveType, String> {
     serde_json::from_value(serde_json::Value::String(prim_kind.to_owned()))
-        .map_err(|e| format!("Error parsing primitive type: {}", e))
-}
-
-fn is_model_ref(ident: &str) -> bool {
-    return ident.chars().next().unwrap_or(' ').is_ascii_uppercase() || ident.find('.').is_some();
-}
-
-fn is_local_model_ref(ident: &str) -> bool {
-    return is_model_ref(ident) && ident.find('.').is_none();
+        .map_err(|e| format!("when parsing primitive {}", e))
 }

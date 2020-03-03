@@ -176,7 +176,7 @@ pub fn compare_types<'a, 'b: 'a, T>(
 where
     T: TypeLookup<'b>,
 {
-    while true {
+    loop {
         if let Some(type_struct) = one.is_a.borrow() {
             if let Some(type_struct_two) = other.is_a.borrow() {
                 let cmp = compare_type_structs(type_struct, type_struct_two);
@@ -278,10 +278,6 @@ fn compare_by_field_tags(
     other_tags: &CategorizedFieldTags,
     type_struct_comp: TypeComparison,
 ) -> TypeComparison {
-    let mut uniq_left = vec![];
-    let mut uniq_right = vec![];
-    let mut shared = vec![];
-
     match type_struct_comp {
         TypeComparison::Incompatible => {
             return TypeComparison::Incompatible;
@@ -302,9 +298,10 @@ fn compare_by_field_tags(
         .specializers
         .difference(&field_tags.specializers)
         .collect();
-    let shared_specializers = field_tags
+    let shared_specializers: Vec<&&str> = field_tags
         .specializers
-        .intersection(&other_tags.specializers);
+        .intersection(&other_tags.specializers)
+        .collect();
 
     let left_generalizers: Vec<&&str> = field_tags
         .generalizers
@@ -314,9 +311,10 @@ fn compare_by_field_tags(
         .generalizers
         .difference(&field_tags.generalizers)
         .collect();
-    let shared_generalizers = field_tags
+    let shared_generalizers: Vec<&&str> = field_tags
         .generalizers
-        .intersection(&other_tags.generalizers);
+        .intersection(&other_tags.generalizers)
+        .collect();
 
     match type_struct_comp {
         // [any, optional?, date!]  vs [int, date!, flat?] or [int, optional?]
@@ -335,8 +333,23 @@ fn compare_by_field_tags(
     }
 
     TypeComparison::DisjointFieldModifiers {
-        uniq_left,
-        uniq_right,
-        shared,
+        uniq_left: left_specializers
+            .into_iter()
+            .chain(left_generalizers)
+            .cloned()
+            .map(|s| s.to_string())
+            .collect(),
+        uniq_right: right_specializers
+            .into_iter()
+            .chain(right_generalizers)
+            .cloned()
+            .map(|s| s.to_string())
+            .collect(),
+        shared: shared_specializers
+            .into_iter()
+            .chain(shared_generalizers)
+            .cloned()
+            .map(|s| s.to_string())
+            .collect(),
     }
 }

@@ -91,7 +91,10 @@ impl DepMapper {
         to_dependency: &str,
     ) -> Result<(), String> {
         if from_dependency == to_dependency {
-            return Err(format!("{} <- {}", from_dependency, to_dependency));
+            return Err(format!(
+                "Circular dependency detected: {} <- {}",
+                from_dependency, to_dependency
+            ));
         }
 
         let from_key = self.key_entry(from_dependency);
@@ -112,12 +115,14 @@ impl DepMapper {
 
         while let Some((next_parent, path)) = parent_queue.pop() {
             if next_parent == to_key {
-                return Err(path
-                    .iter()
-                    .cloned()
-                    .map(|i| self.entries.get(i).unwrap().to_owned())
-                    .collect::<Vec<String>>()
-                    .join(" <- "));
+                return Err(format!(
+                    "Circular dependency: {}",
+                    path.iter()
+                        .cloned()
+                        .map(|i| self.entries.get(i).unwrap().to_owned())
+                        .collect::<Vec<String>>()
+                        .join(" <- ")
+                ));
             }
 
             if seen_parent.contains(&next_parent) {

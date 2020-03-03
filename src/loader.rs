@@ -160,16 +160,19 @@ impl ModuleFileLoader {
 }
 
 fn parse_includes(source: &mut serde_json::Value) -> Result<ModuleIncludes, ValidationError> {
-    if source
-        .as_object()
-        .map(|o| o.contains_key("includes"))
-        .unwrap_or(false)
-    {
-        IncludesDec::validate_json(source)?;
-        return Ok(serde_json::from_value(
-            source.as_object_mut().unwrap().remove("includes").unwrap(),
-        )
-        .unwrap());
+    if let Some(includes) = source.as_object().and_then(|o| o.get("includes")) {
+        let mut includes_source = includes.clone();
+        let includes_source = if let Some(s) = ModuleIncludes::expand_json(&mut includes_source) {
+            s
+        } else {
+            includes_source
+        };
+
+        ModuleIncludes::validate_json(&includes_source)?;
+        source.as_object_mut().unwrap().remove("includes");
+
+        // Validated above, unwrapping is safe.
+        return Ok(serde_json::from_value(includes_source).unwrap());
     }
 
     Ok(ModuleIncludes::default())

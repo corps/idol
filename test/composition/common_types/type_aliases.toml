@@ -1,0 +1,17 @@
+[Int]
+is_a = "int"
+
+[Str]
+is_a = "string"
+
+[Bools]
+is_a = "bool[]"
+
+[AnyMap]
+is_a = "any{}"
+
+[Doubles]
+is_a = "Double[]"
+
+[Double]
+is_a = "double"

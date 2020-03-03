@@ -4,7 +4,7 @@
 
 # This field would receive comments
 # Multiline ones too
-#Stripping and spacing  
+#Stripping and spacing
 fields.a = "string"
 
 # This would be not become a field comment

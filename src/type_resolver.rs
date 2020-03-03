@@ -26,6 +26,11 @@ pub fn resolve_types<'a>(
     };
 
     for type_name in types_ordering.iter() {
+        // Include type that has already been resolved.
+        if store.resolved.contains_key(type_name) {
+            continue;
+        }
+
         if !is_valid_type_name(type_name) {
             return Err(format!(
                 "Invalid type name {} in module {}",
