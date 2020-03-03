@@ -10,20 +10,19 @@ for file in cases/*; do
   actual="actual/$(basename "$file" | cut -f 1 -d '.')"
   expected="expected/$(basename "$file" | cut -f 1 -d '.')"
 
-  output=`$idol -I ./common_types / -- $file 2>&1`
+  $idol -I ./common_types / -- $file 2>$actual.err 1>$actual.json
   if test $? -ne 0; then
     if ! test -e $expected.err; then
       echo "$file composition failed unexpectedly!  Check $expected.err, output has been added there."
-      echo "$output" > $expected.err
+      cp $actual.err $expected.err
     fi
 
-    if [[ "$output" != "$(cat $expected.err)" ]]; then
+    if [[ "$(cat $actual.err)" != "$(cat $expected.err)" ]]; then
       echo "$file composition failed unexpectedly!  Check $expected.err, output was
-$output"
+$(cat $actual.err)"
       exit 1
     fi
   else
-    echo "$output" > $actual.json
     if ! test -e $expected.json; then
       echo "No $expected.json file found, creating out from output"
       cat $actual.json | jq -S > $expected.json

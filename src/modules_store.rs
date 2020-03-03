@@ -72,6 +72,7 @@ impl ModulesStore {
 
         let module = resolve_module(self, &loaded)?;
         self.resolved.insert(module_name.to_owned(), module);
+
         Ok(())
     }
 }

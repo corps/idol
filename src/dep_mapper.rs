@@ -16,14 +16,6 @@ impl DepMapper {
         }
     }
 
-    pub fn plus(&self, other: &DepMapper) -> DepMapper {
-        let mut result = DepMapper::new();
-
-        result.entries.dedup();
-
-        return result;
-    }
-
     pub fn key_entry(&mut self, entry: &str) -> usize {
         let position = self.entries.iter().position(|i| i == &entry);
         if let Some(idx) = position {
@@ -100,11 +92,6 @@ impl DepMapper {
         let from_key = self.key_entry(from_dependency);
         let to_key = self.key_entry(to_dependency);
         let from_parents = self.parents.get(from_key).unwrap();
-
-        // Check for duplicate entry.
-        if from_parents.contains(&to_key) {
-            return Ok(());
-        }
 
         let mut seen_parent: HashSet<usize> = HashSet::new();
         let mut parent_queue: Vec<(usize, Vec<usize>)> = from_parents
