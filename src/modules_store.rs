@@ -1,4 +1,5 @@
 use crate::deconstructors::TypeDeconstructor;
+use crate::dep_mapper::DepMapper;
 use crate::loader::ModuleFileLoader;
 use crate::models::schema::{Module, Reference, Type};
 use crate::module_resolver::resolve_module;
@@ -7,6 +8,7 @@ use std::collections::HashMap;
 pub struct ModulesStore {
     pub resolved: HashMap<String, Module>,
     loader: ModuleFileLoader,
+    pub module_dep_mapper: DepMapper,
 }
 
 pub trait TypeLookup<'a> {
@@ -46,6 +48,7 @@ impl ModulesStore {
         ModulesStore {
             loader,
             resolved: HashMap::new(),
+            module_dep_mapper: DepMapper::new(),
         }
     }
 

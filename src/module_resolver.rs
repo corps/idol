@@ -14,7 +14,6 @@ use std::str::FromStr;
 pub struct ModuleResolver<'a> {
     store: &'a mut ModulesStore,
     loaded: &'a LoadedModule,
-    module_dep_mapper: DepMapper,
 }
 
 impl From<(String, String)> for Reference {
@@ -29,12 +28,7 @@ impl From<(String, String)> for Reference {
 }
 
 pub fn resolve_module(store: &mut ModulesStore, loaded: &LoadedModule) -> Result<Module, String> {
-    (ModuleResolver {
-        store,
-        loaded,
-        module_dep_mapper: DepMapper::new(),
-    })
-    .resolve()
+    (ModuleResolver { store, loaded }).resolve()
 }
 
 impl<'a> ModuleResolver<'a> {
@@ -45,6 +39,17 @@ impl<'a> ModuleResolver<'a> {
 
         let included_types = self.resolve_includes(&mut local_type_dep_mapper)?;
         let parsed_type_decs = self.parse_type_decs(&mut local_type_dep_mapper)?;
+
+        for (type_name, t) in included_types {
+            if parsed_type_decs.contains_key(&type_name) {
+                return Err(format!(
+                    "Included type {} conflicts with locally defined type",
+                    type_name
+                ));
+            }
+
+            result.types_by_name.insert(type_name, t);
+        }
 
         for (type_name, ptd) in parsed_type_decs.iter() {
             self.ensure_dependencies_of(
@@ -105,7 +110,8 @@ impl<'a> ModuleResolver<'a> {
         let mut result = HashMap::new();
         for include in self.loaded.includes.0.iter() {
             // Ensure no circular dependency from include.
-            self.module_dep_mapper
+            self.store
+                .module_dep_mapper
                 .add_dependency(&self.loaded.module_name, &include.from)?;
 
             self.store.load(&include.from)?;
@@ -192,7 +198,8 @@ impl<'a> ModuleResolver<'a> {
 
             for inner_ref in inner_refs {
                 if inner_ref.module_name != next_ref.module_name {
-                    self.module_dep_mapper
+                    self.store
+                        .module_dep_mapper
                         .add_dependency(&next_ref.module_name, &inner_ref.module_name)?;
                 }
                 ref_queue.push((inner_ref, Some(next_ref.to_owned())));
@@ -208,6 +215,10 @@ fn resolve_include_matching<'a>(
     from_module: &'a Module,
 ) -> HashMap<&'a String, &'a Type> {
     let mut result = HashMap::new();
+
+    if matching.is_empty() {
+        return result;
+    }
 
     let matching_regex = compile_matching_regex(matching);
     for (type_name, t) in from_module.types_by_name.iter() {

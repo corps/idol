@@ -47,8 +47,6 @@ pub fn parse_type_dec<'a>(
         field_tags: HashMap::new(),
     };
 
-    let dep_mapper = DepMapper::new();
-
     for is_a_dec in type_dec.is_a.iter() {
         result.is_a.push(
             parse_field_dec(module_name, is_a_dec.as_str())
