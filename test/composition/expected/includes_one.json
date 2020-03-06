@@ -1,4 +1,137 @@
 {
+  "common.type_structs": {
+    "module_name": "common.type_structs",
+    "types_by_name": {
+      "AnyMap": {
+        "fields": {},
+        "is_a": {
+          "literal": null,
+          "primitive_type": "any",
+          "reference": {
+            "module_name": "",
+            "qualified_name": "",
+            "type_name": ""
+          },
+          "struct_kind": "Map"
+        },
+        "named": {
+          "module_name": "common.type_structs",
+          "qualified_name": "common.type_structs.AnyMap",
+          "type_name": "AnyMap"
+        },
+        "options": [],
+        "tags": []
+      },
+      "Bools": {
+        "fields": {},
+        "is_a": {
+          "literal": null,
+          "primitive_type": "bool",
+          "reference": {
+            "module_name": "",
+            "qualified_name": "",
+            "type_name": ""
+          },
+          "struct_kind": "Repeated"
+        },
+        "named": {
+          "module_name": "common.type_structs",
+          "qualified_name": "common.type_structs.Bools",
+          "type_name": "Bools"
+        },
+        "options": [],
+        "tags": []
+      },
+      "Double": {
+        "fields": {},
+        "is_a": {
+          "literal": null,
+          "primitive_type": "double",
+          "reference": {
+            "module_name": "",
+            "qualified_name": "",
+            "type_name": ""
+          },
+          "struct_kind": "Scalar"
+        },
+        "named": {
+          "module_name": "common.type_structs",
+          "qualified_name": "common.type_structs.Double",
+          "type_name": "Double"
+        },
+        "options": [],
+        "tags": []
+      },
+      "Doubles": {
+        "fields": {},
+        "is_a": {
+          "literal": null,
+          "primitive_type": "int",
+          "reference": {
+            "module_name": "common.type_structs",
+            "qualified_name": "common.type_structs.Double",
+            "type_name": "Double"
+          },
+          "struct_kind": "Repeated"
+        },
+        "named": {
+          "module_name": "common.type_structs",
+          "qualified_name": "common.type_structs.Doubles",
+          "type_name": "Doubles"
+        },
+        "options": [],
+        "tags": []
+      },
+      "Int": {
+        "fields": {},
+        "is_a": {
+          "literal": null,
+          "primitive_type": "int",
+          "reference": {
+            "module_name": "",
+            "qualified_name": "",
+            "type_name": ""
+          },
+          "struct_kind": "Scalar"
+        },
+        "named": {
+          "module_name": "common.type_structs",
+          "qualified_name": "common.type_structs.Int",
+          "type_name": "Int"
+        },
+        "options": [],
+        "tags": []
+      },
+      "Str": {
+        "fields": {},
+        "is_a": {
+          "literal": null,
+          "primitive_type": "string",
+          "reference": {
+            "module_name": "",
+            "qualified_name": "",
+            "type_name": ""
+          },
+          "struct_kind": "Scalar"
+        },
+        "named": {
+          "module_name": "common.type_structs",
+          "qualified_name": "common.type_structs.Str",
+          "type_name": "Str"
+        },
+        "options": [],
+        "tags": []
+      }
+    },
+    "types_dependency_ordering": [
+      "Str",
+      "Int",
+      "Double",
+      "Doubles",
+      "Bools",
+      "AnyMap"
+    ]
+  },
   "includes_one": {
     "module_name": "includes_one",
     "types_by_name": {
@@ -25,139 +158,6 @@
     },
     "types_dependency_ordering": [
       "IncludesOneType"
-    ]
-  },
-  "type_aliases": {
-    "module_name": "type_aliases",
-    "types_by_name": {
-      "AnyMap": {
-        "fields": {},
-        "is_a": {
-          "literal": null,
-          "primitive_type": "any",
-          "reference": {
-            "module_name": "",
-            "qualified_name": "",
-            "type_name": ""
-          },
-          "struct_kind": "Map"
-        },
-        "named": {
-          "module_name": "type_aliases",
-          "qualified_name": "type_aliases.AnyMap",
-          "type_name": "AnyMap"
-        },
-        "options": [],
-        "tags": []
-      },
-      "Bools": {
-        "fields": {},
-        "is_a": {
-          "literal": null,
-          "primitive_type": "bool",
-          "reference": {
-            "module_name": "",
-            "qualified_name": "",
-            "type_name": ""
-          },
-          "struct_kind": "Repeated"
-        },
-        "named": {
-          "module_name": "type_aliases",
-          "qualified_name": "type_aliases.Bools",
-          "type_name": "Bools"
-        },
-        "options": [],
-        "tags": []
-      },
-      "Double": {
-        "fields": {},
-        "is_a": {
-          "literal": null,
-          "primitive_type": "double",
-          "reference": {
-            "module_name": "",
-            "qualified_name": "",
-            "type_name": ""
-          },
-          "struct_kind": "Scalar"
-        },
-        "named": {
-          "module_name": "type_aliases",
-          "qualified_name": "type_aliases.Double",
-          "type_name": "Double"
-        },
-        "options": [],
-        "tags": []
-      },
-      "Doubles": {
-        "fields": {},
-        "is_a": {
-          "literal": null,
-          "primitive_type": "int",
-          "reference": {
-            "module_name": "type_aliases",
-            "qualified_name": "type_aliases.Double",
-            "type_name": "Double"
-          },
-          "struct_kind": "Repeated"
-        },
-        "named": {
-          "module_name": "type_aliases",
-          "qualified_name": "type_aliases.Doubles",
-          "type_name": "Doubles"
-        },
-        "options": [],
-        "tags": []
-      },
-      "Int": {
-        "fields": {},
-        "is_a": {
-          "literal": null,
-          "primitive_type": "int",
-          "reference": {
-            "module_name": "",
-            "qualified_name": "",
-            "type_name": ""
-          },
-          "struct_kind": "Scalar"
-        },
-        "named": {
-          "module_name": "type_aliases",
-          "qualified_name": "type_aliases.Int",
-          "type_name": "Int"
-        },
-        "options": [],
-        "tags": []
-      },
-      "Str": {
-        "fields": {},
-        "is_a": {
-          "literal": null,
-          "primitive_type": "string",
-          "reference": {
-            "module_name": "",
-            "qualified_name": "",
-            "type_name": ""
-          },
-          "struct_kind": "Scalar"
-        },
-        "named": {
-          "module_name": "type_aliases",
-          "qualified_name": "type_aliases.Str",
-          "type_name": "Str"
-        },
-        "options": [],
-        "tags": []
-      }
-    },
-    "types_dependency_ordering": [
-      "Str",
-      "Int",
-      "Double",
-      "Doubles",
-      "Bools",
-      "AnyMap"
     ]
   }
 }

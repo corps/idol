@@ -1,0 +1,23 @@
+[Person]
+tags = ["object"]
+fields.name = "PersonId"
+fields.id = ["string", "uuid!"]
+fields.dob = ["string", "date!"]
+fields.address = ["Address", "optional?"]
+fields.age = "int"
+fields.FriendsByRelation = ["PersonId{}", "uuid!"]
+fields.height_feet = "double"
+fields.futureEvents = "Event[]"
+
+[PersonId]
+is_a = "common.type_structs.Str"
+
+[Address]
+fields.street = "string"
+fields.state = "common.enums.State"
+fields.zip = "int"
+
+[Event]
+fields.date = ["string", "date!"]
+fields.from = ["string", "time!"]
+fields.in = "string"

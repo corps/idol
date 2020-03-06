@@ -106,10 +106,10 @@ fn parse_reference(module_name: &str, field_dec: &str) -> Option<Reference> {
 
     REFERENCE_REGEX.captures(field_dec).map(|c| {
         let mut result = Reference::default();
-        let mn = c.get(1).unwrap().as_str();
+        let mn: &str = c.get(1).unwrap().as_str();
 
         if mn.len() > 0 {
-            result.module_name = mn.to_owned();
+            result.module_name = mn.trim_end_matches('.').to_owned();
         } else {
             result.module_name = module_name.to_owned();
         }

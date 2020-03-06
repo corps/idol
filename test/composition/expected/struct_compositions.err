@@ -1,0 +1,2 @@
+Error processing modules: While resolving type SystemPerson in module struct_compositions: local type Person does not exist
+Error: 1

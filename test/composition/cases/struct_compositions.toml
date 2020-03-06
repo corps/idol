@@ -1,0 +1,25 @@
+[SystemPerson]
+is_a = ["common.structs.Person"]
+fields.id = ["string", "internal!"]
+fields.external_id = ["string", "external!", "optional?"]
+
+[NestedOne]
+fields.one = "int"
+
+[NestedTwo]
+fields.two = "string"
+
+[NestedOneTwo]
+is_a = ["NestedOne", "NestedTwo"]
+
+[AFieldOne]
+fields.a = ["NestedOne"]
+
+[AFieldOneBFieldTwo]
+is_a = "AFieldOne"
+fields.b = "NestedTwo"
+
+[AFieldOneOrBFieldTwo]
+is_a = "AFieldOne"
+variane = "contravariant"
+fields.b = "NestedTwo"

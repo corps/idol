@@ -68,7 +68,7 @@ fn compare_type_structs(
     }
 
     if !one.reference.qualified_name.is_empty() {
-        return Err(Err(one.reference.clone()));
+        return Err(Ok(one.reference.clone()));
     }
 
     if !other.reference.qualified_name.is_empty() {

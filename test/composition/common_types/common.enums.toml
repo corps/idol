@@ -1,0 +1,14 @@
+[Colors]
+enum = ["red", "blue", "yellow", "orange", "green"]
+
+[ShortNameColors]
+enum = ["red", "blue"]
+
+[LongNameColors]
+enum = ["yellow", "orange", "green"]
+
+[SomeColors]
+enum = ["blue", "green", "yellow"]
+
+[State]
+enum = ["CA", "AR", "NY"]

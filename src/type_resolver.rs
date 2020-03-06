@@ -68,8 +68,8 @@ impl<'a> TypeResolver<'a> {
         let mut result = if let Some(head) = head_struct {
             if let Some(tail) = tail_type {
                 compose_types(
-                    &head,
                     &tail,
+                    &head,
                     self,
                     parsed_type_dec.type_dec.variance.clone(),
                 )?
