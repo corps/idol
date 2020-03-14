@@ -1,6 +1,7 @@
 use crate::models::schema::{Field, PrimitiveType, Reference, StructKind, Type, TypeStruct};
 use crate::modules_store::TypeLookup;
-use crate::type_composer::{categorized_field_tags, field_tag_modifier_kind, CategorizedFieldTags};
+use crate::type_composer::{field_tag_modifier_kind, CategorizedFieldTags};
+use crate::utils::ordered_by_keys;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashMap};
@@ -93,6 +94,7 @@ fn compare_type_structs(
     })
 }
 
+#[derive(Debug)]
 pub enum TypeComparison {
     // The left side is strictly wider, it accepts all inhabitants of the right side and then some.
     LeftIsWider,
@@ -106,13 +108,6 @@ pub enum TypeComparison {
     FieldsDiffer(HashMap<String, Box<TypeComparison>>),
     // Two types are completely uncomparable
     Incompatible,
-    // This comparison should only apply to field level comparison and is not returned from any
-    // type or typestruct level comparison.
-    DisjointFieldModifiers {
-        uniq_left: Vec<String>,
-        uniq_right: Vec<String>,
-        shared: Vec<String>,
-    },
 }
 
 impl TypeComparison {
@@ -127,45 +122,8 @@ impl TypeComparison {
             ),
             TypeComparison::Equal => TypeComparison::Equal,
             TypeComparison::Incompatible => TypeComparison::Incompatible,
-            TypeComparison::DisjointFieldModifiers {
-                uniq_left,
-                uniq_right,
-                shared,
-            } => TypeComparison::DisjointFieldModifiers {
-                uniq_right: uniq_left.clone(),
-                uniq_left: uniq_right.clone(),
-                shared: shared.clone(),
-            },
         }
     }
-}
-
-macro_rules! base_ts_compare_handlers {
-    ($ident:ident) => {
-        match $ident {
-            Ok(None) => return Ok(TypeComparison::Incompatible),
-            Ok(Some(Ordering::Equal)) => return Ok(TypeComparison::Equal),
-            Ok(Some(Ordering::Greater)) => return Ok(TypeComparison::LeftIsWider),
-            Ok(Some(Ordering::Less)) => return Ok(TypeComparison::RightIsWider),
-            _ => (),
-        }
-    };
-}
-
-macro_rules! on_left_ref {
-    ($cmp:ident, $match_ident:ident, $action:block) => {
-        if let Err(Ok($match_ident)) = $cmp.borrow() {
-            $action
-        }
-    };
-}
-
-macro_rules! on_right_ref {
-    ($cmp:ident, $match_ident:ident, $action:block) => {
-        if let Err(Err($match_ident)) = $cmp.borrow() {
-            $action
-        }
-    };
 }
 
 pub fn compare_types<'a, 'b: 'a, T>(
@@ -176,17 +134,34 @@ pub fn compare_types<'a, 'b: 'a, T>(
 where
     T: TypeLookup<'b>,
 {
+    let mut left_parents: Vec<Reference> = vec![];
+    let mut right_parents: Vec<Reference> = vec![];
+
     loop {
         if let Some(type_struct) = one.is_a.borrow() {
             if let Some(type_struct_two) = other.is_a.borrow() {
                 let cmp = compare_type_structs(type_struct, type_struct_two);
-                base_ts_compare_handlers!(cmp);
-                on_left_ref!(cmp, left_ref, {
-                    one = type_lookup.lookup_reference(&left_ref)?;
-                });
-                on_right_ref!(cmp, right_ref, {
-                    other = type_lookup.lookup_reference(&right_ref)?;
-                });
+                if let Some(result) =
+                    handle_resolved_ts_comparison(&left_parents, &right_parents, &cmp)
+                {
+                    return Ok(result);
+                }
+
+                match cmp {
+                    Err(Ok(left_ref)) => {
+                        one = type_lookup.lookup_reference(&left_ref)?;
+                        if type_struct.struct_kind == StructKind::Scalar {
+                            left_parents.push(one.named.clone());
+                        }
+                    }
+                    Err(Err(right_ref)) => {
+                        other = type_lookup.lookup_reference(&right_ref)?;
+                        if type_struct_two.struct_kind == StructKind::Scalar {
+                            right_parents.push(other.named.clone());
+                        }
+                    }
+                    _ => unreachable!(),
+                }
 
                 continue;
             }
@@ -198,13 +173,21 @@ where
                     ..TypeStruct::default()
                 },
             );
-            base_ts_compare_handlers!(cmp);
-            on_left_ref!(cmp, left_ref, {
-                one = type_lookup.lookup_reference(&left_ref)?;
-            });
-            on_right_ref!(cmp, right_ref, {
-                unreachable!();
-            });
+
+            if let Some(result) = handle_resolved_ts_comparison(&left_parents, &right_parents, &cmp)
+            {
+                return Ok(result);
+            }
+
+            match cmp {
+                Err(Ok(left_ref)) => {
+                    one = type_lookup.lookup_reference(&left_ref)?;
+                    if type_struct.struct_kind == StructKind::Scalar {
+                        left_parents.push(one.named.clone());
+                    }
+                }
+                _ => unreachable!(),
+            }
 
             continue;
         } else if let Some(type_struct_two) = other.is_a.borrow() {
@@ -223,13 +206,13 @@ where
         // Fields comparison
         let mut field_results: HashMap<String, Box<TypeComparison>> = HashMap::new();
 
-        for (field_name, field) in one.fields.iter() {
+        for (field_name, field) in ordered_by_keys(&one.fields) {
             let comparison = compare_fields(field, field_name, &other.fields, type_lookup)
                 .unwrap_or(Ok(TypeComparison::RightIsWider))?;
             field_results.insert(field_name.to_owned(), Box::new(comparison));
         }
 
-        for (field_name, field) in other.fields.iter() {
+        for (field_name, field) in ordered_by_keys(&other.fields) {
             let comparison = compare_fields(field, field_name, &one.fields, type_lookup)
                 .unwrap_or(Ok(TypeComparison::RightIsWider))?
                 .flip();
@@ -240,6 +223,46 @@ where
     }
 
     unreachable!()
+}
+
+fn handle_resolved_ts_comparison(
+    left_parents: &Vec<Reference>,
+    right_parents: &Vec<Reference>,
+    cmp: &Result<Option<Ordering>, Result<Reference, Reference>>,
+) -> Option<TypeComparison> {
+    match cmp {
+        Ok(None) => return Some(TypeComparison::Incompatible),
+        Ok(Some(Ordering::Equal)) => {
+            if left_parents == right_parents {
+                return Some(TypeComparison::Equal);
+            }
+
+            if left_parents.ends_with(&right_parents) {
+                return Some(TypeComparison::RightIsWider);
+            }
+
+            if right_parents.ends_with(&left_parents) {
+                return Some(TypeComparison::LeftIsWider);
+            }
+        }
+        Ok(Some(Ordering::Greater)) => {
+            if right_parents.ends_with(&left_parents) {
+                return Some(TypeComparison::LeftIsWider);
+            }
+
+            return Some(TypeComparison::Incompatible);
+        }
+        Ok(Some(Ordering::Less)) => {
+            if left_parents.ends_with(&right_parents) {
+                return Some(TypeComparison::RightIsWider);
+            }
+
+            return Some(TypeComparison::Incompatible);
+        }
+        _ => {}
+    }
+
+    None
 }
 
 fn compare_fields<'a, T>(
@@ -262,94 +285,41 @@ where
             ..Type::default()
         };
 
-        let field_tags = categorized_field_tags(&field.tags);
-        let other_tags = categorized_field_tags(&other_field.tags);
-
-        Ok(compare_by_field_tags(
-            &field_tags,
-            &other_tags,
-            compare_types(&wrapper, &other_wrapper, type_lookup)?,
-        ))
+        Ok(
+            match compare_types(&wrapper, &other_wrapper, type_lookup)? {
+                TypeComparison::Equal => {
+                    if field.optional {
+                        if other_field.optional {
+                            TypeComparison::Equal
+                        } else {
+                            TypeComparison::LeftIsWider
+                        }
+                    } else if other_field.optional {
+                        TypeComparison::RightIsWider
+                    } else {
+                        TypeComparison::Equal
+                    }
+                }
+                TypeComparison::LeftIsWider => {
+                    if field.optional {
+                        TypeComparison::LeftIsWider
+                    } else if other_field.optional {
+                        TypeComparison::Incompatible
+                    } else {
+                        TypeComparison::LeftIsWider
+                    }
+                }
+                TypeComparison::RightIsWider => {
+                    if other_field.optional {
+                        TypeComparison::RightIsWider
+                    } else if field.optional {
+                        TypeComparison::Incompatible
+                    } else {
+                        TypeComparison::RightIsWider
+                    }
+                }
+                c => c,
+            },
+        )
     })
-}
-
-fn compare_by_field_tags(
-    field_tags: &CategorizedFieldTags,
-    other_tags: &CategorizedFieldTags,
-    type_struct_comp: TypeComparison,
-) -> TypeComparison {
-    match type_struct_comp {
-        TypeComparison::Incompatible => {
-            return TypeComparison::Incompatible;
-        }
-        TypeComparison::FieldsDiffer(_) => {
-            // Don't support field level negotiation if the underlying material types
-            // would also require structural merging.
-            return TypeComparison::Incompatible;
-        }
-        _ => {}
-    }
-
-    let left_specializers: Vec<&&str> = field_tags
-        .specializers
-        .difference(&other_tags.specializers)
-        .collect();
-    let right_specializers: Vec<&&str> = field_tags
-        .specializers
-        .difference(&field_tags.specializers)
-        .collect();
-    let shared_specializers: Vec<&&str> = field_tags
-        .specializers
-        .intersection(&other_tags.specializers)
-        .collect();
-
-    let left_generalizers: Vec<&&str> = field_tags
-        .generalizers
-        .difference(&other_tags.generalizers)
-        .collect();
-    let right_generalizers: Vec<&&str> = field_tags
-        .generalizers
-        .difference(&field_tags.generalizers)
-        .collect();
-    let shared_generalizers: Vec<&&str> = field_tags
-        .generalizers
-        .intersection(&other_tags.generalizers)
-        .collect();
-
-    match type_struct_comp {
-        // [any, optional?, date!]  vs [int, date!, flat?] or [int, optional?]
-        TypeComparison::LeftIsWider => {
-            if right_generalizers.is_empty() && left_specializers.is_empty() {
-                return type_struct_comp;
-            }
-        }
-
-        TypeComparison::RightIsWider => {
-            if left_generalizers.is_empty() && right_specializers.is_empty() {
-                return type_struct_comp;
-            }
-        }
-        _ => {}
-    }
-
-    TypeComparison::DisjointFieldModifiers {
-        uniq_left: left_specializers
-            .into_iter()
-            .chain(left_generalizers)
-            .cloned()
-            .map(|s| s.to_string())
-            .collect(),
-        uniq_right: right_specializers
-            .into_iter()
-            .chain(right_generalizers)
-            .cloned()
-            .map(|s| s.to_string())
-            .collect(),
-        shared: shared_specializers
-            .into_iter()
-            .chain(shared_generalizers)
-            .cloned()
-            .map(|s| s.to_string())
-            .collect(),
-    }
 }

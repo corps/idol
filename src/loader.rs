@@ -1,7 +1,6 @@
-use crate::models::declarations::{IncludesDec, ModuleDec, ModuleIncludes, TypeDec};
+use crate::models::declarations::{ModuleDec, ModuleIncludes, TypeDec};
 use crate::models::idol::{ExpandsJson, ValidatesJson, ValidationError};
 use crate::models::loaded::{Comments, LoadedModule, ModuleComments, TypeComments};
-use crate::models::schema::Module;
 use is_executable::IsExecutable;
 use regex::Regex;
 use std::collections::HashMap;

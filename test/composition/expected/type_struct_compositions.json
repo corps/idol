@@ -132,10 +132,30 @@
       "AnyMap"
     ]
   },
-  "includes_one": {
-    "module_name": "includes_one",
+  "type_struct_compositions": {
+    "module_name": "type_struct_compositions",
     "types_by_name": {
-      "IncludesOneType": {
+      "AnyIntIsAny": {
+        "fields": {},
+        "is_a": {
+          "literal": null,
+          "primitive_type": "any",
+          "reference": {
+            "module_name": "",
+            "qualified_name": "",
+            "type_name": ""
+          },
+          "struct_kind": "Scalar"
+        },
+        "named": {
+          "module_name": "type_struct_compositions",
+          "qualified_name": "type_struct_compositions.AnyIntIsAny",
+          "type_name": "AnyIntIsAny"
+        },
+        "options": [],
+        "tags": []
+      },
+      "AnyIntIsInt": {
         "fields": {},
         "is_a": {
           "literal": null,
@@ -148,16 +168,101 @@
           "struct_kind": "Scalar"
         },
         "named": {
-          "module_name": "includes_one",
-          "qualified_name": "includes_one.IncludesOneType",
-          "type_name": "IncludesOneType"
+          "module_name": "type_struct_compositions",
+          "qualified_name": "type_struct_compositions.AnyIntIsInt",
+          "type_name": "AnyIntIsInt"
+        },
+        "options": [],
+        "tags": []
+      },
+      "IntAnyIsAny": {
+        "fields": {},
+        "is_a": {
+          "literal": null,
+          "primitive_type": "any",
+          "reference": {
+            "module_name": "",
+            "qualified_name": "",
+            "type_name": ""
+          },
+          "struct_kind": "Scalar"
+        },
+        "named": {
+          "module_name": "type_struct_compositions",
+          "qualified_name": "type_struct_compositions.IntAnyIsAny",
+          "type_name": "IntAnyIsAny"
+        },
+        "options": [],
+        "tags": []
+      },
+      "IntIsActualInt": {
+        "fields": {},
+        "is_a": {
+          "literal": null,
+          "primitive_type": "int",
+          "reference": {
+            "module_name": "",
+            "qualified_name": "",
+            "type_name": ""
+          },
+          "struct_kind": "Scalar"
+        },
+        "named": {
+          "module_name": "type_struct_compositions",
+          "qualified_name": "type_struct_compositions.IntIsActualInt",
+          "type_name": "IntIsActualInt"
+        },
+        "options": [],
+        "tags": []
+      },
+      "IntIsInt": {
+        "fields": {},
+        "is_a": {
+          "literal": null,
+          "primitive_type": "int",
+          "reference": {
+            "module_name": "",
+            "qualified_name": "",
+            "type_name": ""
+          },
+          "struct_kind": "Scalar"
+        },
+        "named": {
+          "module_name": "type_struct_compositions",
+          "qualified_name": "type_struct_compositions.IntIsInt",
+          "type_name": "IntIsInt"
+        },
+        "options": [],
+        "tags": []
+      },
+      "IntIsInt2": {
+        "fields": {},
+        "is_a": {
+          "literal": null,
+          "primitive_type": "int",
+          "reference": {
+            "module_name": "",
+            "qualified_name": "",
+            "type_name": ""
+          },
+          "struct_kind": "Scalar"
+        },
+        "named": {
+          "module_name": "type_struct_compositions",
+          "qualified_name": "type_struct_compositions.IntIsInt2",
+          "type_name": "IntIsInt2"
         },
         "options": [],
         "tags": []
       }
     },
     "types_dependency_ordering": [
-      "IncludesOneType"
+      "IntIsInt2",
+      "IntIsInt",
+      "IntIsActualInt",
+      "IntAnyIsAny",
+      "AnyIntIsInt",
+      "AnyIntIsAny"
     ]
   }
 }

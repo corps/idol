@@ -1,10 +1,5 @@
-# Scalars are non contained values
-# Repeated are homogenous lists.  They can be upgraded or downgraded to and from Scalars.
-#   A repeated is indicated in a TypeDec by ending with '[]'
-# Maps are homogenous 'dictionaries', whose key is always a string, mapping to js objects.
-#   A map is indicated in a TypeDec by ending with '{}'
 [StructKind]
-enum = ["Scalar", "Repeated", "Map"]
+enum = ["Scalar", "Repeated", "Map", "Optional"]
 
 [PrimitiveType]
 enum = ["int", "double", "string", "bool", "any"]
@@ -22,7 +17,7 @@ module_name = "string"
 [Type.fields]
 # Set when this is type is an alias or simply an type expression (such as a generic).
 # Exclusive with having values for options or fields.
-is_a = ["TypeStruct", "optional"]
+is_a = "TypeStruct?"
 # When this type is a struct, each of its fields and the type of that field is included
 # Exclusive with is_a and options
 fields = "Field{}"
@@ -50,7 +45,7 @@ types_dependency_ordering = "string[]"
 struct_kind = "StructKind"
 reference = "Reference"
 primitive_type = "PrimitiveType"
-literal = ["Literal", "optional"]
+literal = "Literal?"
 
 [Literal.fields]
 int = "int"

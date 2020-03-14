@@ -1,0 +1,222 @@
+{
+  "struct_compositions": {
+    "module_name": "struct_compositions",
+    "types_by_name": {
+      "AFieldOne": {
+        "fields": {
+          "a": {
+            "field_name": "a",
+            "optional": false,
+            "tags": [],
+            "type_struct": {
+              "literal": null,
+              "primitive_type": "int",
+              "reference": {
+                "module_name": "struct_compositions",
+                "qualified_name": "struct_compositions.NestedOne",
+                "type_name": "NestedOne"
+              },
+              "struct_kind": "Scalar"
+            }
+          }
+        },
+        "is_a": null,
+        "named": {
+          "module_name": "struct_compositions",
+          "qualified_name": "struct_compositions.AFieldOne",
+          "type_name": "AFieldOne"
+        },
+        "options": [],
+        "tags": []
+      },
+      "AFieldOneBFieldTwo": {
+        "fields": {
+          "a": {
+            "field_name": "a",
+            "optional": false,
+            "tags": [],
+            "type_struct": {
+              "literal": null,
+              "primitive_type": "int",
+              "reference": {
+                "module_name": "struct_compositions",
+                "qualified_name": "struct_compositions.NestedOne",
+                "type_name": "NestedOne"
+              },
+              "struct_kind": "Scalar"
+            }
+          },
+          "b": {
+            "field_name": "b",
+            "optional": false,
+            "tags": [],
+            "type_struct": {
+              "literal": null,
+              "primitive_type": "int",
+              "reference": {
+                "module_name": "struct_compositions",
+                "qualified_name": "struct_compositions.NestedTwo",
+                "type_name": "NestedTwo"
+              },
+              "struct_kind": "Scalar"
+            }
+          }
+        },
+        "is_a": null,
+        "named": {
+          "module_name": "struct_compositions",
+          "qualified_name": "struct_compositions.AFieldOneBFieldTwo",
+          "type_name": "AFieldOneBFieldTwo"
+        },
+        "options": [],
+        "tags": []
+      },
+      "AFieldOneOrBFieldTwo": {
+        "fields": {
+          "a": {
+            "field_name": "a",
+            "optional": true,
+            "tags": [],
+            "type_struct": {
+              "literal": null,
+              "primitive_type": "int",
+              "reference": {
+                "module_name": "struct_compositions",
+                "qualified_name": "struct_compositions.NestedOne",
+                "type_name": "NestedOne"
+              },
+              "struct_kind": "Scalar"
+            }
+          },
+          "b": {
+            "field_name": "b",
+            "optional": true,
+            "tags": [],
+            "type_struct": {
+              "literal": null,
+              "primitive_type": "int",
+              "reference": {
+                "module_name": "struct_compositions",
+                "qualified_name": "struct_compositions.NestedTwo",
+                "type_name": "NestedTwo"
+              },
+              "struct_kind": "Scalar"
+            }
+          }
+        },
+        "is_a": null,
+        "named": {
+          "module_name": "struct_compositions",
+          "qualified_name": "struct_compositions.AFieldOneOrBFieldTwo",
+          "type_name": "AFieldOneOrBFieldTwo"
+        },
+        "options": [],
+        "tags": []
+      },
+      "NestedOne": {
+        "fields": {
+          "one": {
+            "field_name": "one",
+            "optional": false,
+            "tags": [],
+            "type_struct": {
+              "literal": null,
+              "primitive_type": "int",
+              "reference": {
+                "module_name": "",
+                "qualified_name": "",
+                "type_name": ""
+              },
+              "struct_kind": "Scalar"
+            }
+          }
+        },
+        "is_a": null,
+        "named": {
+          "module_name": "struct_compositions",
+          "qualified_name": "struct_compositions.NestedOne",
+          "type_name": "NestedOne"
+        },
+        "options": [],
+        "tags": []
+      },
+      "NestedOneTwo": {
+        "fields": {
+          "one": {
+            "field_name": "one",
+            "optional": false,
+            "tags": [],
+            "type_struct": {
+              "literal": null,
+              "primitive_type": "int",
+              "reference": {
+                "module_name": "",
+                "qualified_name": "",
+                "type_name": ""
+              },
+              "struct_kind": "Scalar"
+            }
+          },
+          "two": {
+            "field_name": "two",
+            "optional": false,
+            "tags": [],
+            "type_struct": {
+              "literal": null,
+              "primitive_type": "string",
+              "reference": {
+                "module_name": "",
+                "qualified_name": "",
+                "type_name": ""
+              },
+              "struct_kind": "Scalar"
+            }
+          }
+        },
+        "is_a": null,
+        "named": {
+          "module_name": "struct_compositions",
+          "qualified_name": "struct_compositions.NestedOneTwo",
+          "type_name": "NestedOneTwo"
+        },
+        "options": [],
+        "tags": []
+      },
+      "NestedTwo": {
+        "fields": {
+          "two": {
+            "field_name": "two",
+            "optional": false,
+            "tags": [],
+            "type_struct": {
+              "literal": null,
+              "primitive_type": "string",
+              "reference": {
+                "module_name": "",
+                "qualified_name": "",
+                "type_name": ""
+              },
+              "struct_kind": "Scalar"
+            }
+          }
+        },
+        "is_a": null,
+        "named": {
+          "module_name": "struct_compositions",
+          "qualified_name": "struct_compositions.NestedTwo",
+          "type_name": "NestedTwo"
+        },
+        "options": [],
+        "tags": []
+      }
+    },
+    "types_dependency_ordering": [
+      "NestedTwo",
+      "NestedOne",
+      "NestedOneTwo",
+      "AFieldOne",
+      "AFieldOneOrBFieldTwo",
+      "AFieldOneBFieldTwo"
+    ]
+  }
+}

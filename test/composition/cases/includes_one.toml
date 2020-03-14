@@ -1,5 +1,5 @@
 [[includes]]
-from = "common.type_structs"
+from = "aliases.type_structs"
 
 [IncludesOneType]
 is_a = "int"

@@ -1,0 +1,21 @@
+[IntIsInt]
+is_a = ["int", "aliases.type_structs.Int"]
+
+[IntIsInt2]
+is_a = ["aliases.type_structs.Int", "int"]
+variance = "Contravariant"
+
+[IntIsActualInt]
+is_a = ["int", "int"]
+
+[AnyIntIsInt]
+is_a = ["any", "int"]
+
+[AnyIntIsAny]
+is_a = ["any", "int"]
+variance = "Contravariant"
+
+[IntAnyIsAny]
+is_a = ["int", "any"]
+variance = "Contravariant"
+

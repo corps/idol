@@ -1,7 +1,6 @@
 use crate::models::idol;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::convert::TryFrom;
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Comments(pub Vec<String>);

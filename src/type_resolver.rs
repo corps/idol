@@ -1,5 +1,5 @@
 use crate::deconstructors::TypeDeconstructor;
-use crate::models::schema::{Field, Reference, Type, TypeStruct};
+use crate::models::schema::{Field, Reference, StructKind, Type, TypeStruct};
 use crate::modules_store::{ModulesStore, TypeLookup};
 use crate::type_composer::compose_types;
 use crate::type_dec_parser::ParsedTypeDec;
@@ -58,8 +58,8 @@ impl<'a> TypeResolver<'a> {
         type_name: String,
         parsed_type_dec: &ParsedTypeDec,
     ) -> Result<Type, String> {
-        let head_struct = self.resolve_head_struct(parsed_type_dec)?;
-        let tail_type = self.resolve_tail_type(parsed_type_dec)?;
+        let head_struct = self.resolve_head_struct(type_name.clone(), parsed_type_dec)?;
+        let tail_type = self.resolve_tail_type(parsed_type_dec, head_struct.is_some())?;
 
         if head_struct.is_none() && tail_type.is_none() {
             return Err(format!("Missing fields, enum, or is_a definitions.",));
@@ -84,12 +84,15 @@ impl<'a> TypeResolver<'a> {
 
         result.named = Reference::from((self.module_name.to_owned(), type_name));
         result.tags = parsed_type_dec.type_dec.tags.clone();
-        // result.tags.append(parsed_type_dec.type_dec)
 
         Ok(result)
     }
 
-    fn resolve_head_struct(&self, parsed_type_dec: &ParsedTypeDec) -> Result<Option<Type>, String> {
+    fn resolve_head_struct(
+        &self,
+        type_name: String,
+        parsed_type_dec: &ParsedTypeDec,
+    ) -> Result<Option<Type>, String> {
         if parsed_type_dec.type_dec.fields.is_some() {
             for bad_field in parsed_type_dec
                 .fields
@@ -101,20 +104,18 @@ impl<'a> TypeResolver<'a> {
             }
 
             return Ok(Some(Type {
+                named: Reference::from((self.module_name.to_owned(), type_name)),
                 fields: parsed_type_dec
                     .fields
                     .iter()
-                    .map(|(k, type_struct)| {
+                    .map(|(k, (type_struct, optional))| {
                         (
                             k.to_owned(),
                             Field {
                                 field_name: k.clone(),
-                                tags: parsed_type_dec
-                                    .field_tags
-                                    .get(k)
-                                    .cloned()
-                                    .unwrap_or_else(|| vec![]),
+                                docs: vec![],
                                 type_struct: type_struct.clone(),
+                                optional: optional.clone(),
                             },
                         )
                     })
@@ -133,13 +134,17 @@ impl<'a> TypeResolver<'a> {
         Ok(None)
     }
 
-    fn resolve_tail_type(&self, parsed_type_dec: &ParsedTypeDec) -> Result<Option<Type>, String> {
+    fn resolve_tail_type(
+        &self,
+        parsed_type_dec: &ParsedTypeDec,
+        head_exists: bool,
+    ) -> Result<Option<Type>, String> {
         let is_a: &Vec<TypeStruct> = parsed_type_dec.is_a.borrow();
         if is_a.len() == 0 {
             return Ok(None);
         }
 
-        if is_a.len() == 1 {
+        if is_a.len() == 1 && !head_exists {
             return Ok(Some(Type {
                 is_a: Some(is_a[0].clone()),
                 ..Type::default()

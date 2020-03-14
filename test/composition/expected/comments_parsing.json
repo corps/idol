@@ -6,6 +6,7 @@
         "fields": {
           "a": {
             "field_name": "a",
+            "optional": false,
             "tags": [
               "description:This field would receive comments",
               "description:Multiline ones too",
@@ -24,6 +25,7 @@
           },
           "b": {
             "field_name": "b",
+            "optional": false,
             "tags": [
               "description:But this one would"
             ],
@@ -55,6 +57,7 @@
         "fields": {
           "c": {
             "field_name": "c",
+            "optional": false,
             "tags": [
               "description:And this would",
               "description:as well"

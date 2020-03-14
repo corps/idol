@@ -9,8 +9,7 @@ use std::collections::HashMap;
 pub struct ParsedTypeDec<'a> {
     pub type_dec: &'a TypeDec,
     pub is_a: Vec<TypeStruct>,
-    pub fields: HashMap<String, TypeStruct>,
-    pub field_tags: HashMap<String, Vec<String>>,
+    pub fields: HashMap<String, (TypeStruct, bool)>,
 }
 
 impl<'a> Into<Vec<Reference>> for &ParsedTypeDec<'a> {
@@ -18,12 +17,12 @@ impl<'a> Into<Vec<Reference>> for &ParsedTypeDec<'a> {
         self.is_a
             .iter()
             .filter_map(|ts| {
-                TypeStructDeconstructor(ts)
+                TypeStructDeconstructor(ts, false)
                     .contained()
                     .and_then(|s_dec| s_dec.reference())
             })
-            .chain(self.fields.values().filter_map(|ts| {
-                TypeStructDeconstructor(ts)
+            .chain(self.fields.values().filter_map(|(ts, optional)| {
+                TypeStructDeconstructor(ts, optional.clone())
                     .contained()
                     .and_then(|s_dec| s_dec.reference())
             }))
@@ -44,14 +43,20 @@ pub fn parse_type_dec<'a>(
         type_dec,
         is_a: Vec::new(),
         fields: HashMap::new(),
-        field_tags: HashMap::new(),
     };
 
     for is_a_dec in type_dec.is_a.iter() {
-        result.is_a.push(
-            parse_field_dec(module_name, is_a_dec.as_str())
-                .map_err(|e| format!("is_a declaration {}: {}", is_a_dec, e))?,
-        );
+        let (ts, optional) = parse_field_dec(module_name, is_a_dec.as_str())
+            .map_err(|e| format!("is_a declaration {}: {}", is_a_dec, e))?;
+
+        if optional {
+            return Err(format!(
+                "optional values like {} are not allowed in is_a declarations",
+                is_a_dec
+            ));
+        }
+
+        result.is_a.push(ts);
     }
 
     for fields in type_dec.fields.iter() {
@@ -67,26 +72,28 @@ pub fn parse_type_dec<'a>(
 
             result.fields.insert(
                 field_name.to_owned(),
-                parse_field_dec(module_name, field_dec.as_str()).and_then(|ts| {
+                parse_field_dec(module_name, field_dec.as_str()).and_then(|(ts, optional)| {
                     if ts.literal.is_some() {
-                        Err(format!("field {} does not support literals", field_name))
+                        Err(format!(
+                            "field {} does not support inline literals, declare in separate type",
+                            field_name
+                        ))
                     } else {
-                        Ok(ts)
+                        Ok((ts, optional))
                     }
                 })?,
             );
-
-            result
-                .field_tags
-                .insert(field_name.to_owned(), field_dec_and_tags.cloned().collect());
         }
     }
 
     Ok(result)
 }
 
-pub(crate) fn parse_field_dec(module_name: &str, field_dec: &str) -> Result<TypeStruct, String> {
-    let (mut type_struct, unused) = parse_type_annotation(field_dec)?;
+pub(crate) fn parse_field_dec(
+    module_name: &str,
+    field_dec: &str,
+) -> Result<(TypeStruct, bool), String> {
+    let (mut type_struct, unused, optional) = parse_type_annotation(field_dec)?;
 
     if let Some(field_val) = unused {
         if let Some(reference) = parse_reference(module_name, field_val) {
@@ -96,7 +103,7 @@ pub(crate) fn parse_field_dec(module_name: &str, field_dec: &str) -> Result<Type
         }
     }
 
-    Ok(type_struct)
+    Ok((type_struct, optional))
 }
 
 fn parse_reference(module_name: &str, field_dec: &str) -> Option<Reference> {
@@ -119,10 +126,10 @@ fn parse_reference(module_name: &str, field_dec: &str) -> Option<Reference> {
     })
 }
 
-fn parse_type_annotation(field_dec: &str) -> Result<(TypeStruct, Option<&str>), String> {
+fn parse_type_annotation(field_dec: &str) -> Result<(TypeStruct, Option<&str>, bool), String> {
     lazy_static! {
         static ref TYPE_ANNOTATION_REGEX: Regex =
-            Regex::new(r"^literal:(.*):(.*)$|(.+)\{\}$|(.+)\[\]$").unwrap();
+            Regex::new(r"^literal:(.*):(.*)$|(.+)\{\}\??$|(.+)\[\]\??$|([^?]+)\??$").unwrap();
     }
 
     TYPE_ANNOTATION_REGEX
@@ -131,7 +138,7 @@ fn parse_type_annotation(field_dec: &str) -> Result<(TypeStruct, Option<&str>), 
             c.get(1)
                 .map(|t| {
                     parse_literal_annotation(t.as_str(), c.get(2).unwrap().as_str())
-                        .map(|s| (s, None))
+                        .map(|s| (s, None, false))
                 })
                 .or_else(|| {
                     c.get(3).map(|t| {
@@ -141,6 +148,7 @@ fn parse_type_annotation(field_dec: &str) -> Result<(TypeStruct, Option<&str>), 
                                 ..TypeStruct::default()
                             },
                             Some(t.as_str()),
+                            field_dec.ends_with("?"),
                         ))
                     })
                 })
@@ -152,11 +160,21 @@ fn parse_type_annotation(field_dec: &str) -> Result<(TypeStruct, Option<&str>), 
                                 ..TypeStruct::default()
                             },
                             Some(t.as_str()),
+                            field_dec.ends_with("?"),
+                        ))
+                    })
+                })
+                .or_else(|| {
+                    c.get(5).map(|t| {
+                        Ok((
+                            TypeStruct::default(),
+                            Some(t.as_str()),
+                            field_dec.ends_with("?"),
                         ))
                     })
                 })
         })
-        .or_else(|| Some(Ok((TypeStruct::default(), Some(field_dec)))))
+        .or_else(|| Some(Ok((TypeStruct::default(), Some(field_dec), false))))
         .unwrap()
 }
 

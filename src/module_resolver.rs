@@ -70,13 +70,7 @@ impl<'a> ModuleResolver<'a> {
 
         for (type_name, comments) in self.loaded.comments.0.iter() {
             if let Some(t) = result.types_by_name.get_mut(type_name) {
-                t.tags.extend(
-                    comments
-                        .type_comments
-                        .0
-                        .iter()
-                        .map(|s| format!("description:{}", s)),
-                );
+                t.docs.extend(comments.type_comments.0.iter().cloned());
 
                 if TypeDeconstructor(&t).struct_fields().is_some() {
                     for (k, field) in t.fields.iter_mut() {
@@ -88,12 +82,7 @@ impl<'a> ModuleResolver<'a> {
                         };
 
                         if let Some(field_comments) = comments.field_comments.get(k) {
-                            field.tags.extend(
-                                field_comments
-                                    .0
-                                    .iter()
-                                    .map(|s| format!("description:{}", s)),
-                            )
+                            field.docs.extend(field_comments.0.iter().cloned())
                         }
                     }
                 }

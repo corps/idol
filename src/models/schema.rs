@@ -1,7 +1,6 @@
 use crate::models::idol;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::convert::TryFrom;
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
 pub enum StructKind {
@@ -372,8 +371,9 @@ impl idol::ValidatesJson for TypeStruct {
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Field {
     pub r#field_name: String,
-    pub r#tags: Vec<String>,
+    pub r#docs: Vec<String>,
     pub r#type_struct: TypeStruct,
+    pub r#optional: bool,
 }
 
 impl idol::ExpandsJson for Field {
@@ -401,8 +401,8 @@ impl idol::ExpandsJson for Field {
             None => (),
         }
 
-        match Vec::<String>::expand_json(&mut value["tags"]) {
-            Some(v) => value["tags"] = v,
+        match Vec::<String>::expand_json(&mut value["docs"]) {
+            Some(v) => value["docs"] = v,
             None => (),
         }
 
@@ -426,8 +426,8 @@ impl idol::ValidatesJson for Field {
 
         String::validate_json(&value["field_name"])
             .map_err(|e| idol::ValidationError(format!("field field_name: {}", e)))?;
-        Vec::<String>::validate_json(&value["tags"])
-            .map_err(|e| idol::ValidationError(format!("field tags: {}", e)))?;
+        Vec::<String>::validate_json(&value["docs"])
+            .map_err(|e| idol::ValidationError(format!("field docs: {}", e)))?;
         TypeStruct::validate_json(&value["type_struct"])
             .map_err(|e| idol::ValidationError(format!("field type_struct: {}", e)))?;
 
@@ -442,6 +442,7 @@ pub struct Type {
     pub r#named: Reference,
     pub r#options: Vec<String>,
     pub r#tags: Vec<String>,
+    pub r#docs: Vec<String>,
 }
 
 impl idol::ExpandsJson for Type {
@@ -489,6 +490,11 @@ impl idol::ExpandsJson for Type {
             None => (),
         }
 
+        match Vec::<String>::expand_json(&mut value["docs"]) {
+            Some(v) => value["docs"] = v,
+            None => (),
+        }
+
         None
     }
 }
@@ -512,6 +518,8 @@ impl idol::ValidatesJson for Type {
             .map_err(|e| idol::ValidationError(format!("field options: {}", e)))?;
         Vec::<String>::validate_json(&value["tags"])
             .map_err(|e| idol::ValidationError(format!("field tags: {}", e)))?;
+        Vec::<String>::validate_json(&value["docs"])
+            .map_err(|e| idol::ValidationError(format!("field docs: {}", e)))?;
 
         Ok(())
     }

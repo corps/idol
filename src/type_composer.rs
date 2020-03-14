@@ -3,6 +3,7 @@ use crate::models::schema::{Field, Reference, Type};
 use crate::modules_store::TypeLookup;
 use crate::type_comparison::{compare_types, TypeComparison};
 use crate::type_dec_parser::ParsedTypeDec;
+use crate::utils::ordered_by_keys;
 use serde::export::fmt::Debug;
 use std::collections::btree_set::BTreeSet;
 use std::collections::HashMap;
@@ -35,30 +36,6 @@ pub fn field_tag_modifier_kind(tag: &str) -> FieldModifierKind {
     }
 
     return FieldModifierKind::Metadata;
-}
-
-pub fn categorized_field_tags(tags: &Vec<String>) -> CategorizedFieldTags {
-    let mut result = CategorizedFieldTags {
-        specializers: BTreeSet::new(),
-        generalizers: BTreeSet::new(),
-        metadata: vec![],
-    };
-
-    for tag in tags.iter() {
-        match field_tag_modifier_kind(tag) {
-            FieldModifierKind::Specializer => {
-                result.specializers.insert(tag);
-            }
-            FieldModifierKind::Generalizer => {
-                result.generalizers.insert(tag);
-            }
-            FieldModifierKind::Metadata => {
-                result.metadata.push(tag);
-            }
-        }
-    }
-
-    result
 }
 
 pub fn compose_types<'a, 'b: 'a, 'c, T>(
@@ -106,7 +83,7 @@ fn compose_fields(
         fields.insert(k.to_owned(), v.clone());
     }
 
-    for (k, field_comp) in differing_fields.iter() {
+    for (k, field_comp) in ordered_by_keys(&differing_fields) {
         compose_field(
             &mut fields,
             k,
@@ -146,6 +123,12 @@ fn compose_field(
     variance: &Variance,
 ) -> Result<(), String> {
     match (field_comp, left_field, right_field, variance) {
+        (TypeComparison::Incompatible, _, _, _) => {
+            return Err(format!(
+                "field {} is incompatible between left and right",
+                k
+            ));
+        }
         (TypeComparison::Equal, Some(left), _, _) => {
             fields.insert(k.to_owned(), left.clone());
         }
@@ -174,40 +157,11 @@ fn compose_field(
                 k
             ));
         }
-        (
-            TypeComparison::DisjointFieldModifiers {
-                uniq_left,
-                uniq_right,
-                shared,
-            },
-            Some(left),
-            _,
-            Variance::Contravariant,
-        ) => {
-            fields.insert(
-                k.to_owned(),
-                Field {
-                    field_name: k.to_owned(),
-                    type_struct: left.type_struct.clone(),
-                    tags: shared
-                        .iter()
-                        .chain(uniq_left.iter().filter(|t| {
-                            field_tag_modifier_kind(t) == FieldModifierKind::Generalizer
-                        }))
-                        .chain(uniq_right.iter().filter(|t| {
-                            field_tag_modifier_kind(t) == FieldModifierKind::Generalizer
-                        }))
-                        .cloned()
-                        .collect(),
-                    ..Field::default()
-                },
-            );
+        (TypeComparison::LeftIsWider, _, Some(right), Variance::Covariant) => {
+            fields.insert(k.to_owned(), right.clone());
         }
-        (_, _, _, Variance::Covariant) => {
-            return Err(format!(
-                "field {}'s tags are incompatible for covariant composition",
-                k
-            ));
+        (TypeComparison::LeftIsWider, Some(left), None, Variance::Covariant) => {
+            fields.insert(k.to_owned(), left.clone());
         }
         _ => unreachable!(),
     }
@@ -215,20 +169,9 @@ fn compose_field(
     Ok(())
 }
 
-static OPTIONAL: &str = "optional?";
-
 fn with_optional(f: Field) -> Field {
-    if f.tags.iter().find(|i| i.as_str() == OPTIONAL).is_some() {
-        return f;
-    }
-
     Field {
-        tags: f
-            .tags
-            .iter()
-            .cloned()
-            .chain(vec![OPTIONAL.to_string()])
-            .collect(),
+        optional: true,
         ..f
     }
 }

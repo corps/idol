@@ -1,8 +1,3 @@
-[SystemPerson]
-is_a = ["common.structs.Person"]
-fields.id = ["string", "internal!"]
-fields.external_id = ["string", "external!", "optional?"]
-
 [NestedOne]
 fields.one = "int"
 
@@ -21,5 +16,5 @@ fields.b = "NestedTwo"
 
 [AFieldOneOrBFieldTwo]
 is_a = "AFieldOne"
-variane = "contravariant"
+variance = "Contravariant"
 fields.b = "NestedTwo"

@@ -7,7 +7,7 @@ pub struct TypeDeconstructor<'a>(pub &'a Type);
 impl<'a> TypeDeconstructor<'a> {
     pub fn type_struct(&self) -> Option<TypeStructDeconstructor<'a>> {
         if let Some(m) = self.0.is_a.borrow() {
-            return Some(TypeStructDeconstructor(m));
+            return Some(TypeStructDeconstructor(m, false));
         }
 
         None
@@ -22,7 +22,7 @@ impl<'a> TypeDeconstructor<'a> {
     }
 }
 
-pub struct TypeStructDeconstructor<'a>(pub &'a TypeStruct);
+pub struct TypeStructDeconstructor<'a>(pub &'a TypeStruct, pub bool);
 
 impl<'a> TypeStructDeconstructor<'a> {
     pub fn scalar(&self) -> Option<ScalarDeconstructor<'a>> {
@@ -68,7 +68,7 @@ impl<'a> From<&'a Type> for Vec<Reference> {
                 fields
                     .values()
                     .filter_map(|f| {
-                        TypeStructDeconstructor(&f.type_struct)
+                        TypeStructDeconstructor(&f.type_struct, f.optional)
                             .contained()
                             .and_then(|s_decon| s_decon.reference())
                     })
