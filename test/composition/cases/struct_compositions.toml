@@ -18,3 +18,4 @@ fields.b = "NestedTwo"
 is_a = "AFieldOne"
 variance = "Contravariant"
 fields.b = "NestedTwo"
+

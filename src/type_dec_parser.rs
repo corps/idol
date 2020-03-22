@@ -17,12 +17,12 @@ impl<'a> Into<Vec<Reference>> for &ParsedTypeDec<'a> {
         self.is_a
             .iter()
             .filter_map(|ts| {
-                TypeStructDeconstructor(ts, false)
+                TypeStructDeconstructor(ts, false.into())
                     .contained()
                     .and_then(|s_dec| s_dec.reference())
             })
             .chain(self.fields.values().filter_map(|(ts, optional)| {
-                TypeStructDeconstructor(ts, optional.clone())
+                TypeStructDeconstructor(ts, optional.clone().into())
                     .contained()
                     .and_then(|s_dec| s_dec.reference())
             }))

@@ -1,0 +1,22 @@
+=== module struct_compositions
+struct_compositions.NestedTwo: {
+  two: string # 
+} # 
+struct_compositions.NestedOne: {
+  one: int # 
+} # 
+struct_compositions.NestedOneTwo: {
+  one: int # 
+  two: string # 
+} # 
+struct_compositions.AFieldOne: {
+  a: struct_compositions.NestedOne # 
+} # 
+struct_compositions.AFieldOneOrBFieldTwo: {
+  b: struct_compositions.NestedTwo? # 
+  a: struct_compositions.NestedOne? # 
+} # 
+struct_compositions.AFieldOneBFieldTwo: {
+  a: struct_compositions.NestedOne # 
+  b: struct_compositions.NestedTwo # 
+} # 

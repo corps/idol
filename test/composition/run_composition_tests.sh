@@ -10,11 +10,11 @@ for file in cases/*; do
   actual="actual/$(basename "$file" | cut -f 1 -d '.')"
   expected="expected/$(basename "$file" | cut -f 1 -d '.')"
 
-  $idol -I ./test_imports / -- $file 2>$actual.err 1>$actual.json
+  $idol -I ./test_imports / -- $file 2>$actual.err 1>$actual.txt
   # Ony failure
   if test $? -ne 0; then
     # If we expect success,
-    if test -e $expected.json; then
+    if test -e $expected.txt; then
       echo "$file composition failed unexpectedly!  Err output was:
 $(cat $actual.err)"
       exit 1
@@ -35,13 +35,13 @@ $(cat $actual.err)"
       echo "$file composition succeeded unexpectedly! Expected err:
 $(cat $expected.err)"
       exit 1
-    elif ! test -e $expected.json; then
-      echo "No $expected.json file found, creating out from output"
-      cat $actual.json | jq -S > $expected.json
+    elif ! test -e $expected.txt; then
+      echo "No $expected.txt file found, creating out from output"
+      cat $actual.txt > $expected.txt
     else
-      if [[ "$(cat $expected.json | jq -S)" != "$(cat $actual.json | jq -S)" ]]; then
+      if [[ "$(cat $expected.txt)" != "$(cat $actual.txt)" ]]; then
         echo "$file composition did not match expectation!"
-        diff <(cat $actual.json | jq -S) <(cat $expected.json | jq -S)
+        diff <(cat $actual.txt) <(cat $expected.txt)
         exit 1
       fi
     fi

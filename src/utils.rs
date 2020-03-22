@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-pub(crate) fn ordered_by_keys<T>(map: &HashMap<String, T>) -> Vec<(&String, &T)> {
+pub fn ordered_by_keys<T>(map: &HashMap<String, T>) -> Vec<(&String, &T)> {
     let mut keys: Vec<&String> = map.keys().collect();
     keys.sort();
 

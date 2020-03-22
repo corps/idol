@@ -1,0 +1,14 @@
+=== module aliases.type_structs
+aliases.type_structs.Str: string # 
+aliases.type_structs.Int: int # 
+aliases.type_structs.Double: double # 
+aliases.type_structs.Doubles: aliases.type_structs.Double[] # 
+aliases.type_structs.Bools: bool[] # 
+aliases.type_structs.AnyMap: any{} # 
+=== module type_struct_compositions
+type_struct_compositions.IntIsInt2: int # 
+type_struct_compositions.IntIsInt: int # 
+type_struct_compositions.IntIsActualInt: int # 
+type_struct_compositions.IntAnyIsAny: any # 
+type_struct_compositions.AnyIntIsInt: int # 
+type_struct_compositions.AnyIntIsAny: any # 

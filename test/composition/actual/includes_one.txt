@@ -1,0 +1,9 @@
+=== module aliases.type_structs
+aliases.type_structs.Str: string # 
+aliases.type_structs.Int: int # 
+aliases.type_structs.Double: double # 
+aliases.type_structs.Doubles: aliases.type_structs.Double[] # 
+aliases.type_structs.Bools: bool[] # 
+aliases.type_structs.AnyMap: any{} # 
+=== module includes_one
+includes_one.IncludesOneType: int # 

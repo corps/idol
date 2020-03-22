@@ -1,0 +1,8 @@
+=== module comments_parsing
+comments_parsing.TypeB: {
+  c: int # And this would  as well
+} # Obviously this one  This would be added? to the type comments
+comments_parsing.TypeA: {
+  a: string # This field would receive comments  Multiline ones too  Stripping and spacing
+  b: int # But this one would
+} # This type would receive comments

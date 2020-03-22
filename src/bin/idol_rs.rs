@@ -17,8 +17,8 @@ struct CLIConfiguration {
     #[structopt(long = "extension", short = "x")]
     pub extensions: Vec<String>,
     pub src_files: Vec<String>,
-    #[structopt(long = "as_json", short = "j")]
-    pub as_json: bool,
+    #[structopt(long = "rust_module", short = "m")]
+    pub rust_module: String,
 }
 
 impl From<&CLIConfiguration> for Configuration {
@@ -43,14 +43,6 @@ fn main() -> Result<(), i32> {
         eprintln!("Error processing modules: {}", err);
         1
     })?;
-
-    if config.as_json {
-        println!("{}", serde_json::to_string(&store.resolved).unwrap());
-    } else {
-        for (_, module) in ordered_by_keys(&store.resolved) {
-            println!("{}", module);
-        }
-    }
 
     Ok(())
 }
