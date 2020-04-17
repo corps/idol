@@ -1,8 +1,6 @@
 use crate::deconstructors::TypeStructDeconstructor;
-use crate::dep_mapper::DepMapper;
 use crate::models::declarations::TypeDec;
-use crate::models::schema::{Literal, PrimitiveType, Reference, StructKind, Type, TypeStruct};
-use crate::modules_store::ModulesStore;
+use crate::models::schema::{Literal, PrimitiveType, Reference, StructKind, TypeStruct};
 use regex::Regex;
 use std::collections::HashMap;
 

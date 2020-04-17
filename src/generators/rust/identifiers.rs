@@ -1,22 +1,18 @@
-use crate::generators::declarable::{Escapable, Escaped, HierarchicalIdentifier};
-use crate::generators::generator::GeneratorNode;
+use crate::generators::escaped::Escapable;
 use crate::models::schema::Module;
 use regex::Regex;
 use serde::export::Formatter;
 use std::collections::hash_set::HashSet;
-use std::fmt::Display;
+use std::collections::HashMap;
+use std::fmt::{Debug, Display};
+use std::hash::Hash;
 use std::iter::FromIterator;
+use std::path::PathBuf;
 
-fn is_valid_rust_identifier(s: &str) -> bool {
-    lazy_static! {
-        static ref VALID_RUST_IDENTIFIER: Regex =
-            Regex::new(r"^[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9_]+$").unwrap();
-    }
+#[derive(Clone, PartialOrd, PartialEq, Eq, Hash, Debug)]
+pub struct RustIdentifier(String);
 
-    VALID_RUST_IDENTIFIER.is_match(s)
-}
-
-fn is_restricted_keyword(s: &str) -> bool {
+fn is_module_keyword(s: &str) -> bool {
     s == "crate" || s == "self" || s == "super" || s == "Super"
 }
 
@@ -48,26 +44,71 @@ fn is_reserved_keyword(s: &str) -> bool {
     RESERVED_KEYWORDS.contains(s)
 }
 
-pub struct RustModuleName(HierarchicalIdentifier<RustIdentifier>);
-impl RustModuleName {
-    pub fn from_idol_module_name(module_name: &str) -> Self {
-        let mut module_name_parts = module_name.split(".").into_iter();
-        let module_root = module_name_parts.next().unwrap();
+#[derive(Clone, PartialOrd, PartialEq, Eq, Hash)]
+pub enum RustModuleRoot {
+    RootCrate(RustIdentifier),
+    RootSelf,
+}
 
-        RustModuleName(HierarchicalIdentifier(
-            module_root.into(),
-            module_name_parts.map(|s| s.into()).collect(),
-        ))
+#[derive(Clone, PartialOrd, PartialEq, Eq, Hash)]
+pub struct RustModuleName {
+    root: RustModuleRoot,
+    children: Vec<RustIdentifier>,
+}
+
+impl From<&RustModuleName> for PathBuf {
+    fn from(mn: &RustModuleName) -> Self {
+        match &mn.root {
+            RustModuleRoot::RootSelf => PathBuf::from(
+                mn.children
+                    .iter()
+                    .map(|c| c.escape().unwrap().to_string())
+                    .collect::<Vec<String>>()
+                    .join("/"),
+            ),
+            _ => unreachable!("RustModuleName from external crate cannot be generated!"),
+        }
+    }
+}
+
+impl RustModuleName {
+    pub fn from_idol_module_name(root: RustModuleRoot, module_name: &str) -> Self {
+        let mut module_name_parts = module_name.split(".");
+
+        RustModuleName {
+            root,
+            children: module_name_parts.map(|s| s.into()).collect(),
+        }
     }
 }
 
 impl Escapable for RustModuleName {
-    fn escape(self: Self) -> Option<Escaped<Self>> {
-        (self.0).0.escape().map(|root| {})
+    fn escape(&self) -> Option<Self> {
+        let original_len = self.children.len();
+        let escaped_children: Vec<RustIdentifier> = self
+            .children
+            .iter()
+            .filter_map(|ident| ident.escape())
+            .collect();
+
+        if escaped_children.len() != original_len {
+            return None;
+        }
+
+        match &self.root {
+            RustModuleRoot::RootCrate(ident) => {
+                ident.escape().map(|ident| RustModuleRoot::RootCrate(ident))
+            }
+            root => Some(root.clone()),
+        }
+        .and_then(|module_root| {
+            Some(RustModuleName {
+                root: module_root,
+                children: escaped_children,
+            })
+        })
     }
 }
-
-pub struct RustIdentifier(String);
 
 impl Display for RustIdentifier {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -87,46 +128,62 @@ impl From<&str> for RustIdentifier {
     }
 }
 
-impl Escapable for RustIdentifier {
-    fn escape(self: Self) -> Option<Self> {
-        if self.0.is_empty() {
-            return Some(Self::from("unnamed"));
+fn apply_empty_replacement(s: String) -> String {
+    if s.is_empty() {
+        "unnamed".to_string()
+    } else {
+        s
+    }
+}
+
+fn apply_first_char_escape(s: String) -> String {
+    if let Some(first_char) = s.chars().next() {
+        if (first_char == '_' && s.len() == 1) || first_char.is_numeric() {
+            return format!("a{}", s);
         }
+    }
 
-        if is_valid_rust_identifier(&self.0) {
-            return Some(self);
-        }
+    s
+}
 
-        let mut new_raw = self.0;
-
-        if let Some(first_char) = new_raw.chars().next() {
-            if (first_char == '_' && new_raw.len() == 1) || first_char.is_numeric() {
-                new_raw = format!("a{}", new_raw);
+fn apply_unicode_escaping(s: String) -> String {
+    s.chars()
+        .map(|c| {
+            if c.is_alphanumeric() {
+                c.to_string()
+            } else {
+                c.escape_unicode()
+                    .filter(|c| c.is_numeric() || *c == 'u')
+                    .collect::<String>()
             }
-        }
+        })
+        .collect::<Vec<String>>()
+        .join("")
+}
 
-        new_raw = new_raw
-            .chars()
-            .map(|c| {
-                if c.is_alphanumeric() {
-                    c.to_string()
-                } else {
-                    c.escape_unicode()
-                        .filter(|c| c.is_numeric() || *c == 'u')
-                        .collect::<String>()
-                }
-            })
-            .collect::<Vec<String>>()
-            .join("");
+fn apply_restricted_escaping(s: String) -> String {
+    if is_module_keyword(&s) {
+        return format!("_{}", s);
+    }
+    s
+}
 
-        if is_restricted_keyword(&new_raw) {
-            new_raw = format!("_{}", new_raw);
-        }
+fn apply_raw_escaping(s: String) -> String {
+    if is_reserved_keyword(&s) || is_strict_keyword(&s) {
+        return format!("r#{}", s);
+    }
 
-        if is_reserved_keyword(&new_raw) || is_strict_keyword(&new_raw) {
-            new_raw = format!("r#{}", new_raw);
-        }
+    s
+}
 
+impl Escapable for RustIdentifier {
+    fn escape(&self) -> Option<Self> {
+        let mut new_raw = self.0.clone();
+        new_raw = apply_empty_replacement(new_raw);
+        new_raw = apply_restricted_escaping(new_raw);
+        new_raw = apply_first_char_escape(new_raw);
+        new_raw = apply_unicode_escaping(new_raw);
+        new_raw = apply_raw_escaping(new_raw);
         Some(RustIdentifier::from(new_raw))
     }
 }

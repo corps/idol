@@ -1,22 +1,38 @@
 use fs_extra::copy_items;
 use fs_extra::dir::CopyOptions;
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::{fs, io};
 use tempdir::TempDir;
 
-struct BuildEnv {
+pub struct BuildEnv {
     build_dir: TempDir,
+    written: HashSet<PathBuf>,
 }
 
 impl BuildEnv {
     pub fn new() -> BuildEnv {
         BuildEnv {
             build_dir: TempDir::new("idol-build").unwrap(),
+            written: HashSet::new(),
         }
     }
 
-    pub fn start_write(&self, rel_path: PathBuf) -> io::Result<Box<dyn io::Write>> {
-        let abs_path = self.build_dir.path().join(rel_path);
+    pub fn start_write(&mut self, rel_path: PathBuf) -> io::Result<Box<dyn io::Write>> {
+        let abs_path = self.build_dir.path().join(&rel_path);
+
+        if self.written.contains(&rel_path) {
+            return Err(io::Error::new(
+                io::ErrorKind::AlreadyExists,
+                format!(
+                    "Path {} was written to twice!  Conflicting module -> path mapping detected",
+                    rel_path.as_os_str().to_string_lossy().to_string()
+                ),
+            ));
+        }
+
+        self.written.insert(rel_path.clone());
+
         fs::DirBuilder::new()
             .recursive(true)
             .create(abs_path.parent().unwrap())?;

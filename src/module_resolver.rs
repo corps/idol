@@ -51,7 +51,7 @@ impl<'a> ModuleResolver<'a> {
             result.types_by_name.insert(type_name, t);
         }
 
-        for (type_name, ptd) in parsed_type_decs.iter() {
+        for (type_name, _) in parsed_type_decs.iter() {
             self.ensure_dependencies_of(
                 Reference::from((result.module_name.to_owned(), type_name.to_owned())),
                 &parsed_type_decs,

@@ -1,4 +1,4 @@
-use crate::models::schema::{Field, Reference, StructKind, Type, TypeStruct};
+use crate::models::schema::{Field, Module, Reference, StructKind, Type, TypeStruct};
 use std::borrow::Borrow;
 use std::collections::HashMap;
 
@@ -96,5 +96,43 @@ impl<'a> From<&'a Type> for Vec<Reference> {
                     .collect()
             })
             .unwrap_or_else(|| vec![])
+    }
+}
+
+pub trait ModuleNameOf {
+    fn idol_module_name(&self) -> &str;
+}
+
+impl ModuleNameOf for Module {
+    fn idol_module_name(&self) -> &str {
+        &self.module_name
+    }
+}
+
+impl ModuleNameOf for Reference {
+    fn idol_module_name(&self) -> &str {
+        &self.module_name
+    }
+}
+
+impl ModuleNameOf for Type {
+    fn idol_module_name(&self) -> &str {
+        self.named.idol_module_name()
+    }
+}
+
+pub trait ReferenceOf {
+    fn idol_reference_for(&self) -> &Reference;
+}
+
+impl ReferenceOf for Type {
+    fn idol_reference_for(&self) -> &Reference {
+        &self.named
+    }
+}
+
+impl ReferenceOf for Reference {
+    fn idol_reference_for(&self) -> &Reference {
+        self
     }
 }

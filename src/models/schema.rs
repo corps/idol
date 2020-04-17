@@ -228,7 +228,7 @@ impl idol::ValidatesJson for Literal {
     }
 }
 
-#[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Debug, Clone, Default, PartialOrd, Hash)]
 pub struct Reference {
     pub r#module_name: String,
     pub r#qualified_name: String,

@@ -190,7 +190,7 @@ where
             }
 
             continue;
-        } else if let Some(type_struct_two) = other.is_a.borrow() {
+        } else if other.is_a.is_some() {
             return Ok(compare_types(other, one, type_lookup)?.flip());
         }
 

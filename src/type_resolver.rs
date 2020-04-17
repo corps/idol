@@ -1,5 +1,5 @@
 use crate::deconstructors::TypeDeconstructor;
-use crate::models::schema::{Field, Reference, StructKind, Type, TypeStruct};
+use crate::models::schema::{Field, Reference, Type, TypeStruct};
 use crate::modules_store::{ModulesStore, TypeLookup};
 use crate::type_composer::compose_types;
 use crate::type_dec_parser::ParsedTypeDec;

@@ -61,7 +61,7 @@ impl ModulesStore {
     }
 
     pub fn load(&mut self, module_name: &str) -> Result<(), String> {
-        if let Some(loaded) = self.resolved.get(module_name) {
+        if self.resolved.get(module_name).is_some() {
             return Ok(());
         }
 
