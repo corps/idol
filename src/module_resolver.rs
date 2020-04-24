@@ -1,6 +1,5 @@
 use crate::deconstructors::TypeDeconstructor;
 use crate::dep_mapper::DepMapper;
-use crate::models::declarations::TypeDec;
 use crate::models::loaded::LoadedModule;
 use crate::models::schema::{Module, Reference, Type};
 use crate::modules_store::{ModulesStore, TypeLookup};

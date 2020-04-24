@@ -1,11 +1,6 @@
 use crate::generators::build_env::BuildEnv;
-use crate::generators::rust::identifiers::RustModuleName;
-use crate::generators::rust::RustEscaper;
-use crate::generators::slotted_buffer::SlottedBuffer;
 use crate::models::schema::Reference;
 use crate::modules_store::ModulesStore;
-use std::collections::HashMap;
-use std::path::PathBuf;
 
 #[derive(PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub struct ImplExpandsJson(Reference);

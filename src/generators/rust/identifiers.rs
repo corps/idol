@@ -66,7 +66,7 @@ impl From<&RustModuleName> for PathBuf {
                     .collect::<Vec<String>>()
                     .join("/"),
             ),
-            _ => unreachable!("RustModuleName from external crate cannot be generated!"),
+            _ => unreachable!("RustModuleName from external crate cannot have a path generated!"),
         }
     }
 }

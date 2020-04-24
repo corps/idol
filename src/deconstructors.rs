@@ -1,6 +1,6 @@
 use crate::models::schema::{Field, Module, Reference, StructKind, Type, TypeStruct};
 use std::borrow::Borrow;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 pub struct TypeDeconstructor<'a>(pub &'a Type);
 
@@ -13,9 +13,9 @@ impl<'a> TypeDeconstructor<'a> {
         None
     }
 
-    pub fn struct_fields(&self) -> Option<&'a HashMap<String, Field>> {
+    pub fn struct_fields(&self) -> Option<BTreeMap<String, &'a Field>> {
         if self.0.is_a.is_none() && self.0.options.is_empty() {
-            return Some(&self.0.fields);
+            return Some(self.0.fields.iter().map(|(k, v)| (k.clone(), v)).collect());
         }
 
         None

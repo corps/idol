@@ -1,10 +1,9 @@
 use crate::models::schema::{Field, PrimitiveType, Reference, StructKind, Type, TypeStruct};
 use crate::modules_store::TypeLookup;
-use crate::type_composer::{field_tag_modifier_kind, CategorizedFieldTags};
 use crate::utils::ordered_by_keys;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 
 /*
   Partial ordering of TypeStructures by considering only the 'any'-ness of that type structure.

@@ -2,7 +2,6 @@ use crate::deconstructors::{
     Optional, ScalarDeconstructor, TypeDeconstructor, TypeStructDeconstructor,
 };
 use crate::models::schema::{Module, PrimitiveType, Reference, StructKind, Type};
-use serde::export::fmt::Error;
 use std::borrow::Borrow;
 use std::fmt;
 use std::fmt::Formatter;

@@ -1,45 +1,66 @@
-use crate::generators::escaped::Escaped;
+use crate::dep_mapper::DepMapper;
+use serde::export::PhantomData;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
-use std::hash::Hash;
 use std::io::{BufRead, BufReader, Read, Write};
 
-pub trait Escaper {
-    fn escape(&self, s: &str) -> String;
-    fn try_unescape(&self, s: &str) -> Option<String>;
+pub trait BufferManager {
+    fn escape(s: &str) -> String;
+    fn try_unescape(s: &str) -> Option<String>;
 }
 
-pub struct SlottedBuffer<E: Escaper> {
-    escaper: E,
+pub struct SlottedBuffer<M: BufferManager + ?Sized> {
     header: String,
     slots: HashMap<String, (String, String)>,
-    named_slot_write_order: Vec<String>,
+    slot_dep_mapper: DepMapper,
+    manager: PhantomData<M>,
 }
 
-impl<E: Escaper + Default> Default for SlottedBuffer<E> {
+impl<M: BufferManager> Default for SlottedBuffer<M> {
     fn default() -> Self {
         SlottedBuffer {
-            escaper: E::default(),
             header: "".to_string(),
             slots: HashMap::new(),
-            named_slot_write_order: vec![],
+            slot_dep_mapper: DepMapper::new(),
+            manager: PhantomData,
         }
     }
 }
 
-impl<E: Escaper + Default> SlottedBuffer<E> {
-    pub fn set_slot(&mut self, slot_name: String, codegen: String, scaffold: String) {
-        if !self.named_slot_write_order.contains(&slot_name) {
-            self.named_slot_write_order.push(slot_name.clone());
-        }
+impl<M: BufferManager> SlottedBuffer<M> {
+    pub fn order_slot<Slot: Debug, Dep: Debug>(
+        &mut self,
+        slot: Slot,
+        dependency: Dep,
+    ) -> Result<(), String> {
+        let slot_name = format!("{:?}", slot);
+        let dependency = format!("{:?}", dependency);
 
-        let entry = self.slots.entry(slot_name);
-        entry
-            .and_modify(|(cg, sc)| {
-                cg.clear();
-                cg.push_str(&codegen)
-            })
-            .or_insert_with(|| (codegen, scaffold));
+        self.slot_dep_mapper.add_dependency(&slot_name, &dependency)
+    }
+
+    pub fn set_slot<Slot: Debug, CG: Display, SC: Display>(
+        &mut self,
+        slot: Slot,
+        codegen: CG,
+        scaffold: SC,
+    ) {
+        let slot_name = format!("{:?}", slot);
+
+        if let Some((cg, _)) = self.slots.get_mut(&slot_name) {
+            *cg = format!("{}", codegen);
+        } else {
+            self.slots
+                .insert(slot_name, (format!("{}", codegen), format!("{}", scaffold)));
+        }
+    }
+
+    pub fn append_slot<Slot: Debug, CG: Display, SC: Display>(
+        &mut self,
+        slot: Slot,
+        codegen: CG,
+        scaffold: SC,
+    ) {
     }
 
     pub fn write<W: Write>(self, mut w: W) -> std::io::Result<()> {
@@ -47,21 +68,22 @@ impl<E: Escaper + Default> SlottedBuffer<E> {
             write!(w, "{}\n", self.header)?;
         }
 
-        for slot_name in self.named_slot_write_order.iter() {
-            let (cg, sc) = self.slots.get(slot_name).unwrap();
-            write!(w, "{}\n", self.escaper.escape(slot_name))?;
-            write!(w, "{}\n", cg)?;
-            write!(w, "{}\n", self.escaper.escape("end"))?;
+        for slot_name in self.slot_dep_mapper.order_dependencies() {
+            if let Some((cg, sc)) = self.slots.get(&slot_name) {
+                write!(w, "{}\n", M::escape(&slot_name))?;
+                write!(w, "{}\n", cg)?;
+                write!(w, "{}\n", M::escape("end"))?;
 
-            if !sc.is_empty() {
-                write!(w, "{}\n", sc)?;
+                if !sc.is_empty() {
+                    write!(w, "{}\n", sc)?;
+                }
             }
         }
 
         Ok(())
     }
 
-    pub fn read_from<R: Read>(r: R) -> std::io::Result<SlottedBuffer<E>> {
+    pub fn read_from<R: Read>(r: R) -> std::io::Result<SlottedBuffer<M>> {
         let mut slots = HashMap::new();
         let mut reader = BufReader::new(r);
 
@@ -74,10 +96,8 @@ impl<E: Escaper + Default> SlottedBuffer<E> {
         let mut header = "".to_string();
         let mut cur_slot = "".to_string();
 
-        let escaper = E::default();
-
         while reader.read_line(&mut line_buf)? > 0 {
-            if let Some(slot_name) = escaper.try_unescape(&line_buf) {
+            if let Some(slot_name) = M::try_unescape(&line_buf) {
                 if parsing_header {
                     header = cur_buf.clone();
                     cur_buf.clear();
@@ -115,10 +135,10 @@ impl<E: Escaper + Default> SlottedBuffer<E> {
         }
 
         Ok(SlottedBuffer {
-            escaper,
             header,
             slots,
-            named_slot_write_order: vec![],
+            slot_dep_mapper: DepMapper::new(),
+            manager: PhantomData,
         })
     }
 }

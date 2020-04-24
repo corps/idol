@@ -7,6 +7,12 @@ pub struct DepMapper {
     parents: Vec<Vec<usize>>,
 }
 
+impl Default for DepMapper {
+    fn default() -> Self {
+        DepMapper::new()
+    }
+}
+
 impl DepMapper {
     pub fn new() -> DepMapper {
         DepMapper {

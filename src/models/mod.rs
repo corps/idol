@@ -91,9 +91,9 @@ pub mod idol {
                 }
             } else {
                 if let Some(inner) = T::expand_json(value) {
-                    return Some(serde_json::Value::Array(vec![inner]));;
+                    return Some(serde_json::Value::Array(vec![inner]));
                 } else {
-                    return Some(serde_json::Value::Array(vec![value.to_owned()]));;
+                    return Some(serde_json::Value::Array(vec![value.to_owned()]));
                 }
             }
 
