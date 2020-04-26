@@ -1,64 +1,43 @@
-use crate::dep_mapper::DepMapper;
-use std::collections::HashMap;
-use std::hash::Hash;
+use std::error::Error;
 use std::ops::Deref;
 
-pub trait Acc: Default {
-    fn concat(self, b: Self) -> Self;
+pub struct AccMonad<'a, R, A, E> {
+    inner: Box<dyn Fn(A) -> Result<(A, R), E> + 'a>,
 }
 
-impl<A: Acc> Acc for Option<A> {
-    fn concat(self, b: Self) -> Self {
-        match self {
-            Some(a) => match b {
-                Some(b) => Some(a.concat(b)),
-                _ => Some(a),
-            },
-            _ => b,
-        }
-    }
-}
-
-impl<K: Eq + Hash + Clone, V: Clone> Acc for HashMap<K, V> {
-    fn concat(self, b: Self) -> Self {
-        self.iter()
-            .chain(b.iter())
-            .map(|(k, v)| (k.clone(), v.clone()))
-            .collect()
-    }
-}
-
-pub struct AccMonad<'a, R, A> {
-    inner: Box<dyn Fn(A) -> (A, R) + 'a>,
-}
-
-impl<'a, R, A: Acc> AccMonad<'a, R, A> {
-    pub fn unit<F: Fn() -> R + 'a>(f: F) -> AccMonad<'a, R, A> {
+impl<'a, R, A: Default, E> AccMonad<'a, R, A, E> {
+    pub fn unit<F: Fn() -> R + 'a>(f: F) -> AccMonad<'a, R, A, E> {
         AccMonad {
-            inner: Box::new(move |_| (A::default(), f())),
+            inner: Box::new(move |_| Ok((A::default(), f()))),
         }
     }
 
-    pub fn and_then<'b, S, F: Fn(R) -> AccMonad<'b, S, A> + 'b>(
+    pub fn and_then<'b, S, F: Fn(R) -> AccMonad<'b, S, A, E> + 'b>(
         &'b self,
         f: F,
-    ) -> AccMonad<'b, S, A> {
+    ) -> AccMonad<'b, S, A, E> {
         AccMonad {
-            inner: Box::new(move |acc| -> (A, S) {
-                let (acc, r) = self.inner.deref()(acc);
+            inner: Box::new(move |acc| {
+                let (acc, r) = self.inner.deref()(acc)?;
                 f(r).inner.deref()(acc)
             }),
         }
     }
 
-    pub fn and_then_acc<F: Fn(A) -> (A, R) + 'a>(f: F) -> AccMonad<'a, R, A> {
+    pub fn map_err<'b, EE, F: Fn(E) -> EE + 'b>(&'b self, f: F) -> AccMonad<'b, R, A, EE> {
+        AccMonad {
+            inner: Box::new(move |acc| self.inner.deref()(acc).map_err(|e| f(e))),
+        }
+    }
+
+    pub fn with_acc<F: Fn(A) -> Result<(A, R), E> + 'a>(f: F) -> AccMonad<'a, R, A, E> {
         AccMonad {
             inner: Box::new(move |acc| f(acc)),
         }
     }
 
-    pub fn render<F: Fn(A) -> B, B>(self, f: F) -> B {
-        let (acc, _) = self.inner.deref()(A::default());
-        f(acc)
+    pub fn render<F: Fn(A) -> B, B>(self, f: F) -> Result<B, E> {
+        let (acc, _) = self.inner.deref()(A::default())?;
+        Ok(f(acc))
     }
 }

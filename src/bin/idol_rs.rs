@@ -4,7 +4,6 @@ extern crate structopt;
 use idol::config::Configuration;
 use idol::loader::ModuleFileLoader;
 use idol::modules_store::ModulesStore;
-use idol::utils::ordered_by_keys;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]

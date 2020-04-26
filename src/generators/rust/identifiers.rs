@@ -1,4 +1,4 @@
-use crate::generators::escaped::Escapable;
+use crate::generators::identifiers::{CodegenIdentifier, Escapable};
 use crate::models::schema::Module;
 use regex::Regex;
 use serde::export::Formatter;
@@ -62,7 +62,7 @@ impl From<&RustModuleName> for PathBuf {
             RustModuleRoot::RootSelf => PathBuf::from(
                 mn.children
                     .iter()
-                    .map(|c| c.escape().unwrap().to_string())
+                    .map(|c| c.escape().to_string())
                     .collect::<Vec<String>>()
                     .join("/"),
             ),
@@ -83,30 +83,20 @@ impl RustModuleName {
 }
 
 impl Escapable for RustModuleName {
-    fn escape(&self) -> Option<Self> {
+    fn escape(&self) -> Self {
         let original_len = self.children.len();
-        let escaped_children: Vec<RustIdentifier> = self
-            .children
-            .iter()
-            .filter_map(|ident| ident.escape())
-            .collect();
+        let escaped_children: Vec<RustIdentifier> =
+            self.children.iter().map(|ident| ident.escape()).collect();
 
-        if escaped_children.len() != original_len {
-            return None;
-        }
+        let module_root = match &self.root {
+            RustModuleRoot::RootCrate(ident) => RustModuleRoot::RootCrate(ident.escape()),
+            root => root.clone(),
+        };
 
-        match &self.root {
-            RustModuleRoot::RootCrate(ident) => {
-                ident.escape().map(|ident| RustModuleRoot::RootCrate(ident))
-            }
-            root => Some(root.clone()),
+        RustModuleName {
+            root: module_root,
+            children: escaped_children,
         }
-        .and_then(|module_root| {
-            Some(RustModuleName {
-                root: module_root,
-                children: escaped_children,
-            })
-        })
     }
 }
 
@@ -177,13 +167,29 @@ fn apply_raw_escaping(s: String) -> String {
 }
 
 impl Escapable for RustIdentifier {
-    fn escape(&self) -> Option<Self> {
+    fn escape(&self) -> Self {
         let mut new_raw = self.0.clone();
         new_raw = apply_empty_replacement(new_raw);
         new_raw = apply_restricted_escaping(new_raw);
         new_raw = apply_first_char_escape(new_raw);
         new_raw = apply_unicode_escaping(new_raw);
         new_raw = apply_raw_escaping(new_raw);
-        Some(RustIdentifier::from(new_raw))
+        RustIdentifier::from(new_raw)
+    }
+}
+
+impl CodegenIdentifier for RustIdentifier {
+    fn codegen_variant(&self) -> Self {
+        if self
+            .0
+            .chars()
+            .next()
+            .map(|c| c.is_uppercase())
+            .unwrap_or(false)
+        {
+            RustIdentifier(format!("Generated_{}", self.0))
+        } else {
+            RustIdentifier(format!("_generated_{}", self.0))
+        }
     }
 }

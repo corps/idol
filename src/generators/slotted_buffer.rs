@@ -39,19 +39,19 @@ impl<M: BufferManager> SlottedBuffer<M> {
         self.slot_dep_mapper.add_dependency(&slot_name, &dependency)
     }
 
-    pub fn set_slot<Slot: Debug, CG: Display, SC: Display>(
+    pub fn set_slot<CG: Display, SC: Display>(
         &mut self,
-        slot: Slot,
+        slot_name: &str,
         codegen: CG,
         scaffold: SC,
     ) {
-        let slot_name = format!("{:?}", slot);
-
-        if let Some((cg, _)) = self.slots.get_mut(&slot_name) {
+        if let Some((cg, _)) = self.slots.get_mut(slot_name) {
             *cg = format!("{}", codegen);
         } else {
-            self.slots
-                .insert(slot_name, (format!("{}", codegen), format!("{}", scaffold)));
+            self.slots.insert(
+                slot_name.to_owned(),
+                (format!("{}", codegen), format!("{}", scaffold)),
+            );
         }
     }
 
