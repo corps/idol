@@ -5,10 +5,10 @@ pub struct AccMonad<'a, R, A, E> {
     inner: Box<dyn Fn(A) -> Result<(A, R), E> + 'a>,
 }
 
-impl<'a, R, A: Default, E> AccMonad<'a, R, A, E> {
+impl<'a, R, A, E> AccMonad<'a, R, A, E> {
     pub fn unit<F: Fn() -> R + 'a>(f: F) -> AccMonad<'a, R, A, E> {
         AccMonad {
-            inner: Box::new(move |_| Ok((A::default(), f()))),
+            inner: Box::new(move |a| Ok((a, f()))),
         }
     }
 
@@ -36,8 +36,17 @@ impl<'a, R, A: Default, E> AccMonad<'a, R, A, E> {
         }
     }
 
-    pub fn render<F: Fn(A) -> B, B>(self, f: F) -> Result<B, E> {
-        let (acc, _) = self.inner.deref()(A::default())?;
-        Ok(f(acc))
+    pub fn render(&self, a: A) -> Result<A, E> {
+        let (acc, _) = self.inner.deref()(a)?;
+        Ok(acc)
+    }
+
+    pub fn unwrap(&self, a: A) -> Result<R, E> {
+        let (_, r) = self.inner.deref()(a)?;
+        Ok(r)
+    }
+
+    pub fn run(&self, a: A) -> Result<(A, R), E> {
+        self.inner.deref()(a)
     }
 }

@@ -5,6 +5,12 @@ use std::hash::{Hash, Hasher};
 
 pub struct Escaped<T: Sized>(T);
 
+impl<T: Sized> Escaped<T> {
+    pub fn unwrap(self) -> T {
+        self.0
+    }
+}
+
 impl<T: Sized + Clone> Clone for Escaped<T> {
     fn clone(&self) -> Self {
         Escaped(self.0.clone())
@@ -44,8 +50,9 @@ pub trait Escapable: Sized {
     }
 }
 
-pub trait CodegenIdentifier: Escapable + Hash + Eq + Display + Clone {
+pub trait CodegenIdentifier: Escapable + Hash + Eq + Display + Clone + Sized {
     fn codegen_variant(&self) -> Self;
+    fn import_variant(&self) -> Self;
 }
 
-pub trait ModuleIdentifier: Escapable + Hash + Eq + Display + Clone {}
+pub trait ModuleIdentifier: Escapable + Hash + Eq + Display + Clone + Sized {}

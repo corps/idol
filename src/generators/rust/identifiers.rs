@@ -192,4 +192,8 @@ impl CodegenIdentifier for RustIdentifier {
             RustIdentifier(format!("_generated_{}", self.0))
         }
     }
+
+    fn import_variant(&self) -> Self {
+        RustIdentifier(format!("{}_", self.0))
+    }
 }
