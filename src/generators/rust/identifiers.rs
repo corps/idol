@@ -1,4 +1,4 @@
-use crate::generators::identifiers::{CodegenIdentifier, Escapable};
+use crate::generators::identifiers::{CodegenIdentifier, Escapable, ModuleIdentifier};
 use crate::models::schema::Module;
 use regex::Regex;
 use serde::export::Formatter;
@@ -11,6 +11,12 @@ use std::path::PathBuf;
 
 #[derive(Clone, PartialOrd, PartialEq, Eq, Hash, Debug)]
 pub struct RustIdentifier(String);
+
+impl RustIdentifier {
+    pub fn new(i: String) -> Self {
+        RustIdentifier(i)
+    }
+}
 
 fn is_module_keyword(s: &str) -> bool {
     s == "crate" || s == "self" || s == "super" || s == "Super"
@@ -48,6 +54,15 @@ fn is_reserved_keyword(s: &str) -> bool {
 pub enum RustModuleRoot {
     RootCrate(RustIdentifier),
     RootSelf,
+}
+
+impl Display for RustModuleRoot {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RustModuleRoot::RootCrate(i) => write!(f, "{}", i),
+            RustModuleRoot::RootSelf => write!(f, "self"),
+        }
+    }
 }
 
 #[derive(Clone, PartialOrd, PartialEq, Eq, Hash)]
@@ -99,6 +114,20 @@ impl Escapable for RustModuleName {
         }
     }
 }
+
+impl Display for RustModuleName {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{}", self.root))?;
+
+        for child in self.children.iter() {
+            f.write_fmt(format_args!("::{}", child))?;
+        }
+
+        Ok(())
+    }
+}
+
+impl ModuleIdentifier for RustModuleName {}
 
 impl Display for RustIdentifier {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
