@@ -1,3 +1,5 @@
+use proc_macro2::{Ident, Literal, Punct, Spacing, Span, TokenStream};
+use quote::{ToTokens, TokenStreamExt};
 use serde::export::fmt::Debug;
 use serde::export::Formatter;
 use std::fmt::Display;
@@ -41,6 +43,13 @@ impl<T: Sized + PartialEq> PartialEq for Escaped<T> {
     }
 }
 
+impl<T: Sized + Display> ToTokens for Escaped<T> {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let formatted = format!("{}", self);
+        tokens.append(Ident::new(&formatted, Span::call_site()))
+    }
+}
+
 impl<T: Sized + Eq> Eq for Escaped<T> {}
 
 pub trait Escapable: Sized {
@@ -56,3 +65,29 @@ pub trait CodegenIdentifier: Escapable + Hash + Eq + Display + Clone + Sized {
 }
 
 pub trait ModuleIdentifier: Escapable + Hash + Eq + Display + Clone + Sized {}
+
+pub struct SlashComment(pub String);
+
+impl Escapable for SlashComment {
+    fn escape(&self) -> Self {
+        SlashComment(self.0.replace("\n", "\\n"))
+    }
+}
+
+// Unfortunately TokenStreams may be convenient for many purposes, they don't
+// represent Rust comments (because comments can't be an input to a macro), thus
+// we regress to creating 'fake' comments by combining slash operators and
+// string literals.
+impl ToTokens for SlashComment {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        tokens.append(Punct::new('/', Spacing::Joint));
+        tokens.append(Punct::new('/', Spacing::Joint));
+        tokens.append(Literal::string(&self.0));
+    }
+}
+
+impl Display for SlashComment {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "// {}", self.0)
+    }
+}

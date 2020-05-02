@@ -18,3 +18,7 @@ pub mod type_composer;
 pub mod type_dec_parser;
 pub mod type_resolver;
 pub mod utils;
+#[macro_use]
+extern crate quote;
+#[macro_use]
+extern crate proc_macro2;

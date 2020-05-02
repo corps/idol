@@ -1,12 +1,13 @@
 use crate::deconstructors::TypeDeconstructor;
+use crate::generators::acc_monad::AccMonad;
 use crate::generators::build_env::BuildEnv;
+use crate::generators::features::Feature;
 use crate::generators::project::Declared;
 use crate::generators::rust::identifiers::{RustIdentifier, RustModuleName};
 use crate::generators::rust::rust_file::{
-    RustDeclarationContext, RustDeclarationMonad, RustDeclared, RustProjectContext,
-    RustProjectMonad,
+    RustDeclared, RustModuleContext, RustProjectContext, RustProjectMonad,
 };
-use crate::generators::rust::type_declarable::TypeDeclarable;
+use crate::generators::rust::rust_pojo::{DefaultRustPojoRenderable, RustPojo};
 use crate::models::schema::{Module, Reference, Type};
 use crate::modules_store::ModulesStore;
 
@@ -27,7 +28,7 @@ impl<'a> IdolSerdeRs<'a> {
     }
 
     pub fn generate(&self) -> RustProjectMonad<()> {
-        RustProjectMonad::from(
+        RustProjectMonad::for_each(
             self.store
                 .module_dep_mapper
                 .order_dependencies()
@@ -39,23 +40,13 @@ impl<'a> IdolSerdeRs<'a> {
     }
 
     pub fn generate_module<'b: 'c, 'c>(&'b self, module: &'c Module) -> RustProjectMonad<'c, ()> {
-        RustProjectMonad::from(
-            module
-                .types_dependency_ordering
-                .iter()
-                .map(|type_name| self.generate_type(module.types_by_name.get(type_name).unwrap())),
-        )
-    }
-
-    pub fn generate_type(&self, t: &'a Type) -> RustProjectMonad<'a, RustDeclared> {
-        // let ctx = RustModuleMonad::from(
-        //     TypeDeconstructor(t).struct_fields()
-        // )
-        //
-        RustProjectContext::get_declaration(RustProjectContext::declare_ident(
-            TypeDeclarable(t.named.clone()),
-            RustDeclarationMonad::unit(|| (|_| "".to_string(), |_| "".to_string())),
-        ))
+        RustProjectMonad::for_each(module.types_dependency_ordering.iter().map(|type_name| {
+            RustPojo::new(Reference::from((
+                module.module_name.to_string(),
+                type_name.to_string(),
+            )))
+            .declare(self.store)
+        }))
     }
 }
 

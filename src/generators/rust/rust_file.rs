@@ -1,7 +1,9 @@
 use crate::generators::acc_monad::AccMonad;
-use crate::generators::project::{DeclarationContext, Declared, ProjectContext};
-use crate::generators::rust::identifiers::{RustIdentifier, RustModuleName};
+use crate::generators::identifiers::{Escapable, Escaped};
+use crate::generators::project::{Declared, ModuleContext, ProjectContext};
+use crate::generators::rust::identifiers::{RustIdentifier, RustModuleName, RustModuleRoot};
 use crate::generators::slotted_buffer::{BufferManager, SlottedBuffer};
+use proc_macro2::TokenStream;
 use regex::Regex;
 
 pub struct RustFile;
@@ -23,7 +25,43 @@ impl BufferManager for RustFile {
 }
 
 pub type RustProjectContext = ProjectContext<RustModuleName, RustIdentifier, RustFile>;
-pub type RustDeclarationContext = DeclarationContext<RustModuleName, RustIdentifier, RustFile>;
+pub type RustModuleContext = ModuleContext<RustModuleName, RustIdentifier, RustFile>;
 pub type RustProjectMonad<'a, T> = AccMonad<'a, T, RustProjectContext, String>;
-pub type RustDeclarationMonad<'a, T> = AccMonad<'a, T, RustDeclarationContext, String>;
+pub type RustImportMonad<'a, T> = AccMonad<'a, T, RustModuleContext, String>;
+pub type RustDeclarationMonad<'a, R> = RustProjectMonad<'a, Option<RustImportMonad<'a, R>>>;
+pub type RustReserved = (Escaped<RustIdentifier>, Escaped<RustIdentifier>);
 pub type RustDeclared = Declared<RustModuleName, RustIdentifier>;
+
+pub fn import_from_crate<'a>(
+    crate_name: &str,
+    path: Vec<&str>,
+    ident: &str,
+) -> RustDeclarationMonad<'a, TokenStream> {
+    let module = (RustModuleName {
+        root: RustModuleRoot::RootCrate(crate_name.into()),
+        children: path.iter().map(|v| RustIdentifier(v.to_string())).collect(),
+    })
+    .escaped();
+
+    let ident = RustIdentifier::from(ident).escaped();
+
+    RustDeclarationMonad::lift_value(move || {
+        Some(
+            Declared(module.clone(), ident.clone())
+                .imported()
+                .map(move |ident| {
+                    quote! { ident }
+                }),
+        )
+    })
+}
+
+pub fn import_rust_declared<'a>(
+    declared: RustDeclarationMonad<'a, RustDeclared>,
+) -> RustDeclarationMonad<'a, TokenStream> {
+    declared.map_optional(|acc| {
+        acc.map(|dec| {
+            quote! { dec }
+        })
+    })
+}

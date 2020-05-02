@@ -1,4 +1,6 @@
-use crate::models::schema::{Field, Module, Reference, StructKind, Type, TypeStruct};
+use crate::models::schema::{
+    Field, Literal, Module, PrimitiveType, Reference, StructKind, Type, TypeStruct,
+};
 use std::borrow::Borrow;
 use std::collections::BTreeMap;
 
@@ -44,6 +46,12 @@ impl Into<bool> for &Optional {
 
 pub struct TypeStructDeconstructor<'a>(pub &'a TypeStruct, pub Optional);
 
+impl<'a> From<&'a Field> for TypeStructDeconstructor<'a> {
+    fn from(f: &'a Field) -> Self {
+        TypeStructDeconstructor(&f.type_struct, f.optional.into())
+    }
+}
+
 impl<'a> TypeStructDeconstructor<'a> {
     pub fn scalar(&self) -> Option<ScalarDeconstructor<'a>> {
         if self.0.struct_kind == StructKind::Scalar {
@@ -51,6 +59,20 @@ impl<'a> TypeStructDeconstructor<'a> {
         }
 
         None
+    }
+
+    pub fn repeated(&self) -> Option<()> {
+        match self.0.struct_kind {
+            StructKind::Repeated => Some(()),
+            _ => None,
+        }
+    }
+
+    pub fn map(&self) -> Option<()> {
+        match self.0.struct_kind {
+            StructKind::Map => Some(()),
+            _ => None,
+        }
     }
 
     pub fn contained(&self) -> Option<ScalarDeconstructor<'a>> {
@@ -67,6 +89,26 @@ impl<'a> ScalarDeconstructor<'a> {
         }
 
         Some(&self.0.reference)
+    }
+
+    pub fn primitive(&self) -> Option<PrimitiveType> {
+        if !self.0.reference.qualified_name.is_empty() {
+            return None;
+        }
+
+        if self.0.literal.is_some() {
+            return None;
+        }
+
+        Some(self.0.primitive_type.clone())
+    }
+
+    pub fn literal(&self) -> Option<Literal> {
+        if self.primitive().is_some() || self.reference().is_some() {
+            return None;
+        }
+
+        return self.0.literal.clone();
     }
 }
 

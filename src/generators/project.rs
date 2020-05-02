@@ -1,39 +1,39 @@
 use crate::generators::acc_monad::AccMonad;
-use crate::generators::identifiers::{CodegenIdentifier, Escaped, ModuleIdentifier};
+use crate::generators::identifiers::{CodegenIdentifier, Escapable, Escaped, ModuleIdentifier};
 use crate::generators::slotted_buffer::{BufferManager, SlottedBuffer};
-use crate::models::schema::{Reference, Type};
-use crate::modules_store::{ModulesStore, TypeLookup};
-use std::borrow::Borrow;
+use crate::modules_store::ModulesStore;
+use proc_macro2::{Ident, Span, TokenStream};
+use quote::{ToTokens, TokenStreamExt};
 use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display};
 use std::hash::{Hash, Hasher};
 
-pub struct DeclarationContext<MI: ModuleIdentifier, I: CodegenIdentifier, M: BufferManager> {
-    imported: HashMap<(MI, I), Imported<I>>,
-    rendered: HashSet<String>,
-    idents: HashMap<Escaped<I>, String>,
-    buffer: SlottedBuffer<M>,
+pub struct ModuleContext<MI: ModuleIdentifier, I: CodegenIdentifier, M: BufferManager> {
+    pub(crate) rendered: HashSet<String>,
+    pub(crate) idents: HashMap<Escaped<I>, String>,
+    pub(crate) imported: HashMap<(MI, I), Imported<I>>,
+    pub(crate) buffer: SlottedBuffer<M>,
 }
 
 pub struct ProjectContext<MI: ModuleIdentifier, I: CodegenIdentifier, M: BufferManager> {
-    modules: HashMap<MI, Cell<Option<DeclarationContext<MI, I, M>>>>,
+    pub modules: HashMap<MI, Cell<Option<ModuleContext<MI, I, M>>>>,
 }
 
 impl<MI: ModuleIdentifier, I: CodegenIdentifier, M: BufferManager> Default
-    for DeclarationContext<MI, I, M>
+    for ModuleContext<MI, I, M>
 {
     fn default() -> Self {
-        DeclarationContext {
-            imported: HashMap::default(),
+        ModuleContext {
             rendered: HashSet::default(),
+            imported: HashMap::default(),
             idents: HashMap::default(),
             buffer: SlottedBuffer::default(),
         }
     }
 }
 
-impl<MI: ModuleIdentifier, I: CodegenIdentifier, M: BufferManager> DeclarationContext<MI, I, M> {
+impl<MI: ModuleIdentifier, I: CodegenIdentifier, M: BufferManager> ModuleContext<MI, I, M> {
     pub fn try_add_ident(&mut self, ident: &Escaped<I>, feature_name: &str) -> Result<(), String> {
         if let Some(existing_feature_name) = self.idents.get(ident) {
             return Err(format!(
@@ -52,7 +52,46 @@ impl<MI: ModuleIdentifier, I: CodegenIdentifier, M: BufferManager> DeclarationCo
 }
 
 #[derive(Debug)]
-pub struct Declared<MI: ModuleIdentifier, I: CodegenIdentifier>(Escaped<MI>, Escaped<I>);
+pub struct Imported<I: CodegenIdentifier>(Escaped<I>);
+
+impl<I: CodegenIdentifier> ToTokens for Imported<I> {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let ident_str = format!("{}", self.0);
+        tokens.append(Ident::new(&ident_str, Span::call_site()))
+    }
+}
+
+impl<I: CodegenIdentifier> Hash for Imported<I> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.hash(state)
+    }
+}
+
+impl<I: CodegenIdentifier> PartialEq for Imported<I> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.eq(&other.0)
+    }
+}
+
+impl<I: CodegenIdentifier> Eq for Imported<I> {}
+
+impl<I: CodegenIdentifier> Clone for Imported<I> {
+    fn clone(&self) -> Self {
+        Imported(self.0.clone())
+    }
+}
+
+#[derive(Debug)]
+pub struct Declared<MI: ModuleIdentifier, I: CodegenIdentifier>(
+    pub(crate) Escaped<MI>,
+    pub(crate) Escaped<I>,
+);
+
+impl<MI: ModuleIdentifier, I: CodegenIdentifier> Declared<MI, I> {
+    pub fn extrn(mi: &MI, i: &I) -> Declared<MI, I> {
+        Declared(mi.clone().escaped(), i.clone().escaped())
+    }
+}
 
 impl<MI: ModuleIdentifier, I: CodegenIdentifier> Hash for Declared<MI, I> {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -75,51 +114,32 @@ impl<MI: ModuleIdentifier, I: CodegenIdentifier> Clone for Declared<MI, I> {
     }
 }
 
-#[derive(Debug)]
-pub struct Imported<I: CodegenIdentifier>(Escaped<I>);
-
-impl<I: CodegenIdentifier> Hash for Imported<I> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.hash(state)
+impl<MI: ModuleIdentifier, I: CodegenIdentifier> Declared<MI, I> {
+    pub fn imported<'a, M: BufferManager>(
+        self,
+    ) -> AccMonad<'a, Imported<I>, ModuleContext<MI, I, M>, String>
+    where
+        I: 'a,
+        MI: 'a,
+        M: 'a,
+    {
+        ProjectContext::import_ident(self)
     }
 }
 
-impl<I: CodegenIdentifier> PartialEq for Imported<I> {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.eq(&other.0)
-    }
-}
-
-impl<I: CodegenIdentifier> Eq for Imported<I> {}
-
-impl<I: CodegenIdentifier> Clone for Imported<I> {
-    fn clone(&self) -> Self {
-        Imported(self.0.clone())
-    }
-}
-
-pub trait Declaration {}
-impl Declaration for () {}
-impl<MI: ModuleIdentifier, I: CodegenIdentifier> Declaration for Declared<MI, I> {}
-
-impl<MI: ModuleIdentifier, I: CodegenIdentifier, M: BufferManager> ProjectContext<MI, I, M> {
+impl<'a, MI: ModuleIdentifier + 'a, I: CodegenIdentifier + 'a, M: BufferManager + 'a>
+    ProjectContext<MI, I, M>
+{
     pub fn new() -> Self {
         ProjectContext {
             modules: HashMap::new(),
         }
     }
 
-    pub fn get_declaration<'a, R: Declaration>(
-        dec: (MI, AccMonad<'a, R, DeclarationContext<MI, I, M>, String>),
-    ) -> AccMonad<'a, R, ProjectContext<MI, I, M>, String>
-    where
-        I: 'a,
-        MI: 'a,
-        M: 'a,
-        R: 'a,
-    {
-        let (module_ident, acc) = dec;
-
+    pub fn run_in_module<R: 'a>(
+        module_ident: MI,
+        acc: AccMonad<'a, R, ModuleContext<MI, I, M>, String>,
+    ) -> AccMonad<'a, R, ProjectContext<MI, I, M>, String> {
         AccMonad::with_acc(move |mut p: ProjectContext<MI, I, M>| {
             if let Some(existing) = p.modules.get_mut(&module_ident) {
                 let m = existing.take();
@@ -128,7 +148,7 @@ impl<MI: ModuleIdentifier, I: CodegenIdentifier, M: BufferManager> ProjectContex
                 return Ok((p, r));
             }
 
-            let m = DeclarationContext::default();
+            let m = ModuleContext::default();
             let (m, r) = acc.run(m)?;
             p.modules.insert(module_ident.clone(), Cell::new(Some(m)));
 
@@ -136,93 +156,10 @@ impl<MI: ModuleIdentifier, I: CodegenIdentifier, M: BufferManager> ProjectContex
         })
     }
 
-    pub fn declare_ident<
-        'a: 'b,
-        'b,
-        Feature: Debug + 'a,
-        CG: (Fn(Escaped<I>) -> String) + 'a,
-        SC: (Fn(Escaped<I>) -> String) + 'a,
-    >(
-        feature: Feature,
-        acc: AccMonad<'a, (CG, SC), DeclarationContext<MI, I, M>, String>,
-    ) -> (
-        MI,
-        AccMonad<'b, Declared<MI, I>, DeclarationContext<MI, I, M>, String>,
-    )
-    where
-        I: for<'c> From<&'c Feature> + 'a,
-        MI: for<'c> From<&'c Feature> + 'a,
-        M: 'a,
-    {
-        let ident: I = feature.borrow().into();
-        let module_ident: MI = feature.borrow().into();
-        let feature_name = format!("{:?}", feature);
-
-        (
-            module_ident.clone(),
-            acc.and_then(move |(cg, sc)| {
-                let ident = ident.clone();
-                let module_ident = module_ident.clone();
-                let feature_name = feature_name.clone();
-
-                AccMonad::with_acc(move |mut m: DeclarationContext<MI, I, M>| {
-                    let codegen_ident = ident.codegen_variant();
-                    let ident = ident.clone().escaped();
-                    let codegen_ident = codegen_ident.escaped();
-
-                    let declared_ident = Declared(module_ident.clone().escaped(), ident.clone());
-
-                    if m.rendered.insert(feature_name.clone()) {
-                        m.try_add_ident(&ident, &feature_name)?;
-                        m.try_add_ident(&codegen_ident, &format!("Codegen({})", &feature_name))?;
-
-                        m.buffer
-                            .set_slot(&feature_name, cg(codegen_ident), sc(ident.clone()));
-                    }
-
-                    Ok((m, declared_ident))
-                })
-            }),
-        )
-    }
-
-    pub fn declare_feature<'a, Feature: Debug + 'a, CG: Display + 'a, SC: Display + 'a>(
-        feature: Feature,
-        acc: AccMonad<'a, (CG, SC), DeclarationContext<MI, I, M>, String>,
-    ) -> (MI, AccMonad<'a, (), DeclarationContext<MI, I, M>, String>)
-    where
-        MI: for<'c> From<&'c Feature> + 'a,
-        M: 'a,
-        I: 'a,
-    {
-        let module_ident: MI = feature.borrow().into();
-        let feature_name = format!("{:?}", feature);
-
-        (
-            module_ident,
-            acc.and_then(move |(cg, sc)| {
-                let feature_name = feature_name.clone();
-
-                AccMonad::with_acc(move |mut m: DeclarationContext<MI, I, M>| {
-                    if m.rendered.insert(feature_name.clone()) {
-                        m.buffer
-                            .set_slot(&feature_name, format!("{}", cg), format!("{}", sc));
-                    }
-
-                    Ok((m, ()))
-                })
-            }),
-        )
-    }
-
-    pub fn import_ident<'a>(
+    fn import_ident(
         ident: Declared<MI, I>,
-    ) -> AccMonad<'a, Imported<I>, DeclarationContext<MI, I, M>, String>
-    where
-        I: 'a,
-        MI: 'a,
-    {
-        AccMonad::with_acc(move |mut m: DeclarationContext<MI, I, M>| {
+    ) -> AccMonad<'a, Imported<I>, ModuleContext<MI, I, M>, String> {
+        AccMonad::with_acc(move |mut m: ModuleContext<MI, I, M>| {
             let import_key = (ident.0.clone().unwrap(), ident.1.clone().unwrap());
             if let Some(existing) = m.imported.get(&import_key) {
                 let existing = existing.to_owned();

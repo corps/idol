@@ -10,13 +10,7 @@ use std::iter::FromIterator;
 use std::path::PathBuf;
 
 #[derive(Clone, PartialOrd, PartialEq, Eq, Hash, Debug)]
-pub struct RustIdentifier(String);
-
-impl RustIdentifier {
-    pub fn new(i: String) -> Self {
-        RustIdentifier(i)
-    }
-}
+pub struct RustIdentifier(pub String);
 
 fn is_module_keyword(s: &str) -> bool {
     s == "crate" || s == "self" || s == "super" || s == "Super"
@@ -67,8 +61,8 @@ impl Display for RustModuleRoot {
 
 #[derive(Clone, PartialOrd, PartialEq, Eq, Hash)]
 pub struct RustModuleName {
-    root: RustModuleRoot,
-    children: Vec<RustIdentifier>,
+    pub root: RustModuleRoot,
+    pub children: Vec<RustIdentifier>,
 }
 
 impl From<&RustModuleName> for PathBuf {
