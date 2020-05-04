@@ -41,7 +41,7 @@ pub trait Feature<'a>: Sized + Debug + 'a {
         Option<
             AccMonad<
                 'a,
-                Box<dyn Fn(Self::Reserved) -> (Self::CG, Self::SC)>,
+                Box<dyn Fn(Self::Reserved) -> (Self::CG, Self::SC) + 'a>,
                 ModuleContext<Self::MI, Self::I, Self::M>,
                 String,
             >,

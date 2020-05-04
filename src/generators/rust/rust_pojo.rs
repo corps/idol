@@ -1,4 +1,4 @@
-use crate::deconstructors::{Optional, TypeStructDeconstructor, TypeDeconstructor};
+use crate::deconstructors::{Optional, TypeDeconstructor, TypeStructDeconstructor};
 use crate::generators::acc_monad::AccMonad;
 use crate::generators::features::{Feature, Reserved};
 use crate::generators::identifiers::{Escapable, Escaped, SlashComment};
@@ -8,7 +8,7 @@ use crate::generators::rust::rust_file::{
     import_from_crate, import_rust_declared, RustDeclarationMonad, RustDeclared, RustFile,
     RustImportMonad, RustModuleContext, RustProjectContext, RustProjectMonad, RustReserved,
 };
-use crate::models::schema::{Field, PrimitiveType, Reference};
+use crate::models::schema::{Field, PrimitiveType, Reference, Type};
 use crate::modules_store::{ModulesStore, TypeLookup};
 use proc_macro2::TokenStream;
 use quote::ToTokens;
@@ -31,8 +31,8 @@ impl<'a, R: RustPojoRenderable + Debug + 'a> Feature<'a> for RustPojo<R> {
     type M = RustFile;
     type Declared = RustDeclared;
     type Reserved = RustReserved;
-    type CG = String;
-    type SC = String;
+    type CG = TokenStream;
+    type SC = TokenStream;
 
     fn reserve(
         &self,
@@ -49,25 +49,30 @@ impl<'a, R: RustPojoRenderable + Debug + 'a> Feature<'a> for RustPojo<R> {
 
     fn render(
         &self,
-        store: &ModulesStore,
-    ) -> RustDeclarationMonad<'a, Box<dyn Fn(Self::Reserved) -> (Self::CG, Self::SC)>> {
+        store: &'a ModulesStore,
+    ) -> RustDeclarationMonad<'a, Box<dyn Fn(RustReserved) -> (TokenStream, TokenStream) + 'a>>
+    {
+        AccMonad::from(store.lookup_reference(&self.0)).and_then(move |t: &Type| {
+            R::field_definitions(store, t).map_optional(|fields| {
+                fields.map(|fields| {
+                    let v: Box<dyn Fn(RustReserved) -> (TokenStream, TokenStream)> = Box::new(move |(codegen_ident, scaffold_ident): RustReserved| -> (TokenStream, TokenStream) {
+                        (
+                            R::codegen_struct_type(codegen_ident.clone(), &fields),
+                            quote! { pub type #scaffold_ident = #codegen_ident; },
+                        )
+                    });
 
-        store.lookup_reference(&self.0).and_then(move |t| {
-            TypeDeconstructor(t).struct_fields().map(|fields| {
-                R::field_definition(store, field)
-                fields.values().cloned().map(|f| {
-                    R::field_definition(store, f)
+                    v
                 })
             })
-        }).unwrap_or_default()
+        })
     }
 }
 
 pub trait RustPojoRenderable: Debug {
-    fn codegen_struct_wrapper<'a>(
-        store: &'a ModulesStore,
-        codegen_ident: Reserved<Escaped<RustIdentifier>>,
-        fields: Vec<TokenStream>,
+    fn codegen_struct_type<'a>(
+        codegen_ident: Escaped<RustIdentifier>,
+        fields: &Vec<TokenStream>,
     ) -> TokenStream {
         quote! {
             pub struct #codegen_ident {
@@ -76,22 +81,42 @@ pub trait RustPojoRenderable: Debug {
         }
     }
 
+    fn field_definitions<'a>(
+        store: &'a ModulesStore,
+        t: &'a Type,
+    ) -> RustDeclarationMonad<'a, Vec<TokenStream>> {
+        TypeDeconstructor(t)
+            .struct_fields()
+            .map(|fields| {
+                RustDeclarationMonad::collect(
+                    fields
+                        .values()
+                        .map(|field| Self::field_definition(store, field)),
+                )
+                .map(|fields| Some(AccMonad::collect(fields.iter().filter_map(|f| f.clone()))))
+            })
+            .unwrap_or_default()
+    }
+
     fn field_definition<'a>(
         store: &'a ModulesStore,
-        field: &Field,
-        field_type: TokenStream,
-    ) -> TokenStream {
-        let field_name = &field.field_name;
-        let docs = field
-            .docs
-            .iter()
-            .map(|s| SlashComment(s.to_string()).escape());
-
-        quote! {
-            #(#docs)
-            *
-            #field_name: #field_type
-        }
+        field: &'a Field,
+    ) -> RustDeclarationMonad<'a, TokenStream> {
+        Self::field_type(store, field).map_optional(move |acc| {
+            let field_name = field.field_name.to_owned();
+            let docs = field
+                .docs
+                .iter()
+                .map(|s| SlashComment(s.to_string()).escape())
+                .collect::<Vec<SlashComment>>();
+            acc.map(move |field_type| {
+                quote! {
+                    #(#docs)
+                    *
+                    #field_name: #field_type
+                }
+            })
+        })
     }
 
     fn field_type<'a>(
@@ -108,7 +133,6 @@ pub trait RustPojoRenderable: Debug {
                     .or(ts
                         .reference()
                         .map(|r| Self::reference_field_type(store, r.to_owned())))
-                // .or(ts.literal().map(|lit|))
             })
             .unwrap_or_default();
 

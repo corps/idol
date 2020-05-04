@@ -38,6 +38,15 @@ impl<'a, R: 'a, A: 'a, E: 'a> Clone for AccMonad<'a, R, A, E> {
     }
 }
 
+impl<'a, R: Clone + 'a, A: 'a, E: Clone + 'a> From<Result<R, E>> for AccMonad<'a, R, A, E> {
+    fn from(r: Result<R, E>) -> Self {
+        match r {
+            Ok(v) => AccMonad::lift_value(move || v.clone()),
+            Err(e) => AccMonad::with_acc(move |acc| Err(e.clone())),
+        }
+    }
+}
+
 impl<'a, R: 'a, A: 'a, E: 'a> AccMonad<'a, R, A, E> {
     pub fn lift_value<F: Fn() -> R + 'a>(f: F) -> AccMonad<'a, R, A, E> {
         AccMonad {
