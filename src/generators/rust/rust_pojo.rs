@@ -1,20 +1,18 @@
-use crate::deconstructors::{Optional, TypeDeconstructor, TypeStructDeconstructor};
+use crate::deconstructors::{TypeDeconstructor, TypeStructDeconstructor};
 use crate::generators::acc_monad::AccMonad;
 use crate::generators::features::{Feature, Reserved};
 use crate::generators::identifiers::{Escapable, Escaped, SlashComment};
-use crate::generators::project::{Declared, ModuleContext, ProjectContext};
+use crate::generators::project::ModuleContext;
 use crate::generators::rust::identifiers::{RustIdentifier, RustModuleName, RustModuleRoot};
 use crate::generators::rust::rust_file::{
     import_from_crate, import_rust_declared, RustDeclarationMonad, RustDeclared, RustFile,
-    RustImportMonad, RustModuleContext, RustProjectContext, RustProjectMonad, RustReserved,
+    RustReserved,
 };
 use crate::models::schema::{Field, PrimitiveType, Reference, Type};
 use crate::modules_store::{ModulesStore, TypeLookup};
 use proc_macro2::TokenStream;
-use quote::ToTokens;
 use serde::export::fmt::Debug;
 use serde::export::PhantomData;
-use std::fmt::Display;
 
 #[derive(Debug, Clone)]
 pub struct RustPojo<R: RustPojoRenderable>(pub Reference, PhantomData<R>);
@@ -31,8 +29,7 @@ impl<'a, R: RustPojoRenderable + Debug + 'a> Feature<'a> for RustPojo<R> {
     type M = RustFile;
     type Declared = RustDeclared;
     type Reserved = RustReserved;
-    type CG = TokenStream;
-    type SC = TokenStream;
+    type Renderable = TokenStream;
 
     fn reserve(
         &self,

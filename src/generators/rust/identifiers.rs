@@ -1,9 +1,6 @@
 use crate::generators::identifiers::{CodegenIdentifier, Escapable, ModuleIdentifier};
-use crate::models::schema::Module;
-use regex::Regex;
 use serde::export::Formatter;
 use std::collections::hash_set::HashSet;
-use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 use std::iter::FromIterator;
@@ -73,7 +70,8 @@ impl From<&RustModuleName> for PathBuf {
                     .iter()
                     .map(|c| c.escape().to_string())
                     .collect::<Vec<String>>()
-                    .join("/"),
+                    .join("/")
+                    + ".rs",
             ),
             _ => unreachable!("RustModuleName from external crate cannot have a path generated!"),
         }
@@ -121,7 +119,11 @@ impl Display for RustModuleName {
     }
 }
 
-impl ModuleIdentifier for RustModuleName {}
+impl ModuleIdentifier for RustModuleName {
+    fn path(&self) -> PathBuf {
+        self.into()
+    }
+}
 
 impl Display for RustIdentifier {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

@@ -1,26 +1,31 @@
 use crate::generators::acc_monad::AccMonad;
-use crate::generators::identifiers::{CodegenIdentifier, Escapable, Escaped, ModuleIdentifier};
+use crate::generators::build_env::BuildEnv;
+use crate::generators::identifiers::{CodegenIdentifier, Escaped, ModuleIdentifier};
 use crate::generators::slotted_buffer::{BufferManager, SlottedBuffer};
-use crate::modules_store::ModulesStore;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{ToTokens, TokenStreamExt};
 use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
+use std::path::PathBuf;
 
-pub struct ModuleContext<MI: ModuleIdentifier, I: CodegenIdentifier, M: BufferManager> {
+pub trait ModuleManager<MI: ModuleIdentifier, I: CodegenIdentifier>: BufferManager {
+    fn render_imports(imported: &HashMap<(MI, I), I>) -> String;
+}
+
+pub struct ModuleContext<MI: ModuleIdentifier, I: CodegenIdentifier, M: ModuleManager<MI, I>> {
     pub(crate) rendered: HashSet<String>,
     pub(crate) idents: HashMap<Escaped<I>, String>,
-    pub(crate) imported: HashMap<(MI, I), Imported<I>>,
+    pub(crate) imported: HashMap<(MI, I), I>,
     pub(crate) buffer: SlottedBuffer<M>,
 }
 
-pub struct ProjectContext<MI: ModuleIdentifier, I: CodegenIdentifier, M: BufferManager> {
+pub struct ProjectContext<MI: ModuleIdentifier, I: CodegenIdentifier, M: ModuleManager<MI, I>> {
     pub modules: HashMap<MI, Cell<Option<ModuleContext<MI, I, M>>>>,
 }
 
-impl<MI: ModuleIdentifier, I: CodegenIdentifier, M: BufferManager> Default
+impl<MI: ModuleIdentifier, I: CodegenIdentifier, M: ModuleManager<MI, I>> Default
     for ModuleContext<MI, I, M>
 {
     fn default() -> Self {
@@ -33,7 +38,7 @@ impl<MI: ModuleIdentifier, I: CodegenIdentifier, M: BufferManager> Default
     }
 }
 
-impl<MI: ModuleIdentifier, I: CodegenIdentifier, M: BufferManager> ModuleContext<MI, I, M> {
+impl<MI: ModuleIdentifier, I: CodegenIdentifier, M: ModuleManager<MI, I>> ModuleContext<MI, I, M> {
     pub fn try_add_ident(&mut self, ident: &Escaped<I>, feature_name: &str) -> Result<(), String> {
         if let Some(existing_feature_name) = self.idents.get(ident) {
             return Err(format!(
@@ -115,7 +120,7 @@ impl<MI: ModuleIdentifier, I: CodegenIdentifier> Clone for Declared<MI, I> {
 }
 
 impl<MI: ModuleIdentifier, I: CodegenIdentifier> Declared<MI, I> {
-    pub fn imported<'a, M: BufferManager>(
+    pub fn imported<'a, M: ModuleManager<MI, I>>(
         self,
     ) -> AccMonad<'a, Imported<I>, ModuleContext<MI, I, M>, String>
     where
@@ -127,13 +132,53 @@ impl<MI: ModuleIdentifier, I: CodegenIdentifier> Declared<MI, I> {
     }
 }
 
-impl<'a, MI: ModuleIdentifier + 'a, I: CodegenIdentifier + 'a, M: BufferManager + 'a>
+impl<'a, MI: ModuleIdentifier + 'a, I: CodegenIdentifier + 'a, M: ModuleManager<MI, I> + 'a> Default
+    for ProjectContext<MI, I, M>
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<'a, MI: ModuleIdentifier + 'a, I: CodegenIdentifier + 'a, M: ModuleManager<MI, I> + 'a>
     ProjectContext<MI, I, M>
 {
     pub fn new() -> Self {
         ProjectContext {
             modules: HashMap::new(),
         }
+    }
+
+    pub fn write(mut self, target_dir: PathBuf) -> std::io::Result<()> {
+        let mut build_env = BuildEnv::new()?;
+
+        let pairs: Vec<(MI, Cell<Option<ModuleContext<MI, I, M>>>)> =
+            self.modules.drain().collect();
+
+        // TODO: MAKE THIS BETTERER.
+        // It sucks that import handling is so adhoc and out of band, strapped onto the side of
+        // the rendering processing.  That said, when is a clearly better time to do it?
+        // Would hate to push that responsibility back onto the individual features.
+        // Possibly the render accumulator would learn how to build up the rendered imports
+        // into the buffer inside of the import call.
+        // What if rendering imports needs to know about the final set of imports to correctly
+        // render?  IE: grouping up imports from the same module.
+        for (mi, mut m) in pairs {
+            let mut m = m.take().unwrap();
+            m.buffer
+                .prepend_slot("imports", M::render_imports(&m.imported), "".to_string());
+
+            m.buffer.update_from_target(target_dir.join(mi.path()))?;
+
+            let mut writer = build_env.start_write(mi.path())?;
+            m.buffer.write(&mut writer);
+        }
+
+        build_env
+            .copy_into(target_dir)
+            .map_err(|fe| std::io::Error::new(std::io::ErrorKind::Other, fe))?;
+
+        Ok(())
     }
 
     pub fn run_in_module<R: 'a>(
@@ -161,9 +206,10 @@ impl<'a, MI: ModuleIdentifier + 'a, I: CodegenIdentifier + 'a, M: BufferManager 
     ) -> AccMonad<'a, Imported<I>, ModuleContext<MI, I, M>, String> {
         AccMonad::with_acc(move |mut m: ModuleContext<MI, I, M>| {
             let import_key = (ident.0.clone().unwrap(), ident.1.clone().unwrap());
+
             if let Some(existing) = m.imported.get(&import_key) {
                 let existing = existing.to_owned();
-                return Ok((m, existing));
+                return Ok((m, Imported(existing.escaped())));
             }
 
             let mut local_ident = ident.1.clone().unwrap().import_variant().escaped();
@@ -175,10 +221,10 @@ impl<'a, MI: ModuleIdentifier + 'a, I: CodegenIdentifier + 'a, M: BufferManager 
             let imported = m
                 .imported
                 .entry(import_key)
-                .or_insert(Imported(local_ident))
+                .or_insert(local_ident.unwrap().clone())
                 .clone();
 
-            Ok((m, imported))
+            Ok((m, Imported(imported.escaped())))
         })
     }
 }

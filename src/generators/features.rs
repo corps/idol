@@ -1,7 +1,6 @@
 use crate::generators::acc_monad::AccMonad;
 use crate::generators::identifiers::{CodegenIdentifier, Escapable, Escaped, ModuleIdentifier};
-use crate::generators::project::{Declared, ModuleContext, ProjectContext};
-use crate::generators::slotted_buffer::BufferManager;
+use crate::generators::project::{Declared, ModuleContext, ModuleManager, ProjectContext};
 use crate::modules_store::ModulesStore;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
@@ -18,11 +17,10 @@ impl<T: ToTokens> ToTokens for Reserved<T> {
 pub trait Feature<'a>: Sized + Debug + 'a {
     type MI: ModuleIdentifier + 'a;
     type I: CodegenIdentifier + 'a;
-    type M: BufferManager + 'a;
+    type M: ModuleManager<Self::MI, Self::I> + 'a;
     type Declared: Clone + 'a;
     type Reserved: Clone + 'a;
-    type CG: Display;
-    type SC: Display;
+    type Renderable: Display;
 
     fn reserve(
         &self,
@@ -41,7 +39,7 @@ pub trait Feature<'a>: Sized + Debug + 'a {
         Option<
             AccMonad<
                 'a,
-                Box<dyn Fn(Self::Reserved) -> (Self::CG, Self::SC) + 'a>,
+                Box<dyn Fn(Self::Reserved) -> (Self::Renderable, Self::Renderable) + 'a>,
                 ModuleContext<Self::MI, Self::I, Self::M>,
                 String,
             >,
@@ -105,7 +103,7 @@ pub trait Feature<'a>: Sized + Debug + 'a {
             move |renderer: Option<
                 AccMonad<
                     'a,
-                    Box<dyn Fn(Self::Reserved) -> (Self::CG, Self::SC)>,
+                    Box<dyn Fn(Self::Reserved) -> (Self::Renderable, Self::Renderable)>,
                     ModuleContext<Self::MI, Self::I, Self::M>,
                     String,
                 >,
@@ -120,7 +118,7 @@ pub trait Feature<'a>: Sized + Debug + 'a {
                         AccMonad::with_acc(
                             move |mut m: ModuleContext<Self::MI, Self::I, Self::M>| {
                                 if !m.rendered.insert(feature_name.clone()) {
-                                    let m = reserve_acc.render(m)?;
+                                    let m = reserve_acc.run_acc(m)?;
                                     let (mut m, do_render) = render_acc.run(m)?;
                                     let (cg, sc) = do_render(reserved.clone());
                                     m.buffer.set_slot(&feature_name, cg, sc);

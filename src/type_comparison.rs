@@ -125,6 +125,7 @@ impl TypeComparison {
     }
 }
 
+#[allow(unreachable_code)]
 pub fn compare_types<'a, 'b: 'a, T>(
     mut one: &'a Type,
     mut other: &'a Type,

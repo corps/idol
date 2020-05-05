@@ -1,10 +1,12 @@
 use crate::generators::acc_monad::AccMonad;
 use crate::generators::identifiers::{Escapable, Escaped};
-use crate::generators::project::{Declared, ModuleContext, ProjectContext};
+use crate::generators::project::{Declared, ModuleContext, ModuleManager, ProjectContext};
 use crate::generators::rust::identifiers::{RustIdentifier, RustModuleName, RustModuleRoot};
-use crate::generators::slotted_buffer::{BufferManager, SlottedBuffer};
+use crate::generators::slotted_buffer::BufferManager;
 use proc_macro2::TokenStream;
 use regex::Regex;
+use std::collections::hash_map::RandomState;
+use std::collections::HashMap;
 
 pub struct RustFile;
 
@@ -15,12 +17,39 @@ impl BufferManager for RustFile {
 
     fn try_unescape(s: &str) -> Option<String> {
         lazy_static! {
-            static ref ESCAPE_REGEX: Regex = { Regex::new(r"^\/\/\#\#\#\ idol\:\ (.+)").unwrap() };
+            static ref ESCAPE_REGEX: Regex = { Regex::new(r"^//\#\#\# idol: (.+)").unwrap() };
         }
 
         ESCAPE_REGEX
             .captures(s)
             .and_then(|c| c.get(1).map(|c| c.as_str().to_string()))
+    }
+}
+
+impl ModuleManager<RustModuleName, RustIdentifier> for RustFile {
+    fn render_imports(
+        imported: &HashMap<(RustModuleName, RustIdentifier), RustIdentifier, RandomState>,
+    ) -> String {
+        imported
+            .iter()
+            .map(|((from_mod, from_ident), to_ident)| -> String {
+                if to_ident.eq(from_ident) {
+                    format!(
+                        "use {}::{};",
+                        from_mod.clone().escaped(),
+                        from_ident.clone().escaped()
+                    )
+                } else {
+                    format!(
+                        "use {}::{} as {};",
+                        from_mod.clone().escaped(),
+                        from_ident.clone().escaped(),
+                        to_ident.clone().escaped(),
+                    )
+                }
+            })
+            .collect::<Vec<String>>()
+            .join("\n")
     }
 }
 

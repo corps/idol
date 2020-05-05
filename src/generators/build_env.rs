@@ -11,11 +11,11 @@ pub struct BuildEnv {
 }
 
 impl BuildEnv {
-    pub fn new() -> BuildEnv {
-        BuildEnv {
-            build_dir: TempDir::new("idol-build").unwrap(),
+    pub fn new() -> std::io::Result<BuildEnv> {
+        Ok(BuildEnv {
+            build_dir: TempDir::new("idol-build")?,
             written: HashSet::new(),
-        }
+        })
     }
 
     pub fn start_write(&mut self, rel_path: PathBuf) -> io::Result<Box<dyn io::Write>> {
@@ -41,6 +41,10 @@ impl BuildEnv {
     }
 
     pub fn copy_into(&self, output_dir: PathBuf) -> Result<(), fs_extra::error::Error> {
+        fs::DirBuilder::new()
+            .recursive(true)
+            .create(output_dir.clone())?;
+
         let options = CopyOptions {
             overwrite: true,
             copy_inside: true,

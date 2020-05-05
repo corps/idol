@@ -61,7 +61,6 @@ where
         (TypeComparison::FieldsDiffer(differing_fields), variance) => {
             compose_fields(left, right, variance.clone(), differing_fields)
         }
-        _ => unreachable!(),
     };
 }
 

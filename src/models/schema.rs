@@ -74,6 +74,7 @@ impl idol::ValidatesJson for StructKind {
     }
 }
 
+#[allow(non_camel_case_types)]
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
 pub enum PrimitiveType {
     int,

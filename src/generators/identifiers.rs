@@ -4,6 +4,7 @@ use serde::export::fmt::Debug;
 use serde::export::Formatter;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
+use std::path::PathBuf;
 
 pub struct Escaped<T: Sized>(T);
 
@@ -64,7 +65,9 @@ pub trait CodegenIdentifier: Escapable + Hash + Eq + Display + Clone + Sized {
     fn import_variant(&self) -> Self;
 }
 
-pub trait ModuleIdentifier: Escapable + Hash + Eq + Display + Clone + Sized {}
+pub trait ModuleIdentifier: Escapable + Hash + Eq + Display + Clone + Sized {
+    fn path(&self) -> PathBuf;
+}
 
 pub struct SlashComment(pub String);
 

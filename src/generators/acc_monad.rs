@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-use std::error::Error;
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -42,7 +40,7 @@ impl<'a, R: Clone + 'a, A: 'a, E: Clone + 'a> From<Result<R, E>> for AccMonad<'a
     fn from(r: Result<R, E>) -> Self {
         match r {
             Ok(v) => AccMonad::lift_value(move || v.clone()),
-            Err(e) => AccMonad::with_acc(move |acc| Err(e.clone())),
+            Err(e) => AccMonad::with_acc(move |_| Err(e.clone())),
         }
     }
 }
@@ -146,7 +144,7 @@ impl<'a, R: 'a, A: 'a, E: 'a> AccMonad<'a, R, A, E> {
         }
     }
 
-    pub fn render(&self, a: A) -> Result<A, E> {
+    pub fn run_acc(&self, a: A) -> Result<A, E> {
         let (acc, _) = self.inner.deref()(a)?;
         Ok(acc)
     }
@@ -158,6 +156,13 @@ impl<'a, R: 'a, A: 'a, E: 'a> AccMonad<'a, R, A, E> {
 
     pub fn run(&self, a: A) -> Result<(A, R), E> {
         self.inner.deref()(a)
+    }
+}
+
+impl<'a, R: 'a, A: Default + 'a, E: 'a> AccMonad<'a, R, A, E> {
+    pub fn render(&self) -> Result<A, E> {
+        let (acc, _) = self.inner.deref()(A::default())?;
+        Ok(acc)
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::models::declarations::{ModuleDec, ModuleIncludes, TypeDec};
+use crate::models::declarations::{ModuleIncludes, TypeDec};
 use crate::models::idol::{ExpandsJson, ValidatesJson, ValidationError};
 use crate::models::loaded::{Comments, LoadedModule, ModuleComments, TypeComments};
 use is_executable::IsExecutable;
@@ -33,7 +33,7 @@ pub enum LoadError {
 
 impl Display for LoadError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        (match self {
+        match self {
             LoadError::IoError(m, err) => write!(f, "IO error while loading module {}: {}", m, err),
             LoadError::DeserializationError(m, err) => {
                 write!(f, "Error while deserializing module {}: {}", m, err)
@@ -51,7 +51,7 @@ impl Display for LoadError {
             LoadError::CouldNotFindError(m) => {
                 write!(f, "Could not find module {} in search directories", m)
             }
-        })
+        }
     }
 }
 
